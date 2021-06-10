@@ -5,7 +5,9 @@ go 1.16
 require (
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
 	github.com/apache/thrift v0.12.0 // indirect
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/golang-migrate/migrate/v4 v4.14.1 // indirect
+	github.com/google/uuid v1.2.0 // indirect
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/jackc/pgx v3.2.0+incompatible // indirect
 	github.com/jmoiron/sqlx v1.3.4 // indirect

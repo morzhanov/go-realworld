@@ -27,6 +27,20 @@ func (s *UsersService) GetUserData(userId string) (user *GetUserDto, err error) 
 	return user, nil
 }
 
+func (s *UsersService) GetUserDataByUsername(username string) (user *GetUserDto, err error) {
+	q := `SELECT id, username FROM users
+		WHERE username = $1`
+	row := s.db.QueryRow(q, username)
+
+	user = &GetUserDto{}
+	err = row.Scan(user.ID, user.Username)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
 func (s *UsersService) ValidateUserPassword(username string, password string) error {
 	q := `SELECT id, username FROM users
 		WHERE username = $1`
