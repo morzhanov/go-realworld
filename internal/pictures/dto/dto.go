@@ -1,6 +1,6 @@
 package dto
 
-type CreatePhotoDto struct {
+type CreatePicturesDto struct {
 	Title  string `json:"title"`
 	Base64 string `json:"base64"`
 }

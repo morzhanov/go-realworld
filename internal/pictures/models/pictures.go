@@ -1,6 +1,6 @@
 package models
 
-type Photo struct {
+type Picture struct {
 	ID     string `json:"id" db:"id"`
 	Title  string `json:"title" db:"title"`
 	Base64 string `json:"base64" db:"base64"`

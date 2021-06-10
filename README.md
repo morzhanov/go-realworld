@@ -9,12 +9,12 @@ TBD: Go Real World example
   - should contain endpoint which ingress will use as proxy to check requests
 - users
   - should operate users CRUD
-- photos
-  - simple photo saving service
-  - user can save photos in postgresql db in base64 format
-  - user can get all photos
-  - user can get photo by id
-  - user can delete photo
+- pictures
+  - simple picture saving service
+  - user can save pictures in postgresql db in base64 format
+  - user can get all pictures
+  - user can get picture by id
+  - user can delete picture
 - analytics
   - should handle requests from other services and log alanytics data into kafka
 - client
