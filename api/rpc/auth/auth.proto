@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+package main;
+
+option go_package = "github.com/morzhanov/go-realworld/api/rpc/auth/rpc";
+
+service Auth {
+  // Validate rpc request
+  rpc ValidateRpcRequest (ValidateRpcRequestInput) returns (google.protobuf.Empty) {}
+}
+
+// Log data request
+message ValidateRpcRequestInput {
+  string access_token = 1;
+}

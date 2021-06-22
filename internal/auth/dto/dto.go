@@ -19,7 +19,7 @@ type ValidateRestRequestInput struct {
 	AccessToken string
 }
 
-type ValidateGrpcRequestInput struct {
+type ValidateRpcRequestInput struct {
 	Method      string
 	AccessToken string
 }

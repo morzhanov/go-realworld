@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+package main;
+
+option go_package = "github.com/morzhanov/go-realworld/api/rpc/analytics/rpc";
+
+service Analytics {
+  // Connect a client
+  rpc LogData (LogDataRequest) returns (google.protobuf.Empty) {}
+
+  // Get a log
+  rpc GetLog (GetLogRequest) returns (AnalyticsEntryMessage) {}
+}
+
+// Log data request
+message LogDataRequest {
+  string id = 1;
+  string userId = 2;
+  string operation = 3;
+  string dataid = 4;
+}
+
+// Get a log request
+message GetLogRequest {
+  int32 offset = 1;
+}
+
+// Analytics entry message
+message AnalyticsEntryMessage {
+  string id = 1;
+  string userId = 2;
+  string operation = 3;
+  string dataid = 4;
+}

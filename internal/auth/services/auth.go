@@ -82,7 +82,7 @@ func (s *AuthService) ValidateRestRequest(data ValidateRestRequestInput) error {
 }
 
 // TODO: this GET endpoint should be called from client service
-func (s *AuthService) ValidateGrpcRequest(data ValidateGrpcRequestInput) error {
+func (s *AuthService) ValidateRpcRequest(data ValidateRpcRequestInput) error {
 	for _, route := range PUBLIC_RPC_METHODS {
 		if route == data.Method {
 			return nil

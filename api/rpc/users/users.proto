@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+package main;
+
+option go_package = "github.com/morzhanov/go-realworld/api/users/rpc";
+
+service Users {
+  // Get user data
+  rpc GetUserData (GetUserDataRequest) returns (UserMessage) {}
+
+  // Get user data by username
+  rpc GetUserDataByUsername (GetUserDataByUsernameRequest) returns (UserMessage) {}
+
+  // Validate user password
+  rpc ValidateUserPassword (ValidateUserPasswordRequest) returns (google.protobuf.Empty) {}
+
+  // Create a user
+  rpc CreateUser (CreateUserRequest) returns (UserMessage) {}
+
+  // Delete a user
+  rpc DeleteUser (DeleteUserRequest) returns (google.protobuf.Empty) {}
+}
+
+// User message
+message UserMessage {
+  string id = 1;
+  string username = 2;
+}
+
+// GetUserData request
+message GetUserDataRequest {
+  string user_id = 1;
+}
+
+// GetUserData request
+message GetUserDataByUsernameRequest {
+  string username = 1;
+}
+
+// ValidateUserPassword request
+message ValidateUserPasswordRequest {
+  string username = 1;
+  string password = 2;
+}
+
+// CreateUser request
+message CreateUserRequest {
+  string username = 1;
+  string password = 2;
+}
+
+// DeleteUserRequest request
+message DeleteUserRequest {
+  string user_id = 1;
+}

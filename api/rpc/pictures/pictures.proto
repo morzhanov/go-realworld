@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+package main;
+
+option go_package = "github.com/morzhanov/go-realworld/api/rpc/analytics/rpc";
+
+service Pictures {
+  // Get user pictures
+  rpc GetUserPictures (GetUserPicturesRequest) returns (PicturesMessage) {}
+
+  // Get user picture
+  rpc GetUserPicture (GetUserPictureRequest) returns (PictureMessage) {}
+
+  // Create user picture
+  rpc CreateUserPicture (CreateUserPictureRequest) returns (PictureMessage) {}
+
+  // Delete user picture
+  rpc DeleteUserPicture (DeleteUserPictureRequest) returns (google.protobuf.Empty) {}
+}
+
+// Picture message
+message PictureMessage {
+  string id = 1;
+  string title = 2;
+  string base64 = 3;
+  string user_id = 4;
+}
+
+// Pictures message
+message PicturesMessage {
+  repeated PictureMessage pictures = 1;
+}
+
+// GetUserPictures request
+message GetUserPicturesRequest {
+  string user_id = 1;
+}
+
+// GetUserPicture request
+message GetUserPictureRequest {
+  string user_id = 1;
+  string picture_id = 2;
+}
+
+// CreateUserPicture request
+message CreateUserPictureRequest {
+  string title = 1;
+  string base64 = 2;
+}
+
+// DeleteUserPicture request
+message DeleteUserPictureRequest {
+  string user_id = 1;
+  string picture_id = 2;
+}
