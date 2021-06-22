@@ -41,17 +41,17 @@ func (s *UsersService) GetUserDataByUsername(username string) (user *GetUserDto,
 	return user, nil
 }
 
-func (s *UsersService) ValidateUserPassword(username string, password string) error {
+func (s *UsersService) ValidateUserPassword(data *ValidateUserPasswordDto) error {
 	q := `SELECT id, username FROM users
 		WHERE username = $1`
-	row := s.db.QueryRow(q, username)
+	row := s.db.QueryRow(q, data.Username)
 
 	user := &User{}
 	if err := row.Scan(user.ID, user.Username, user.Password); err != nil {
 		return err
 	}
 
-	if checkPasswordHash(password, user.Password) {
+	if checkPasswordHash(data.Password, user.Password) {
 		return nil
 	}
 	return errors.New("Wrong password")

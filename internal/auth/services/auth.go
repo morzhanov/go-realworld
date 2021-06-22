@@ -26,7 +26,7 @@ func (s *AuthService) Login(data *LoginInput) (res *LoginDto, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return &LoginDto{token}, nil
+	return &LoginDto{AccessToken: token}, nil
 }
 
 func (s *AuthService) Signup(data *SignupInput) (res *LoginDto, err error) {
@@ -37,7 +37,7 @@ func (s *AuthService) Signup(data *SignupInput) (res *LoginDto, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return &LoginDto{token}, nil
+	return &LoginDto{AccessToken: token}, nil
 }
 
 func createJwt(userId string) (res string, err error) {
@@ -70,6 +70,7 @@ func verifyJwt(tokenString string) error {
 	return nil
 }
 
+// TODO: this GET endpoint should be called from ingress
 func (s *AuthService) ValidateRestRequest(data ValidateRestRequestInput) error {
 	for _, route := range PUBLIC_ROUTES {
 		if route == data.Path {
@@ -77,8 +78,10 @@ func (s *AuthService) ValidateRestRequest(data ValidateRestRequestInput) error {
 		}
 	}
 	return verifyJwt(data.AccessToken)
+	// TODO: inject userId into headers and return result to ingress
 }
 
+// TODO: this GET endpoint should be called from client service
 func (s *AuthService) ValidateGrpcRequest(data ValidateGrpcRequestInput) error {
 	for _, route := range PUBLIC_RPC_METHODS {
 		if route == data.Method {
@@ -86,8 +89,10 @@ func (s *AuthService) ValidateGrpcRequest(data ValidateGrpcRequestInput) error {
 		}
 	}
 	return verifyJwt(data.AccessToken)
+	// TODO: return userId
 }
 
+// TODO: this GET endpoint should be called from client service
 func (s *AuthService) ValidateEventsRequest(data ValidateEventsRequestInput) error {
 	for _, route := range PUBLIC_EVENTS {
 		if route == data.Event {
@@ -95,6 +100,7 @@ func (s *AuthService) ValidateEventsRequest(data ValidateEventsRequestInput) err
 		}
 	}
 	return verifyJwt(data.AccessToken)
+	// TODO: return userId
 }
 
 func NewAuthService(db *sqlx.DB) *AuthService {

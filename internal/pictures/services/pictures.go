@@ -45,11 +45,20 @@ func (s *PictureService) GetUserPicture(userId string, pictureId string) (res *P
 	return res, nil
 }
 
-func (s *PictureService) CreateUserPicture(userId string, data *CreatePicturesDto) error {
+func (s *PictureService) CreateUserPicture(userId string, data *CreatePicturesDto) (res *Picture, err error) {
 	q := `INSERT INTO pictures (title, base64, user_id)
-		VALUES ($1, $2, $3)`
-	_, err := s.db.Query(q, data.Title, data.Base64, userId)
-	return err
+		VALUES ($1, $2, $3)
+		RETURNING *`
+	row, err := s.db.Query(q, data.Title, data.Base64, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	res = &Picture{}
+	if err = row.Scan(res.ID, res.Title, res.Base64, res.UserId); err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 func (s *PictureService) DeleteUserPicture(userId string, pictureId string) error {
