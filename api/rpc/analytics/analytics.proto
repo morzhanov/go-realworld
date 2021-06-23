@@ -4,7 +4,7 @@ import "google/protobuf/empty.proto";
 
 package main;
 
-option go_package = "github.com/morzhanov/go-realworld/api/rpc/analytics/rpc";
+option go_package = "github.com/morzhanov/go-realworld/api/rpc/analytics";
 
 service Analytics {
   // Connect a client
@@ -19,7 +19,7 @@ message LogDataRequest {
   string id = 1;
   string userId = 2;
   string operation = 3;
-  string dataid = 4;
+  string data = 4;
 }
 
 // Get a log request
@@ -32,5 +32,5 @@ message AnalyticsEntryMessage {
   string id = 1;
   string userId = 2;
   string operation = 3;
-  string dataid = 4;
+  string data = 4;
 }

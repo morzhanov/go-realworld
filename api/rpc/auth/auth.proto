@@ -4,7 +4,7 @@ import "google/protobuf/empty.proto";
 
 package main;
 
-option go_package = "github.com/morzhanov/go-realworld/api/rpc/auth/rpc";
+option go_package = "github.com/morzhanov/go-realworld/api/rpc/auth";
 
 service Auth {
   // Validate rpc request
@@ -14,4 +14,5 @@ service Auth {
 // Log data request
 message ValidateRpcRequestInput {
   string access_token = 1;
+  string method = 2;
 }

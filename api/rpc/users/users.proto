@@ -4,7 +4,7 @@ import "google/protobuf/empty.proto";
 
 package main;
 
-option go_package = "github.com/morzhanov/go-realworld/api/users/rpc";
+option go_package = "github.com/morzhanov/go-realworld/api/rpc/users";
 
 service Users {
   // Get user data

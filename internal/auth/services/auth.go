@@ -71,7 +71,7 @@ func verifyJwt(tokenString string) error {
 }
 
 // TODO: this GET endpoint should be called from ingress
-func (s *AuthService) ValidateRestRequest(data ValidateRestRequestInput) error {
+func (s *AuthService) ValidateRestRequest(data *ValidateRestRequestInput) error {
 	for _, route := range PUBLIC_ROUTES {
 		if route == data.Path {
 			return nil
@@ -82,7 +82,7 @@ func (s *AuthService) ValidateRestRequest(data ValidateRestRequestInput) error {
 }
 
 // TODO: this GET endpoint should be called from client service
-func (s *AuthService) ValidateRpcRequest(data ValidateRpcRequestInput) error {
+func (s *AuthService) ValidateRpcRequest(data *ValidateRpcRequestInput) error {
 	for _, route := range PUBLIC_RPC_METHODS {
 		if route == data.Method {
 			return nil
@@ -93,7 +93,7 @@ func (s *AuthService) ValidateRpcRequest(data ValidateRpcRequestInput) error {
 }
 
 // TODO: this GET endpoint should be called from client service
-func (s *AuthService) ValidateEventsRequest(data ValidateEventsRequestInput) error {
+func (s *AuthService) ValidateEventsRequest(data *ValidateEventsRequestInput) error {
 	for _, route := range PUBLIC_EVENTS {
 		if route == data.Event {
 			return nil

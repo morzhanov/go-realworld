@@ -4,7 +4,7 @@ import "google/protobuf/empty.proto";
 
 package main;
 
-option go_package = "github.com/morzhanov/go-realworld/api/rpc/analytics/rpc";
+option go_package = "github.com/morzhanov/go-realworld/api/rpc/analytics";
 
 service Pictures {
   // Get user pictures
@@ -48,6 +48,7 @@ message GetUserPictureRequest {
 message CreateUserPictureRequest {
   string title = 1;
   string base64 = 2;
+  string user_id = 3;
 }
 
 // DeleteUserPicture request
