@@ -7,13 +7,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	analyticsdto "github.com/morzhanov/go-realworld/internal/analytics/dto"
+	. "github.com/morzhanov/go-realworld/internal/apigw/services"
 	authdto "github.com/morzhanov/go-realworld/internal/auth/dto"
-	. "github.com/morzhanov/go-realworld/internal/client/services"
 	picturedto "github.com/morzhanov/go-realworld/internal/pictures/dto"
 )
 
-type ClientRestController struct {
-	service *ClientService
+type APIGatewayRestController struct {
+	service *APIGatewayService
 	router  *gin.Engine
 }
 
@@ -23,7 +23,7 @@ func handleError(c *gin.Context, err error) {
 
 // TODO: kuber gateway/ingress should inject userId after request is authenticated
 // TODO: or we can call auth.ValidateXXXXRequest explicitly with each request
-func (c *ClientRestController) handleLogin(ctx *gin.Context) {
+func (c *APIGatewayRestController) handleLogin(ctx *gin.Context) {
 	jsonData, err := ioutil.ReadAll(ctx.Request.Body)
 	if err != nil {
 		handleError(ctx, err)
@@ -44,7 +44,7 @@ func (c *ClientRestController) handleLogin(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func (c *ClientRestController) handleSignup(ctx *gin.Context) {
+func (c *APIGatewayRestController) handleSignup(ctx *gin.Context) {
 	jsonData, err := ioutil.ReadAll(ctx.Request.Body)
 	if err != nil {
 		handleError(ctx, err)
@@ -65,7 +65,7 @@ func (c *ClientRestController) handleSignup(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, res)
 }
 
-func (c *ClientRestController) handleCreatePicture(ctx *gin.Context) {
+func (c *APIGatewayRestController) handleCreatePicture(ctx *gin.Context) {
 	jsonData, err := ioutil.ReadAll(ctx.Request.Body)
 	if err != nil {
 		handleError(ctx, err)
@@ -89,7 +89,7 @@ func (c *ClientRestController) handleCreatePicture(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, res)
 }
 
-func (c *ClientRestController) handleGetPictures(ctx *gin.Context) {
+func (c *APIGatewayRestController) handleGetPictures(ctx *gin.Context) {
 	// TODO: get userId from kuber ingress or via auth service varify token endpoint
 	userId := "user-id"
 
@@ -101,7 +101,7 @@ func (c *ClientRestController) handleGetPictures(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func (c *ClientRestController) handleGetPicture(ctx *gin.Context) {
+func (c *APIGatewayRestController) handleGetPicture(ctx *gin.Context) {
 	id := ctx.Param("id")
 	// TODO: get userId from kuber ingress or via auth service varify token endpoint
 	userId := "user-id"
@@ -114,7 +114,7 @@ func (c *ClientRestController) handleGetPicture(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func (c *ClientRestController) handleDeletePicture(ctx *gin.Context) {
+func (c *APIGatewayRestController) handleDeletePicture(ctx *gin.Context) {
 	id := ctx.Param("id")
 	// TODO: get userId from kuber ingress or via auth service varify token endpoint
 	userId := "user-id"
@@ -127,7 +127,7 @@ func (c *ClientRestController) handleDeletePicture(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
-func (c *ClientRestController) handleGetAnalytics(ctx *gin.Context) {
+func (c *APIGatewayRestController) handleGetAnalytics(ctx *gin.Context) {
 	jsonData, err := ioutil.ReadAll(ctx.Request.Body)
 	if err != nil {
 		handleError(ctx, err)
@@ -148,9 +148,9 @@ func (c *ClientRestController) handleGetAnalytics(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, res)
 }
 
-func NewRestController(s *ClientService) *ClientRestController {
+func NewAPIGatewayRestController(s *APIGatewayService) *APIGatewayRestController {
 	router := gin.Default()
-	c := ClientRestController{s, router}
+	c := APIGatewayRestController{s, router}
 
 	router.POST("/login", c.handleLogin)
 	router.POST("/signup", c.handleSignup)
