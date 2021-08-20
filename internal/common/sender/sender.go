@@ -116,7 +116,7 @@ func (c *Sender) GetRpcClient(client RpcClient) (interface{}, error) {
 	}
 }
 
-func (c *Sender) EventsRequest(input EventsRequestInput) {
+func (c *Sender) EventsRequest(input *EventsRequestInput) {
 	var w *kafka.Writer
 	switch input.Service {
 	case "auth":
@@ -184,13 +184,13 @@ func setupGrpcClient() *GrpcClient {
 	return &GrpcClient{picturesClient, usersClient, analyticsClient, authClient}
 }
 
-func setupEventsClient() EventsClient {
+func setupEventsClient() *EventsClient {
 	// TODO: get values from env vars
 	authConnectionUri := ""
 	topic := ""
 	// ...
 
-	return EventsClient{
+	return &EventsClient{
 		Auth:      &EventsClientItem{[]string{authConnectionUri}, topic},
 		Analytics: &EventsClientItem{[]string{connectionUri}, topic},
 		Pictures:  &EventsClientItem{[]string{connectionUri}, topic},
@@ -207,7 +207,7 @@ func NewServiceAPI() map[string]*ServiceAPI {
 	return map[string]*ServiceAPI{}
 }
 
-func NewConnector() *Sender {
+func NewSender() *Sender {
 	API := NewServiceAPI()
 	r := setupRestClient()
 	g := setupGrpcClient()

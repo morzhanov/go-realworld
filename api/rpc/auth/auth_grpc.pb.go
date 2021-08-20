@@ -21,6 +21,8 @@ const _ = grpc.SupportPackageIsVersion7
 type AuthClient interface {
 	// Validate rpc request
 	ValidateRpcRequest(ctx context.Context, in *ValidateRpcRequestInput, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Login(ctx context.Context, in *LoginInput, opts ...grpc.CallOption) (*AuthResponse, error)
+	Signup(ctx context.Context, in *SignupInput, opts ...grpc.CallOption) (*AuthResponse, error)
 }
 
 type authClient struct {
@@ -40,12 +42,32 @@ func (c *authClient) ValidateRpcRequest(ctx context.Context, in *ValidateRpcRequ
 	return out, nil
 }
 
+func (c *authClient) Login(ctx context.Context, in *LoginInput, opts ...grpc.CallOption) (*AuthResponse, error) {
+	out := new(AuthResponse)
+	err := c.cc.Invoke(ctx, "/main.Auth/Login", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) Signup(ctx context.Context, in *SignupInput, opts ...grpc.CallOption) (*AuthResponse, error) {
+	out := new(AuthResponse)
+	err := c.cc.Invoke(ctx, "/main.Auth/Signup", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServer is the server API for Auth service.
 // All implementations must embed UnimplementedAuthServer
 // for forward compatibility
 type AuthServer interface {
 	// Validate rpc request
 	ValidateRpcRequest(context.Context, *ValidateRpcRequestInput) (*emptypb.Empty, error)
+	Login(context.Context, *LoginInput) (*AuthResponse, error)
+	Signup(context.Context, *SignupInput) (*AuthResponse, error)
 	mustEmbedUnimplementedAuthServer()
 }
 
@@ -55,6 +77,12 @@ type UnimplementedAuthServer struct {
 
 func (UnimplementedAuthServer) ValidateRpcRequest(context.Context, *ValidateRpcRequestInput) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ValidateRpcRequest not implemented")
+}
+func (UnimplementedAuthServer) Login(context.Context, *LoginInput) (*AuthResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Login not implemented")
+}
+func (UnimplementedAuthServer) Signup(context.Context, *SignupInput) (*AuthResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Signup not implemented")
 }
 func (UnimplementedAuthServer) mustEmbedUnimplementedAuthServer() {}
 
@@ -87,6 +115,42 @@ func _Auth_ValidateRpcRequest_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Auth_Login_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LoginInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).Login(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/main.Auth/Login",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).Login(ctx, req.(*LoginInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Auth_Signup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SignupInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).Signup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/main.Auth/Signup",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).Signup(ctx, req.(*SignupInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Auth_ServiceDesc is the grpc.ServiceDesc for Auth service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -97,6 +161,14 @@ var Auth_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ValidateRpcRequest",
 			Handler:    _Auth_ValidateRpcRequest_Handler,
+		},
+		{
+			MethodName: "Login",
+			Handler:    _Auth_Login_Handler,
+		},
+		{
+			MethodName: "Signup",
+			Handler:    _Auth_Signup_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

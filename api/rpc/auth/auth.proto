@@ -9,10 +9,29 @@ option go_package = "github.com/morzhanov/go-realworld/api/rpc/auth";
 service Auth {
   // Validate rpc request
   rpc ValidateRpcRequest (ValidateRpcRequestInput) returns (google.protobuf.Empty) {}
+  rpc Login (LoginInput) returns (AuthResponse) {}
+  rpc Signup (SignupInput) returns (AuthResponse) {}
 }
 
 // Log data request
 message ValidateRpcRequestInput {
   string access_token = 1;
   string method = 2;
+}
+
+// Login
+message LoginInput {
+  string username = 1;
+  string password = 2;
+}
+
+// Signup
+message SignupInput {
+  string username = 1;
+  string password = 2;
+}
+
+// Auth response
+message AuthResponse {
+  string access_token = 1;
 }
