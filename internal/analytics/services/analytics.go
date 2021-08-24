@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	. "github.com/morzhanov/go-realworld/internal/analytics/dto"
 	. "github.com/morzhanov/go-realworld/internal/analytics/models"
 	. "github.com/morzhanov/go-realworld/internal/analytics/mq"
 	"github.com/segmentio/kafka-go"

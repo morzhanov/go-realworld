@@ -1,43 +1,67 @@
 package services
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/jmoiron/sqlx"
+	authrpc "github.com/morzhanov/go-realworld/api/rpc/auth"
+	usersrpc "github.com/morzhanov/go-realworld/api/rpc/users"
 	. "github.com/morzhanov/go-realworld/internal/auth/config"
-	. "github.com/morzhanov/go-realworld/internal/auth/dto"
-	. "github.com/morzhanov/go-realworld/internal/users/models"
+	"github.com/morzhanov/go-realworld/internal/common/eventlistener"
+	"github.com/morzhanov/go-realworld/internal/common/sender"
 )
 
-// TODO: kuber should proxy all rest/grpc/events requests to this service
-// TODO: service should handle access tokens from rest/grpc/events calls and check them
-// TODO: also service should handle login and signup calls
 type AuthService struct {
-	db *sqlx.DB
+	db     *sqlx.DB
+	sender *sender.Sender
+	el     *eventlistener.EventListener
 }
 
-func (s *AuthService) Login(data *LoginInput) (res *LoginDto, err error) {
-	// TODO: validate user password (users.ValidateUserPassword)
-	// TODO: get user data by username from users service (users.GetUserDataByUsername)
-	user := User{}
+func getTransport(ctx context.Context) sender.Transport {
+	val := ctx.Value("transport")
+	return val.(sender.Transport)
+}
 
-	token, err := createJwt(user.ID)
+func (s *AuthService) Login(ctx context.Context, data *authrpc.LoginInput) (res *authrpc.AuthResponse, err error) {
+	transport := getTransport(ctx)
+
+	d := usersrpc.ValidateUserPasswordRequest{Username: data.Username, Password: data.Password}
+	_, err = s.sender.PerformRequest(transport, "users", "validateUserPasswordRequest", &d, s.el)
 	if err != nil {
 		return nil, err
 	}
-	return &LoginDto{AccessToken: token}, nil
-}
 
-func (s *AuthService) Signup(data *SignupInput) (res *LoginDto, err error) {
-	// TODO: create new user via users.CreateUser
-	user := User{}
-
-	token, err := createJwt(user.ID)
+	d2 := usersrpc.GetUserDataByUsernameRequest{Username: data.Username}
+	r, err := s.sender.PerformRequest(transport, "users", "getUserDataByUsername", &d2, s.el)
 	if err != nil {
 		return nil, err
 	}
-	return &LoginDto{AccessToken: token}, nil
+	user := r.(*usersrpc.UserMessage)
+
+	token, err := createJwt(user.Id)
+	if err != nil {
+		return nil, err
+	}
+	return &authrpc.AuthResponse{AccessToken: token}, nil
+}
+
+func (s *AuthService) Signup(ctx context.Context, data *authrpc.SignupInput) (res *authrpc.AuthResponse, err error) {
+	transport := getTransport(ctx)
+
+	d := usersrpc.CreateUserRequest{Username: data.Username, Password: data.Password}
+	r, err := s.sender.PerformRequest(transport, "users", "createUser", &d, s.el)
+	if err != nil {
+		return nil, err
+	}
+	user := r.(*usersrpc.UserMessage)
+
+	token, err := createJwt(user.Id)
+	if err != nil {
+		return nil, err
+	}
+	return &authrpc.AuthResponse{AccessToken: token}, nil
 }
 
 func createJwt(userId string) (res string, err error) {
@@ -70,7 +94,6 @@ func verifyJwt(tokenString string) error {
 	return nil
 }
 
-// TODO: this GET endpoint should be called from ingress
 func (s *AuthService) ValidateRestRequest(data *ValidateRestRequestInput) error {
 	for _, route := range PUBLIC_ROUTES {
 		if route == data.Path {
@@ -81,7 +104,6 @@ func (s *AuthService) ValidateRestRequest(data *ValidateRestRequestInput) error 
 	// TODO: inject userId into headers and return result to ingress
 }
 
-// TODO: this GET endpoint should be called from client service
 func (s *AuthService) ValidateRpcRequest(data *ValidateRpcRequestInput) error {
 	for _, route := range PUBLIC_RPC_METHODS {
 		if route == data.Method {
@@ -92,7 +114,6 @@ func (s *AuthService) ValidateRpcRequest(data *ValidateRpcRequestInput) error {
 	// TODO: return userId
 }
 
-// TODO: this GET endpoint should be called from client service
 func (s *AuthService) ValidateEventsRequest(data *ValidateEventsRequestInput) error {
 	for _, route := range PUBLIC_EVENTS {
 		if route == data.Event {
@@ -103,6 +124,6 @@ func (s *AuthService) ValidateEventsRequest(data *ValidateEventsRequestInput) er
 	// TODO: return userId
 }
 
-func NewAuthService(db *sqlx.DB) *AuthService {
-	return &AuthService{db}
+func NewAuthService(db *sqlx.DB, s *sender.Sender, el *eventlistener.EventListener) *AuthService {
+	return &AuthService{db, s, el}
 }

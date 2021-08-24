@@ -3,17 +3,31 @@ package sender
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"reflect"
+	"time"
 
 	analyticsrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
 	authrpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	picturesrpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
 	usersrpc "github.com/morzhanov/go-realworld/api/rpc/users"
+	"github.com/morzhanov/go-realworld/internal/common/eventlistener"
+	uuid "github.com/satori/go.uuid"
 	"github.com/segmentio/kafka-go"
 	"google.golang.org/grpc"
+)
+
+// TODO: move this to commmon package
+type Transport int
+
+const (
+	rest Transport = iota
+	rpc
+	events
 )
 
 type Headers map[string]string
@@ -85,23 +99,60 @@ func check(err error) {
 	}
 }
 
-func (c *Sender) RestRequest(method string, url string, data []byte, headers *Headers) []byte {
-	req, err := http.NewRequest(method, url, bytes.NewBuffer(data))
+func (s *Sender) PerformRequest(
+	transport Transport,
+	service string,
+	method string,
+	input interface{},
+	el *eventlistener.EventListener,
+) (res interface{}, err error) {
+	switch transport {
+	case rest:
+		params := s.API[service].Rest[method]
+		err = s.restRequest(params.Method, params.Url, input, nil, &res)
+	case rpc:
+		res, err = s.rpcRequest(AuthRpcClient, method, input)
+	case events:
+		uuid := uuid.NewV4().String()
+		json, err := json.Marshal(input)
+		if err != nil {
+			return nil, err
+		}
+		err = s.eventsRequest(service, method, string(json), uuid, &res, true, el)
+	default:
+		return nil, fmt.Errorf("Wrong transport type")
+	}
+	return
+}
+
+func (s *Sender) restRequest(
+	method string,
+	url string,
+	data interface{},
+	headers *Headers,
+	res interface{},
+) (err error) {
+	b, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(b))
 	check(err)
 	for k, v := range *headers {
 		req.Header.Set(k, v)
 	}
 
-	res, err := c.restClient.Do(req)
+	response, err := s.restClient.Do(req)
 	check(err)
-	defer res.Body.Close()
+	defer response.Body.Close()
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := ioutil.ReadAll(response.Body)
 	check(err)
-	return body
+
+	return json.Unmarshal(body, &res)
 }
 
-func (c *Sender) GetRpcClient(client RpcClient) (interface{}, error) {
+func (c *Sender) getRpcClient(client RpcClient) (interface{}, error) {
 	switch client {
 	case UsersRpcClient:
 		return &c.grpcClient.usersClient, nil
@@ -116,31 +167,75 @@ func (c *Sender) GetRpcClient(client RpcClient) (interface{}, error) {
 	}
 }
 
-func (c *Sender) EventsRequest(input *EventsRequestInput) {
+func (s *Sender) rpcRequest(
+	client RpcClient,
+	method string,
+	input interface{},
+) (res interface{}, err error) {
+	c, err := s.getRpcClient(client)
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*5))
+	defer cancel()
+
+	fn := reflect.ValueOf(c).Elem().MethodByName(method)
+
+	inputArgs := [2]reflect.Value{reflect.ValueOf(ctx), reflect.ValueOf(input)}
+	returnArgs := fn.Call(inputArgs[:])
+
+	if len(returnArgs) == 1 {
+		err = returnArgs[0].Interface().(error)
+		return nil, err
+	}
+
+	err = returnArgs[1].Interface().(error)
+	if err != nil {
+		return nil, err
+	}
+	return returnArgs[0].Interface(), nil
+}
+
+func (s *Sender) eventsRequest(
+	api string,
+	event string,
+	data string,
+	eventId string,
+	res interface{},
+	wait bool,
+	el *eventlistener.EventListener,
+) (err error) {
+	params := s.API[api].Events[event]
+	input := EventsRequestInput{
+		Service: api,
+		Event:   params.Event,
+		Data:    data,
+	}
+
 	var w *kafka.Writer
 	switch input.Service {
 	case "auth":
 		w = kafka.NewWriter(kafka.WriterConfig{
-			Brokers:  c.eventsClient.Auth.brokers,
-			Topic:    c.eventsClient.Auth.topic,
+			Brokers:  s.eventsClient.Auth.brokers,
+			Topic:    s.eventsClient.Auth.topic,
 			Balancer: &kafka.LeastBytes{},
 		})
 	case "analytics":
 		w = kafka.NewWriter(kafka.WriterConfig{
-			Brokers:  c.eventsClient.Analytics.brokers,
-			Topic:    c.eventsClient.Analytics.topic,
+			Brokers:  s.eventsClient.Analytics.brokers,
+			Topic:    s.eventsClient.Analytics.topic,
 			Balancer: &kafka.LeastBytes{},
 		})
 	case "pictures":
 		w = kafka.NewWriter(kafka.WriterConfig{
-			Brokers:  c.eventsClient.Pictures.brokers,
-			Topic:    c.eventsClient.Pictures.topic,
+			Brokers:  s.eventsClient.Pictures.brokers,
+			Topic:    s.eventsClient.Pictures.topic,
 			Balancer: &kafka.LeastBytes{},
 		})
 	case "users":
 		w = kafka.NewWriter(kafka.WriterConfig{
-			Brokers:  c.eventsClient.Users.brokers,
-			Topic:    c.eventsClient.Users.topic,
+			Brokers:  s.eventsClient.Users.brokers,
+			Topic:    s.eventsClient.Users.topic,
 			Balancer: &kafka.LeastBytes{},
 		})
 	}
@@ -152,6 +247,21 @@ func (c *Sender) EventsRequest(input *EventsRequestInput) {
 			Value: []byte(input.Data),
 		},
 	)
+
+	if wait {
+		response := make(chan []byte)
+		l := eventlistener.Listener{Uuid: eventId, Response: response}
+		err = el.AddListener(&l)
+		if err != nil {
+			return err
+		}
+		b := <-response
+		err = json.Unmarshal(b, &res)
+		if err != nil {
+			return err
+		}
+	}
+	return
 }
 
 func setupRestClient() *http.Client {
