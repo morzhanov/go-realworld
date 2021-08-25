@@ -94,6 +94,12 @@ type RestServiceAPIItem struct {
 	Url    string
 }
 
+// TODO: move to common package
+type EventMessage struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
 type EventsServiceAPIItem struct {
 	Event string
 }

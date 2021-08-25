@@ -18,22 +18,7 @@ type AuthEventsController struct {
 	Conn    *kafka.Conn
 }
 
-// TODO: move to common package
-type EventMessage struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
-}
-
-type BaseEventPayload struct {
-	EventId string `json:"eventId"`
-}
-
-type ErrorMessage struct {
-	Error string `json:"error"`
-}
-
-type SuccessMessage struct{}
-
+// TODO: common logic
 func check(err error) {
 	// TODO: handle error
 	if err != nil {
@@ -75,7 +60,7 @@ func (c *AuthEventsController) Listen() {
 }
 
 func (c *AuthEventsController) processRequest(b *[]byte) {
-	input := EventMessage{}
+	input := sender.EventMessage{}
 	err := json.Unmarshal(*b, &input)
 	check(err)
 

@@ -18,39 +18,6 @@ type PicturesEventsController struct {
 	Conn    *kafka.Conn
 }
 
-// TODO: move to common package
-type EventMessage struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
-}
-
-type BaseEventPayload struct {
-	EventId string `json:"eventId"`
-}
-
-type ErrorMessage struct {
-	Error string `json:"error"`
-}
-
-type SuccessMessage struct{}
-
-type GetUserPicturesInput struct {
-	BaseEventPayload
-	UserId string `json:"userId"`
-}
-
-type GetUserPictureInput struct {
-	BaseEventPayload
-	UserId    string `json:"userId"`
-	PictireId string `json:"pictureId"`
-}
-
-type DeleteUserPictureInput struct {
-	BaseEventPayload
-	UserId    string `json:"userId"`
-	PictireId string `json:"pictureId"`
-}
-
 func check(err error) {
 	// TODO: handle error
 	if err != nil {
@@ -92,7 +59,7 @@ func (c *PicturesEventsController) Listen() {
 }
 
 func (c *PicturesEventsController) processRequest(b *[]byte) {
-	input := EventMessage{}
+	input := sender.EventMessage{}
 	err := json.Unmarshal(*b, &input)
 	check(err)
 

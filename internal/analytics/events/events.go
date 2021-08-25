@@ -8,7 +8,6 @@ import (
 	"time"
 
 	anrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
-	"github.com/morzhanov/go-realworld/internal/analytics/models"
 	"github.com/morzhanov/go-realworld/internal/analytics/services"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
 	"github.com/segmentio/kafka-go"
@@ -17,28 +16,6 @@ import (
 type AnalyticsEventsController struct {
 	service *services.AnalyticsService
 	Conn    *kafka.Conn
-}
-
-// TODO: move to common package
-type EventMessage struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
-}
-
-type ErrorMessage struct {
-	Error string `json:"error"`
-}
-
-type SuccessMessage struct{}
-
-type LogDataInput struct {
-	sender.BaseEventPayload
-	models.AnalyticsEntry
-}
-
-type GetLogsInput struct {
-	sender.BaseEventPayload
-	anrpc.GetLogRequest
 }
 
 func check(err error) {
@@ -82,7 +59,7 @@ func (c *AnalyticsEventsController) Listen() {
 }
 
 func (c *AnalyticsEventsController) processRequest(b *[]byte) {
-	input := EventMessage{}
+	input := sender.EventMessage{}
 	err := json.Unmarshal(*b, &input)
 	check(err)
 

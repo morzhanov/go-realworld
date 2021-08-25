@@ -18,37 +18,6 @@ type UsersEventsController struct {
 	Conn    *kafka.Conn
 }
 
-// TODO: move to common package
-type EventMessage struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
-}
-
-type BaseEventPayload struct {
-	EventId string `json:"eventId"`
-}
-
-type GetUserDataInput struct {
-	BaseEventPayload
-	UserId string `json:"userId"`
-}
-
-type GetUserDataByUsernameInput struct {
-	BaseEventPayload
-	Username string `json:"username"`
-}
-
-type DeleteUserInput struct {
-	BaseEventPayload
-	UserId string `json:"userId"`
-}
-
-type ErrorMessage struct {
-	Error string `json:"error"`
-}
-
-type SuccessMessage struct{}
-
 func check(err error) {
 	// TODO: handle error
 	if err != nil {
@@ -88,7 +57,7 @@ func (c *UsersEventsController) Listen() {
 }
 
 func (c *UsersEventsController) processRequest(b *[]byte) {
-	input := EventMessage{}
+	input := sender.EventMessage{}
 	err := json.Unmarshal(*b, &input)
 	check(err)
 

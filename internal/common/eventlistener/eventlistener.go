@@ -7,14 +7,9 @@ import (
 	"log"
 	"time"
 
+	"github.com/morzhanov/go-realworld/internal/common/sender"
 	"github.com/segmentio/kafka-go"
 )
-
-// TODO: move to common package
-type EventMessage struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
-}
 
 type Listener struct {
 	Uuid     string
@@ -49,7 +44,7 @@ func (e *EventListener) RemoveListener(l *Listener) error {
 }
 
 func (e *EventListener) processEvent(b *[]byte) {
-	data := EventMessage{}
+	data := sender.EventMessage{}
 	err := json.Unmarshal(*b, &data)
 	check(err)
 	for _, l := range e.listeners {
