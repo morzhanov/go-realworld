@@ -1,12 +1,11 @@
 package rest
 
 import (
-	"encoding/json"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	picturedto "github.com/morzhanov/go-realworld/internal/pictures/dto"
+	prpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
+	"github.com/morzhanov/go-realworld/internal/common/sender"
 	. "github.com/morzhanov/go-realworld/internal/pictures/services"
 )
 
@@ -20,21 +19,15 @@ func handleError(c *gin.Context, err error) {
 }
 
 func (c *PicturesRestController) handleCreateUserPicture(ctx *gin.Context) {
+	input := prpc.CreateUserPictureRequest{}
+	if err := sender.ParseRestBody(ctx, &input); err != nil {
+		handleError(ctx, err)
+		return
+	}
 	userId := ctx.Param("userId")
+	input.UserId = userId
 
-	jsonData, err := ioutil.ReadAll(ctx.Request.Body)
-	if err != nil {
-		handleError(ctx, err)
-		return
-	}
-
-	input := picturedto.CreatePicturesDto{}
-	if err = json.Unmarshal(jsonData, &input); err != nil {
-		handleError(ctx, err)
-		return
-	}
-
-	res, err := c.service.CreateUserPicture(userId, &input)
+	res, err := c.service.CreateUserPicture(&input)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -44,13 +37,12 @@ func (c *PicturesRestController) handleCreateUserPicture(ctx *gin.Context) {
 
 func (c *PicturesRestController) handleGetUserPictures(ctx *gin.Context) {
 	userId := ctx.Param("userId")
-
 	res, err := c.service.GetUserPictures(userId)
 	if err != nil {
 		handleError(ctx, err)
 		return
 	}
-	ctx.JSON(http.StatusOK, res)
+	ctx.JSON(http.StatusCreated, res)
 }
 
 func (c *PicturesRestController) handleGetUserPicture(ctx *gin.Context) {

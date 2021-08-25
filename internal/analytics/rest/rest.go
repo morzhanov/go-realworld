@@ -1,15 +1,13 @@
 package rest
 
 import (
-	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/morzhanov/go-realworld/internal/analytics/dto"
-	. "github.com/morzhanov/go-realworld/internal/analytics/models"
+	anrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
 	. "github.com/morzhanov/go-realworld/internal/analytics/services"
+	"github.com/morzhanov/go-realworld/internal/common/sender"
 )
 
 type AnalyticsRestController struct {
@@ -17,24 +15,19 @@ type AnalyticsRestController struct {
 	router  *gin.Engine
 }
 
+// TODO: maybe all error handling should be generalized
 func handleError(c *gin.Context, err error) {
 	c.String(http.StatusInternalServerError, err.Error())
 }
 
 func (c *AnalyticsRestController) handleLogData(ctx *gin.Context) {
-	jsonData, err := ioutil.ReadAll(ctx.Request.Body)
-	if err != nil {
+	input := anrpc.LogDataRequest{}
+	if err := sender.ParseRestBody(ctx, &input); err != nil {
 		handleError(ctx, err)
 		return
 	}
 
-	input := AnalyticsEntry{}
-	if err = json.Unmarshal(jsonData, &input); err != nil {
-		handleError(ctx, err)
-		return
-	}
-
-	if err = c.service.LogData(&input); err != nil {
+	if err := c.service.LogData(&input); err != nil {
 		handleError(ctx, err)
 		return
 	}
@@ -42,12 +35,12 @@ func (c *AnalyticsRestController) handleLogData(ctx *gin.Context) {
 }
 
 func (c *AnalyticsRestController) handleGetData(ctx *gin.Context) {
-	offset, err := strconv.Atoi(ctx.Param("offse"))
+	offset, err := strconv.Atoi(ctx.Param("offset"))
 	if err != nil {
 		handleError(ctx, err)
 	}
 
-	res, err := c.service.GetLog(&dto.GetLogsInput{Offset: offset})
+	res, err := c.service.GetLog(&anrpc.GetLogRequest{Offset: int32(offset)})
 	if err != nil {
 		handleError(ctx, err)
 		return

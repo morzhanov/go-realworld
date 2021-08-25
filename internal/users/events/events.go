@@ -7,7 +7,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/morzhanov/go-realworld/internal/users/dto"
+	urpc "github.com/morzhanov/go-realworld/api/rpc/users"
+	"github.com/morzhanov/go-realworld/internal/common/sender"
 	"github.com/morzhanov/go-realworld/internal/users/services"
 	"github.com/segmentio/kafka-go"
 )
@@ -35,16 +36,6 @@ type GetUserDataInput struct {
 type GetUserDataByUsernameInput struct {
 	BaseEventPayload
 	Username string `json:"username"`
-}
-
-type ValidateUserPasswordInput struct {
-	BaseEventPayload
-	dto.ValidateUserPasswordDto
-}
-
-type CreateUserInput struct {
-	BaseEventPayload
-	dto.CreateUserDto
 }
 
 type DeleteUserInput struct {
@@ -96,72 +87,51 @@ func (c *UsersEventsController) Listen() {
 	}
 }
 
-/*
-Request event schema:
-	Key: "resource:action"
-	Value: "{payload}"
-*/
-/*
-Response event schema:
-	Key: "result:event_uuid"
-	Value: "{payload}"
-*/
 func (c *UsersEventsController) processRequest(b *[]byte) {
 	input := EventMessage{}
 	err := json.Unmarshal(*b, &input)
 	check(err)
 
 	switch input.Key {
-	case "users:get_data":
-		payload := GetUserDataInput{}
-		err := json.Unmarshal([]byte(input.Value), &payload)
+	case "getUser":
+		res := urpc.GetUserDataRequest{}
+		payload, err := sender.ParseEventsResponse(input.Value, &res)
 		check(err)
-
-		res, err := c.service.GetUserData(payload.UserId)
+		d, err := c.service.GetUserData(res.UserId)
 		check(err)
-
-		c.sendResponse(payload.EventId, res)
-	case "users:get_data_by_username":
-		payload := GetUserDataByUsernameInput{}
-		err := json.Unmarshal([]byte(input.Value), &payload)
+		c.sendResponse(payload.EventId, &d)
+	case "getUserByUsername":
+		res := urpc.GetUserDataByUsernameRequest{}
+		payload, err := sender.ParseEventsResponse(input.Value, &res)
 		check(err)
-
-		res, err := c.service.GetUserDataByUsername(payload.Username)
+		d, err := c.service.GetUserData(res.Username)
 		check(err)
-
-		c.sendResponse(payload.EventId, res)
-	case "users:validate_password":
-		payload := ValidateUserPasswordInput{}
-		err := json.Unmarshal([]byte(input.Value), &payload)
+		c.sendResponse(payload.EventId, &d)
+	case "validatePassword":
+		res := urpc.ValidateUserPasswordRequest{}
+		payload, err := sender.ParseEventsResponse(input.Value, &res)
 		check(err)
-
-		err = c.service.ValidateUserPassword(&payload.ValidateUserPasswordDto)
-		if err != nil {
-			c.sendResponse(payload.EventId, &ErrorMessage{Error: err.Error()})
-		}
-		c.sendResponse(payload.EventId, &SuccessMessage{})
-	case "users:create":
-		payload := CreateUserInput{}
-		err := json.Unmarshal([]byte(input.Value), &payload)
+		err = c.service.ValidateUserPassword(&res)
 		check(err)
-
-		res, err := c.service.CreateUser(&payload.CreateUserDto)
+		c.sendResponse(payload.EventId, nil)
+	case "createUser":
+		res := urpc.CreateUserRequest{}
+		payload, err := sender.ParseEventsResponse(input.Value, &res)
 		check(err)
-
-		c.sendResponse(payload.EventId, res)
-	case "users:delete":
-		payload := DeleteUserInput{}
-		err := json.Unmarshal([]byte(input.Value), &payload)
+		d, err := c.service.CreateUser(&res)
 		check(err)
-
-		if err != nil {
-			c.sendResponse(payload.EventId, &ErrorMessage{Error: err.Error()})
-		}
-		c.sendResponse(payload.EventId, &SuccessMessage{})
+		c.sendResponse(payload.EventId, &d)
+	case "deleteUser":
+		res := urpc.DeleteUserRequest{}
+		payload, err := sender.ParseEventsResponse(input.Value, &res)
+		check(err)
+		err = c.service.DeleteUser(res.UserId)
+		check(err)
+		c.sendResponse(payload.EventId, nil)
 	}
-
 }
 
+// TODO: seems like common
 // TODO: send the response with client module and use payload.EventId as event_uuid
 func (c *UsersEventsController) sendResponse(eventUuid string, value interface{}) {
 	// TODO: send response via client kafka

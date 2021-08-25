@@ -3,43 +3,27 @@ package rpc
 import (
 	"context"
 
-	grpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
-	"github.com/morzhanov/go-realworld/internal/analytics/dto"
-	"github.com/morzhanov/go-realworld/internal/analytics/models"
+	anrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
 	"github.com/morzhanov/go-realworld/internal/analytics/services"
-	core_grpc "google.golang.org/grpc"
+	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type AnalyticsRpcServer struct {
-	grpc.UnimplementedAnalyticsServer
+	anrpc.UnimplementedAnalyticsServer
 	analyticsService *services.AnalyticsService
 }
 
-func (s *AnalyticsRpcServer) LogData(ctx context.Context, in *grpc.LogDataRequest) (res *emptypb.Empty, err error) {
-	err = s.analyticsService.LogData(&models.AnalyticsEntry{
-		ID:        in.Id,
-		UserID:    in.UserId,
-		Operation: in.Operation,
-		Data:      in.Data,
-	})
-
+func (s *AnalyticsRpcServer) LogData(ctx context.Context, in *anrpc.LogDataRequest) (res *emptypb.Empty, err error) {
+	err = s.analyticsService.LogData(in)
 	return res, err
 }
 
-func (s *AnalyticsRpcServer) GetLog(ctx context.Context, in *grpc.GetLogRequest) (res *grpc.AnalyticsEntryMessage, err error) {
-	entry, err := s.analyticsService.GetLog(&dto.GetLogsInput{Offset: int(in.Offset)})
-
-	res = &grpc.AnalyticsEntryMessage{
-		Id:        entry.ID,
-		UserId:    entry.UserID,
-		Operation: entry.Operation,
-		Data:      entry.Data,
-	}
-	return res, err
+func (s *AnalyticsRpcServer) GetLog(ctx context.Context, in *anrpc.GetLogRequest) (res *anrpc.AnalyticsEntryMessage, err error) {
+	return s.analyticsService.GetLog(in)
 }
 
-func NewAnalyticsRpcService(analyticsService services.AnalyticsService) (s *core_grpc.Server) {
+func NewAnalyticsRpcService(analyticsService services.AnalyticsService) (s *grpc.Server) {
 	// TODO: get port from env vars
 	// TODO: call those lines in the main app to start rpc server
 	// port := ":5000"
@@ -54,7 +38,7 @@ func NewAnalyticsRpcService(analyticsService services.AnalyticsService) (s *core
 	// }
 	// log.Printf("Server started at: localhost%v", port)
 
-	s = core_grpc.NewServer()
-	grpc.RegisterAnalyticsServer(s, &AnalyticsRpcServer{analyticsService: &analyticsService})
+	s = grpc.NewServer()
+	anrpc.RegisterAnalyticsServer(s, &AnalyticsRpcServer{analyticsService: &analyticsService})
 	return s
 }

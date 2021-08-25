@@ -7,8 +7,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/morzhanov/go-realworld/internal/auth/dto"
+	arpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	"github.com/morzhanov/go-realworld/internal/auth/services"
+	"github.com/morzhanov/go-realworld/internal/common/sender"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -32,21 +33,6 @@ type ErrorMessage struct {
 }
 
 type SuccessMessage struct{}
-
-type LoginInput struct {
-	BaseEventPayload
-	dto.LoginInput
-}
-
-type Signup struct {
-	BaseEventPayload
-	dto.SignupInput
-}
-
-type ValidateEventsRequestInput struct {
-	BaseEventPayload
-	dto.ValidateEventsRequestInput
-}
 
 func check(err error) {
 	// TODO: handle error
@@ -88,52 +74,41 @@ func (c *AuthEventsController) Listen() {
 	}
 }
 
-/*
-Request event schema:
-	Key: "resource:action"
-	Value: "{payload}"
-*/
-/*
-Response event schema:
-	Key: "result:event_uuid"
-	Value: "{payload}"
-*/
 func (c *AuthEventsController) processRequest(b *[]byte) {
 	input := EventMessage{}
 	err := json.Unmarshal(*b, &input)
 	check(err)
 
 	switch input.Key {
-	case "auth:validate_events_request":
-		payload := ValidateEventsRequestInput{}
-		err := json.Unmarshal([]byte(input.Value), &payload)
+	case "validateEventsRequest":
+		res := arpc.ValidateEventsRequestInput{}
+		payload, err := sender.ParseEventsResponse(input.Value, &res)
+		check(err)
+		d, err := c.service.ValidateEventsRequest(&res)
+		check(err)
+		c.sendResponse(payload.EventId, &d)
+	case "login":
+		res := arpc.LoginInput{}
+		payload, err := sender.ParseEventsResponse(input.Value, &res)
 		check(err)
 
-		err = c.service.ValidateEventsRequest(&payload.ValidateEventsRequestInput)
-		if err != nil {
-			c.sendResponse(payload.EventId, &ErrorMessage{Error: err.Error()})
-		}
-		c.sendResponse(payload.EventId, &SuccessMessage{})
-	case "auth:login":
-		payload := LoginInput{}
-		err := json.Unmarshal([]byte(input.Value), &payload)
+		ctx := context.WithValue(context.Background(), "transport", sender.EventsTransport)
+		d, err := c.service.Login(ctx, &res)
+		check(err)
+		c.sendResponse(payload.EventId, &d)
+	case "signup":
+		res := arpc.SignupInput{}
+		payload, err := sender.ParseEventsResponse(input.Value, &res)
 		check(err)
 
-		res, err := c.service.Login(&payload.LoginInput)
+		ctx := context.WithValue(context.Background(), "transport", sender.EventsTransport)
+		d, err := c.service.Signup(ctx, &res)
 		check(err)
-
-		c.sendResponse(payload.EventId, res)
-	case "pictures:signup":
-		payload := Signup{}
-		err := json.Unmarshal([]byte(input.Value), &payload)
-		check(err)
-
-		res, err := c.service.Signup(&payload.SignupInput)
-		check(err)
-		c.sendResponse(payload.EventId, res)
+		c.sendResponse(payload.EventId, &d)
 	}
 }
 
+// TODO: seems like common
 // TODO: send the response with client module and use payload.EventId as event_uuid
 func (c *AuthEventsController) sendResponse(eventUuid string, value interface{}) {
 	// TODO: send response via client kafka

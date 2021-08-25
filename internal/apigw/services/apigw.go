@@ -1,6 +1,9 @@
 package services
 
 import (
+	"fmt"
+
+	"github.com/gin-gonic/gin"
 	anrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
 	authrpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	prpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
@@ -12,6 +15,47 @@ import (
 type APIGatewayService struct {
 	sender        *sender.Sender
 	eventListener *eventlistener.EventListener
+}
+
+func (s *APIGatewayService) getAccessToken(ctx *gin.Context) string {
+	authorization := ctx.GetHeader("Authorization")
+	return authorization[6:]
+}
+
+func (s *APIGatewayService) CheckAuth(
+	ctx *gin.Context,
+	transport sender.Transport,
+	api string,
+	key string,
+) (res *authrpc.ValidationResponse, err error) {
+	accessToken := s.getAccessToken(ctx)
+
+	var input interface{}
+	var method string
+	switch transport {
+	case sender.RestTransport:
+		input = &authrpc.ValidateRestRequestInput{
+			Path:        s.sender.API[api].Rest[key].Url,
+			AccessToken: accessToken,
+		}
+		method = "verifyRestRequest"
+	case sender.RpcTransport:
+		input = &authrpc.ValidateRpcRequestInput{
+			Method:      key,
+			AccessToken: accessToken,
+		}
+		method = "verifyRpcRequest"
+	case sender.EventsTransport:
+		input = &authrpc.ValidateEventsRequestInput{
+			Event:       s.sender.API[api].Events[key].Event,
+			AccessToken: accessToken,
+		}
+		method = "verifyEventsRequest"
+	default:
+		return nil, fmt.Errorf("not valid transport %v", transport)
+	}
+	result, err := s.sender.PerformRequest(transport, "auth", method, input, s.eventListener)
+	return result.(*authrpc.ValidationResponse), err
 }
 
 func (s *APIGatewayService) Login(transport sender.Transport, input *authrpc.LoginInput) (res *authrpc.AuthResponse, err error) {

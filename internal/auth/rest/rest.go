@@ -1,13 +1,13 @@
 package rest
 
 import (
-	"encoding/json"
-	"io/ioutil"
+	"context"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/morzhanov/go-realworld/internal/auth/dto"
+	arpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	. "github.com/morzhanov/go-realworld/internal/auth/services"
+	"github.com/morzhanov/go-realworld/internal/common/sender"
 )
 
 type AuthRestController struct {
@@ -24,19 +24,14 @@ func (c *AuthRestController) handleAuthValidation(ctx *gin.Context) {
 }
 
 func (c *AuthRestController) handleLogin(ctx *gin.Context) {
-	jsonData, err := ioutil.ReadAll(ctx.Request.Body)
-	if err != nil {
+	input := arpc.LoginInput{}
+	if err := sender.ParseRestBody(ctx, &input); err != nil {
 		handleError(ctx, err)
 		return
 	}
 
-	input := dto.LoginInput{}
-	if err = json.Unmarshal(jsonData, &input); err != nil {
-		handleError(ctx, err)
-		return
-	}
-
-	res, err := c.service.Login(&input)
+	reqCtx := context.WithValue(context.Background(), "transport", sender.RestTransport)
+	res, err := c.service.Login(reqCtx, &input)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -45,19 +40,14 @@ func (c *AuthRestController) handleLogin(ctx *gin.Context) {
 }
 
 func (c *AuthRestController) handleSignup(ctx *gin.Context) {
-	jsonData, err := ioutil.ReadAll(ctx.Request.Body)
-	if err != nil {
+	input := arpc.SignupInput{}
+	if err := sender.ParseRestBody(ctx, &input); err != nil {
 		handleError(ctx, err)
 		return
 	}
 
-	input := dto.SignupInput{}
-	if err = json.Unmarshal(jsonData, &input); err != nil {
-		handleError(ctx, err)
-		return
-	}
-
-	res, err := c.service.Signup(&input)
+	reqCtx := context.WithValue(context.Background(), "transport", sender.RestTransport)
+	res, err := c.service.Signup(reqCtx, &input)
 	if err != nil {
 		handleError(ctx, err)
 		return

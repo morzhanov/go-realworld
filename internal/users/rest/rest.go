@@ -1,12 +1,11 @@
 package rest
 
 import (
-	"encoding/json"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	userdto "github.com/morzhanov/go-realworld/internal/users/dto"
+	urpc "github.com/morzhanov/go-realworld/api/rpc/users"
+	"github.com/morzhanov/go-realworld/internal/common/sender"
 	. "github.com/morzhanov/go-realworld/internal/users/services"
 )
 
@@ -46,19 +45,14 @@ func (c *UsersRestController) handleGetUserDataByUsername(ctx *gin.Context) {
 }
 
 func (c *UsersRestController) handleValidateUserPassword(ctx *gin.Context) {
-	jsonData, err := ioutil.ReadAll(ctx.Request.Body)
+	input := urpc.ValidateUserPasswordRequest{}
+	if err := sender.ParseRestBody(ctx, &input); err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	err := c.service.ValidateUserPassword(&input)
 	if err != nil {
-		handleError(ctx, err)
-		return
-	}
-
-	input := userdto.ValidateUserPasswordDto{}
-	if err = json.Unmarshal(jsonData, &input); err != nil {
-		handleError(ctx, err)
-		return
-	}
-
-	if err = c.service.ValidateUserPassword(&input); err != nil {
 		handleError(ctx, err)
 		return
 	}
@@ -66,14 +60,8 @@ func (c *UsersRestController) handleValidateUserPassword(ctx *gin.Context) {
 }
 
 func (c *UsersRestController) handleCreateUser(ctx *gin.Context) {
-	jsonData, err := ioutil.ReadAll(ctx.Request.Body)
-	if err != nil {
-		handleError(ctx, err)
-		return
-	}
-
-	input := userdto.CreateUserDto{}
-	if err = json.Unmarshal(jsonData, &input); err != nil {
+	input := urpc.CreateUserRequest{}
+	if err := sender.ParseRestBody(ctx, &input); err != nil {
 		handleError(ctx, err)
 		return
 	}
@@ -88,7 +76,6 @@ func (c *UsersRestController) handleCreateUser(ctx *gin.Context) {
 
 func (c *UsersRestController) handleDeleteUser(ctx *gin.Context) {
 	id := ctx.Param("id")
-
 	err := c.service.DeleteUser(id)
 	if err != nil {
 		handleError(ctx, err)

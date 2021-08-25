@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	analyticsrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
 	authrpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	picturesrpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
@@ -25,9 +26,9 @@ import (
 type Transport int
 
 const (
-	rest Transport = iota
-	rpc
-	events
+	RestTransport Transport = iota
+	RpcTransport
+	EventsTransport
 )
 
 type Headers map[string]string
@@ -64,6 +65,15 @@ type EventsClient struct {
 	Analytics *EventsClientItem
 	Pictures  *EventsClientItem
 	Users     *EventsClientItem
+}
+
+type BaseEventPayload struct {
+	EventId string `json:"eventId"`
+}
+
+type EventData struct {
+	EventId string
+	Data    string
 }
 
 type EventsRequestInput struct {
@@ -107,12 +117,12 @@ func (s *Sender) PerformRequest(
 	el *eventlistener.EventListener,
 ) (res interface{}, err error) {
 	switch transport {
-	case rest:
+	case RestTransport:
 		params := s.API[service].Rest[method]
 		err = s.restRequest(params.Method, params.Url, input, nil, &res)
-	case rpc:
+	case RpcTransport:
 		res, err = s.rpcRequest(AuthRpcClient, method, input)
-	case events:
+	case EventsTransport:
 		uuid := uuid.NewV4().String()
 		json, err := json.Marshal(input)
 		if err != nil {
@@ -123,6 +133,31 @@ func (s *Sender) PerformRequest(
 		return nil, fmt.Errorf("Wrong transport type")
 	}
 	return
+}
+
+// TODO: maybe parse functions should be moved to some separate package
+func ParseEventsResponse(inputValue string, res interface{}) (payload *EventData, err error) {
+	payload = &EventData{}
+	err = json.Unmarshal([]byte(inputValue), payload)
+	check(err)
+
+	result := reflect.ValueOf(res)
+	err = json.Unmarshal([]byte(payload.Data), &result)
+	return
+}
+
+func ParseRestBody(ctx *gin.Context, input interface{}) (err error) {
+	jsonData, err := ioutil.ReadAll(ctx.Request.Body)
+	if err != nil {
+
+		return err
+	}
+
+	in := reflect.ValueOf(input)
+	if err = json.Unmarshal(jsonData, &in); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *Sender) restRequest(
@@ -206,10 +241,16 @@ func (s *Sender) eventsRequest(
 	el *eventlistener.EventListener,
 ) (err error) {
 	params := s.API[api].Events[event]
+
+	eventData := EventData{
+		EventId: eventId,
+		Data:    data,
+	}
+	jsonData, err := json.Marshal(&eventData)
 	input := EventsRequestInput{
 		Service: api,
 		Event:   params.Event,
-		Data:    data,
+		Data:    string(jsonData),
 	}
 
 	var w *kafka.Writer

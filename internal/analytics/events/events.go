@@ -7,9 +7,10 @@ import (
 	"log"
 	"time"
 
-	"github.com/morzhanov/go-realworld/internal/analytics/dto"
+	anrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
 	"github.com/morzhanov/go-realworld/internal/analytics/models"
 	"github.com/morzhanov/go-realworld/internal/analytics/services"
+	"github.com/morzhanov/go-realworld/internal/common/sender"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -24,10 +25,6 @@ type EventMessage struct {
 	Value string `json:"value"`
 }
 
-type BaseEventPayload struct {
-	EventId string `json:"eventId"`
-}
-
 type ErrorMessage struct {
 	Error string `json:"error"`
 }
@@ -35,13 +32,13 @@ type ErrorMessage struct {
 type SuccessMessage struct{}
 
 type LogDataInput struct {
-	BaseEventPayload
+	sender.BaseEventPayload
 	models.AnalyticsEntry
 }
 
 type GetLogsInput struct {
-	BaseEventPayload
-	dto.GetLogsInput
+	sender.BaseEventPayload
+	anrpc.GetLogRequest
 }
 
 func check(err error) {
@@ -84,43 +81,29 @@ func (c *AnalyticsEventsController) Listen() {
 	}
 }
 
-/*
-Request event schema:
-	Key: "resource:action"
-	Value: "{payload}"
-*/
-/*
-Response event schema:
-	Key: "result:event_uuid"
-	Value: "{payload}"
-*/
 func (c *AnalyticsEventsController) processRequest(b *[]byte) {
 	input := EventMessage{}
 	err := json.Unmarshal(*b, &input)
 	check(err)
 
 	switch input.Key {
-	case "analytics:log":
-		payload := LogDataInput{}
-		err := json.Unmarshal([]byte(input.Value), &payload)
+	case "logData":
+		res := anrpc.LogDataRequest{}
+		_, err := sender.ParseEventsResponse(input.Value, &res)
 		check(err)
-
-		err = c.service.LogData(&payload.AnalyticsEntry)
+		err = c.service.LogData(&res)
 		check(err)
-
-		c.sendResponse(payload.EventId, &SuccessMessage{})
-	case "analytics:get":
-		payload := GetLogsInput{}
-		err := json.Unmarshal([]byte(input.Value), &payload)
+	case "getLogs":
+		res := anrpc.GetLogRequest{}
+		payload, err := sender.ParseEventsResponse(input.Value, &res)
 		check(err)
-
-		res, err := c.service.GetLog(&payload.GetLogsInput)
+		d, err := c.service.GetLog(&res)
 		check(err)
-
-		c.sendResponse(payload.EventId, res)
+		c.sendResponse(payload.EventId, &d)
 	}
 }
 
+// TODO: seems like common
 // TODO: send the response with client module and use payload.EventId as event_uuid
 func (c *AnalyticsEventsController) sendResponse(eventUuid string, value interface{}) {
 	// TODO: send response via client kafka

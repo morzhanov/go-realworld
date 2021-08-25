@@ -1,16 +1,15 @@
 package rest
 
 import (
-	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	analyticsdto "github.com/morzhanov/go-realworld/internal/analytics/dto"
+	anrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
+	arpc "github.com/morzhanov/go-realworld/api/rpc/auth"
+	prpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
 	. "github.com/morzhanov/go-realworld/internal/apigw/services"
-	authdto "github.com/morzhanov/go-realworld/internal/auth/dto"
-	picturedto "github.com/morzhanov/go-realworld/internal/pictures/dto"
+	"github.com/morzhanov/go-realworld/internal/common/sender"
 )
 
 type APIGatewayRestController struct {
@@ -22,27 +21,19 @@ func handleError(c *gin.Context, err error) {
 	c.String(http.StatusInternalServerError, err.Error())
 }
 
-// TODO: kuber gateway/ingress should inject userId after request is authenticated
-// TODO: or we can call auth.ValidateXXXXRequest explicitly with each request
 func (c *APIGatewayRestController) handleLogin(ctx *gin.Context) {
 	transport, err := strconv.Atoi(ctx.Param("transport"))
 	if err != nil {
 		handleError(ctx, err)
 		return
 	}
-	jsonData, err := ioutil.ReadAll(ctx.Request.Body)
-	if err != nil {
+	input := arpc.LoginInput{}
+	if err := sender.ParseRestBody(ctx, &input); err != nil {
 		handleError(ctx, err)
 		return
 	}
 
-	input := authdto.LoginInput{}
-	if err = json.Unmarshal(jsonData, &input); err != nil {
-		handleError(ctx, err)
-		return
-	}
-
-	res, err := c.service.Login(Transport(transport), &input)
+	res, err := c.service.Login(sender.Transport(transport), &input)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -56,24 +47,18 @@ func (c *APIGatewayRestController) handleSignup(ctx *gin.Context) {
 		handleError(ctx, err)
 		return
 	}
-	jsonData, err := ioutil.ReadAll(ctx.Request.Body)
-	if err != nil {
+	input := arpc.SignupInput{}
+	if err := sender.ParseRestBody(ctx, &input); err != nil {
 		handleError(ctx, err)
 		return
 	}
 
-	input := authdto.SignupInput{}
-	if err = json.Unmarshal(jsonData, &input); err != nil {
-		handleError(ctx, err)
-		return
-	}
-
-	res, err := c.service.Signup(Transport(transport), &input)
+	res, err := c.service.Signup(sender.Transport(transport), &input)
 	if err != nil {
 		handleError(ctx, err)
 		return
 	}
-	ctx.JSON(http.StatusCreated, res)
+	ctx.JSON(http.StatusOK, res)
 }
 
 func (c *APIGatewayRestController) handleCreatePicture(ctx *gin.Context) {
@@ -82,22 +67,16 @@ func (c *APIGatewayRestController) handleCreatePicture(ctx *gin.Context) {
 		handleError(ctx, err)
 		return
 	}
-	jsonData, err := ioutil.ReadAll(ctx.Request.Body)
-	if err != nil {
+	validationRes, err := c.service.CheckAuth(ctx, sender.Transport(transport), "pictures", "createUserPicture")
+
+	input := prpc.CreateUserPictureRequest{}
+	if err := sender.ParseRestBody(ctx, &input); err != nil {
 		handleError(ctx, err)
 		return
 	}
+	input.UserId = validationRes.UserId
 
-	input := picturedto.CreatePicturesDto{}
-	if err = json.Unmarshal(jsonData, &input); err != nil {
-		handleError(ctx, err)
-		return
-	}
-
-	// TODO: get userId from kuber ingress or via auth service varify token endpoint
-	userId := "user-id"
-
-	res, err := c.service.CreatePicture(Transport(transport), userId, &input)
+	res, err := c.service.CreatePicture(sender.Transport(transport), &input)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -111,10 +90,15 @@ func (c *APIGatewayRestController) handleGetPictures(ctx *gin.Context) {
 		handleError(ctx, err)
 		return
 	}
-	// TODO: get userId from kuber ingress or via auth service varify token endpoint
-	userId := "user-id"
+	validationRes, err := c.service.CheckAuth(ctx, sender.Transport(transport), "pictures", "getUserPictures")
 
-	res, err := c.service.GetPictures(Transport(transport), userId)
+	input := prpc.GetUserPicturesRequest{}
+	if err := sender.ParseRestBody(ctx, &input); err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	res, err := c.service.GetPictures(sender.Transport(transport), validationRes.UserId)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -128,11 +112,15 @@ func (c *APIGatewayRestController) handleGetPicture(ctx *gin.Context) {
 		handleError(ctx, err)
 		return
 	}
-	id := ctx.Param("id")
-	// TODO: get userId from kuber ingress or via auth service varify token endpoint
-	userId := "user-id"
+	validationRes, err := c.service.CheckAuth(ctx, sender.Transport(transport), "pictures", "getUserPicture")
 
-	res, err := c.service.GetPicture(Transport(transport), userId, id)
+	input := prpc.GetUserPictureRequest{}
+	if err := sender.ParseRestBody(ctx, &input); err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	res, err := c.service.GetPicture(sender.Transport(transport), validationRes.UserId, input.PictureId)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -146,11 +134,15 @@ func (c *APIGatewayRestController) handleDeletePicture(ctx *gin.Context) {
 		handleError(ctx, err)
 		return
 	}
-	id := ctx.Param("id")
-	// TODO: get userId from kuber ingress or via auth service varify token endpoint
-	userId := "user-id"
+	validationRes, err := c.service.CheckAuth(ctx, sender.Transport(transport), "pictures", "deletePicture")
 
-	err = c.service.DeletePicture(Transport(transport), userId, id)
+	input := prpc.DeleteUserPictureRequest{}
+	if err := sender.ParseRestBody(ctx, &input); err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	err = c.service.DeletePicture(sender.Transport(transport), validationRes.UserId, input.PictureId)
 	if err != nil {
 		handleError(ctx, err)
 		return
@@ -164,24 +156,20 @@ func (c *APIGatewayRestController) handleGetAnalytics(ctx *gin.Context) {
 		handleError(ctx, err)
 		return
 	}
-	jsonData, err := ioutil.ReadAll(ctx.Request.Body)
-	if err != nil {
+	_, err = c.service.CheckAuth(ctx, sender.Transport(transport), "analytics", "getLogs")
+
+	input := anrpc.GetLogRequest{}
+	if err := sender.ParseRestBody(ctx, &input); err != nil {
 		handleError(ctx, err)
 		return
 	}
 
-	input := analyticsdto.GetLogsInput{}
-	if err = json.Unmarshal(jsonData, &input); err != nil {
-		handleError(ctx, err)
-		return
-	}
-
-	res, err := c.service.GetAnalytics(Transport(transport), &input)
+	res, err := c.service.GetAnalytics(sender.Transport(transport), &input)
 	if err != nil {
 		handleError(ctx, err)
 		return
 	}
-	ctx.JSON(http.StatusCreated, res)
+	ctx.JSON(http.StatusOK, res)
 }
 
 func NewAPIGatewayRestController(s *APIGatewayService) *APIGatewayRestController {

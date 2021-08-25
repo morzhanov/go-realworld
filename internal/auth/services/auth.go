@@ -78,7 +78,8 @@ func createJwt(userId string) (res string, err error) {
 	return token, nil
 }
 
-func verifyJwt(tokenString string) error {
+// TODO: should return userId
+func verifyJwt(tokenString string) (res *authrpc.ValidationResponse, err error) {
 	const secret = "jdnfksdmfksd"
 
 	_, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
@@ -94,34 +95,31 @@ func verifyJwt(tokenString string) error {
 	return nil
 }
 
-func (s *AuthService) ValidateRestRequest(data *ValidateRestRequestInput) error {
+func (s *AuthService) ValidateRestRequest(data *authrpc.ValidateRestRequestInput) (res *authrpc.ValidationResponse, err error) {
 	for _, route := range PUBLIC_ROUTES {
 		if route == data.Path {
-			return nil
+			return nil, nil
 		}
 	}
 	return verifyJwt(data.AccessToken)
-	// TODO: inject userId into headers and return result to ingress
 }
 
-func (s *AuthService) ValidateRpcRequest(data *ValidateRpcRequestInput) error {
+func (s *AuthService) ValidateRpcRequest(data *authrpc.ValidateRpcRequestInput) (res *authrpc.ValidationResponse, err error) {
 	for _, route := range PUBLIC_RPC_METHODS {
 		if route == data.Method {
-			return nil
+			return nil, nil
 		}
 	}
 	return verifyJwt(data.AccessToken)
-	// TODO: return userId
 }
 
-func (s *AuthService) ValidateEventsRequest(data *ValidateEventsRequestInput) error {
+func (s *AuthService) ValidateEventsRequest(data *authrpc.ValidateEventsRequestInput) (res *authrpc.ValidationResponse, err error) {
 	for _, route := range PUBLIC_EVENTS {
 		if route == data.Event {
-			return nil
+			return nil, nil
 		}
 	}
 	return verifyJwt(data.AccessToken)
-	// TODO: return userId
 }
 
 func NewAuthService(db *sqlx.DB, s *sender.Sender, el *eventlistener.EventListener) *AuthService {

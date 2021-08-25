@@ -4,10 +4,9 @@ import (
 	"context"
 
 	grpc "github.com/morzhanov/go-realworld/api/rpc/auth"
-	"github.com/morzhanov/go-realworld/internal/auth/dto"
 	"github.com/morzhanov/go-realworld/internal/auth/services"
+	"github.com/morzhanov/go-realworld/internal/common/sender"
 	core_grpc "google.golang.org/grpc"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type AuthRpcServer struct {
@@ -15,9 +14,18 @@ type AuthRpcServer struct {
 	authService *services.AuthService
 }
 
-func (s *AuthRpcServer) ValidateRpcRequest(ctx context.Context, in *grpc.ValidateRpcRequestInput) (res *emptypb.Empty, err error) {
-	err = s.authService.ValidateRpcRequest(&dto.ValidateRpcRequestInput{AccessToken: in.AccessToken, Method: in.Method})
-	return res, err
+func (s *AuthRpcServer) ValidateRpcRequest(ctx context.Context, in *grpc.ValidateRpcRequestInput) (res *grpc.ValidationResponse, err error) {
+	return s.authService.ValidateRpcRequest(in)
+}
+
+func (s *AuthRpcServer) Login(ctx context.Context, in *grpc.LoginInput) (res *grpc.AuthResponse, err error) {
+	ctx = context.WithValue(ctx, "transport", sender.RpcTransport)
+	return s.authService.Login(ctx, in)
+}
+
+func (s *AuthRpcServer) Signup(ctx context.Context, in *grpc.SignupInput) (res *grpc.AuthResponse, err error) {
+	ctx = context.WithValue(ctx, "transport", sender.RpcTransport)
+	return s.authService.Signup(ctx, in)
 }
 
 func NewAuthRpcService(authService services.AuthService) (s *core_grpc.Server) {

@@ -7,7 +7,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/morzhanov/go-realworld/internal/pictures/dto"
+	prpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
+	"github.com/morzhanov/go-realworld/internal/common/sender"
 	"github.com/morzhanov/go-realworld/internal/pictures/services"
 	"github.com/segmentio/kafka-go"
 )
@@ -42,12 +43,6 @@ type GetUserPictureInput struct {
 	BaseEventPayload
 	UserId    string `json:"userId"`
 	PictireId string `json:"pictureId"`
-}
-
-type CreateUserPictureInput struct {
-	BaseEventPayload
-	UserId string `json:"userId"`
-	dto.CreatePicturesDto
 }
 
 type DeleteUserPictureInput struct {
@@ -96,60 +91,43 @@ func (c *PicturesEventsController) Listen() {
 	}
 }
 
-/*
-Request event schema:
-	Key: "resource:action"
-	Value: "{payload}"
-*/
-/*
-Response event schema:
-	Key: "result:event_uuid"
-	Value: "{payload}"
-*/
 func (c *PicturesEventsController) processRequest(b *[]byte) {
 	input := EventMessage{}
 	err := json.Unmarshal(*b, &input)
 	check(err)
 
 	switch input.Key {
-	case "pictures:get":
-		payload := GetUserPicturesInput{}
-		err := json.Unmarshal([]byte(input.Value), &payload)
+	case "getPictures":
+		res := prpc.GetUserPicturesRequest{}
+		payload, err := sender.ParseEventsResponse(input.Value, &res)
 		check(err)
-
-		res, err := c.service.GetUserPictures(payload.UserId)
+		d, err := c.service.GetUserPictures(res.UserId)
 		check(err)
-
-		c.sendResponse(payload.EventId, res)
-	case "pictures:get_one":
-		payload := GetUserPictureInput{}
-		err := json.Unmarshal([]byte(input.Value), &payload)
+		c.sendResponse(payload.EventId, &d)
+	case "getPicture":
+		res := prpc.GetUserPictureRequest{}
+		payload, err := sender.ParseEventsResponse(input.Value, &res)
 		check(err)
-
-		res, err := c.service.GetUserPicture(payload.UserId, payload.PictireId)
+		d, err := c.service.GetUserPicture(res.UserId, res.PictureId)
 		check(err)
-
-		c.sendResponse(payload.EventId, res)
-	case "pictures:create":
-		payload := CreateUserPictureInput{}
-		err := json.Unmarshal([]byte(input.Value), &payload)
+		c.sendResponse(payload.EventId, &d)
+	case "createPicture":
+		res := prpc.CreateUserPictureRequest{}
+		payload, err := sender.ParseEventsResponse(input.Value, &res)
 		check(err)
-
-		res, err := c.service.CreateUserPicture(payload.UserId, &payload.CreatePicturesDto)
+		d, err := c.service.CreateUserPicture(&res)
 		check(err)
-		c.sendResponse(payload.EventId, res)
-	case "pictures:delete":
-		payload := DeleteUserPictureInput{}
-		err := json.Unmarshal([]byte(input.Value), &payload)
+		c.sendResponse(payload.EventId, &d)
+	case "deletePicture":
+		res := prpc.DeleteUserPictureRequest{}
+		_, err := sender.ParseEventsResponse(input.Value, &res)
 		check(err)
-
-		err = c.service.DeleteUserPicture(payload.UserId, payload.PictireId)
+		err = c.service.DeleteUserPicture(res.UserId, res.PictureId)
 		check(err)
-
-		c.sendResponse(payload.EventId, &SuccessMessage{})
 	}
 }
 
+// TODO: seems like common logic
 // TODO: send the response with client module and use payload.EventId as event_uuid
 func (c *PicturesEventsController) sendResponse(eventUuid string, value interface{}) {
 	// TODO: send response via client kafka

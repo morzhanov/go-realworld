@@ -3,10 +3,10 @@ package services
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
+	anrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
 	. "github.com/morzhanov/go-realworld/internal/analytics/models"
 	. "github.com/morzhanov/go-realworld/internal/analytics/mq"
 	"github.com/segmentio/kafka-go"
@@ -16,7 +16,7 @@ type AnalyticsService struct {
 	mq *MQ
 }
 
-func (s *AnalyticsService) LogData(data *AnalyticsEntry) error {
+func (s *AnalyticsService) LogData(data *anrpc.LogDataRequest) error {
 	bytes, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -28,7 +28,7 @@ func (s *AnalyticsService) LogData(data *AnalyticsEntry) error {
 	return nil
 }
 
-func (s *AnalyticsService) GetLog(data *GetLogsInput) (res *AnalyticsEntry, err error) {
+func (s *AnalyticsService) GetLog(data *anrpc.GetLogRequest) (res *anrpc.AnalyticsEntryMessage, err error) {
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:   s.mq.Brokers,
 		Topic:     s.mq.Topic,
@@ -48,14 +48,19 @@ func (s *AnalyticsService) GetLog(data *GetLogsInput) (res *AnalyticsEntry, err 
 		return nil, err
 	}
 	if m.Value == nil {
-		return nil, errors.New(fmt.Sprintf("No message found on the %v offset", data.Offset))
+		return nil, fmt.Errorf("no message found on the %v offset", data.Offset)
 	}
 
-	res = &AnalyticsEntry{}
-	if err = json.Unmarshal(m.Value, res); err != nil {
+	result := &AnalyticsEntry{}
+	if err = json.Unmarshal(m.Value, result); err != nil {
 		return nil, err
 	}
-	return res, nil
+	return &anrpc.AnalyticsEntryMessage{
+		Id:        result.ID,
+		UserId:    result.UserID,
+		Operation: result.Operation,
+		Data:      result.Data,
+	}, nil
 }
 
 func NewAnalyticsService(mq *MQ) *AnalyticsService {

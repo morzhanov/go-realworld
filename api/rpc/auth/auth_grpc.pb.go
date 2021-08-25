@@ -7,7 +7,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -19,8 +18,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AuthClient interface {
-	// Validate rpc request
-	ValidateRpcRequest(ctx context.Context, in *ValidateRpcRequestInput, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	ValidateRpcRequest(ctx context.Context, in *ValidateRpcRequestInput, opts ...grpc.CallOption) (*ValidationResponse, error)
 	Login(ctx context.Context, in *LoginInput, opts ...grpc.CallOption) (*AuthResponse, error)
 	Signup(ctx context.Context, in *SignupInput, opts ...grpc.CallOption) (*AuthResponse, error)
 }
@@ -33,8 +31,8 @@ func NewAuthClient(cc grpc.ClientConnInterface) AuthClient {
 	return &authClient{cc}
 }
 
-func (c *authClient) ValidateRpcRequest(ctx context.Context, in *ValidateRpcRequestInput, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	out := new(emptypb.Empty)
+func (c *authClient) ValidateRpcRequest(ctx context.Context, in *ValidateRpcRequestInput, opts ...grpc.CallOption) (*ValidationResponse, error) {
+	out := new(ValidationResponse)
 	err := c.cc.Invoke(ctx, "/main.Auth/ValidateRpcRequest", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -64,8 +62,7 @@ func (c *authClient) Signup(ctx context.Context, in *SignupInput, opts ...grpc.C
 // All implementations must embed UnimplementedAuthServer
 // for forward compatibility
 type AuthServer interface {
-	// Validate rpc request
-	ValidateRpcRequest(context.Context, *ValidateRpcRequestInput) (*emptypb.Empty, error)
+	ValidateRpcRequest(context.Context, *ValidateRpcRequestInput) (*ValidationResponse, error)
 	Login(context.Context, *LoginInput) (*AuthResponse, error)
 	Signup(context.Context, *SignupInput) (*AuthResponse, error)
 	mustEmbedUnimplementedAuthServer()
@@ -75,7 +72,7 @@ type AuthServer interface {
 type UnimplementedAuthServer struct {
 }
 
-func (UnimplementedAuthServer) ValidateRpcRequest(context.Context, *ValidateRpcRequestInput) (*emptypb.Empty, error) {
+func (UnimplementedAuthServer) ValidateRpcRequest(context.Context, *ValidateRpcRequestInput) (*ValidationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ValidateRpcRequest not implemented")
 }
 func (UnimplementedAuthServer) Login(context.Context, *LoginInput) (*AuthResponse, error) {

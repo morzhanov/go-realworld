@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/jmoiron/sqlx"
-	. "github.com/morzhanov/go-realworld/internal/users/dto"
+	urpc "github.com/morzhanov/go-realworld/api/rpc/users"
 	. "github.com/morzhanov/go-realworld/internal/users/models"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -13,13 +13,13 @@ type UsersService struct {
 	db *sqlx.DB
 }
 
-func (s *UsersService) GetUserData(userId string) (user *GetUserDto, err error) {
+func (s *UsersService) GetUserData(userId string) (user *urpc.UserMessage, err error) {
 	q := `SELECT id, username FROM users
 		WHERE id = $1`
 	row := s.db.QueryRow(q, userId)
 
-	user = &GetUserDto{}
-	err = row.Scan(user.ID, user.Username)
+	user = &urpc.UserMessage{}
+	err = row.Scan(user.Id, user.Username)
 	if err != nil {
 		return nil, err
 	}
@@ -27,13 +27,13 @@ func (s *UsersService) GetUserData(userId string) (user *GetUserDto, err error) 
 	return user, nil
 }
 
-func (s *UsersService) GetUserDataByUsername(username string) (user *GetUserDto, err error) {
+func (s *UsersService) GetUserDataByUsername(username string) (user *urpc.UserMessage, err error) {
 	q := `SELECT id, username FROM users
 		WHERE username = $1`
 	row := s.db.QueryRow(q, username)
 
-	user = &GetUserDto{}
-	err = row.Scan(user.ID, user.Username)
+	user = &urpc.UserMessage{}
+	err = row.Scan(user.Id, user.Username)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +41,7 @@ func (s *UsersService) GetUserDataByUsername(username string) (user *GetUserDto,
 	return user, nil
 }
 
-func (s *UsersService) ValidateUserPassword(data *ValidateUserPasswordDto) error {
+func (s *UsersService) ValidateUserPassword(data *urpc.ValidateUserPasswordRequest) error {
 	q := `SELECT id, username FROM users
 		WHERE username = $1`
 	row := s.db.QueryRow(q, data.Username)
@@ -57,7 +57,7 @@ func (s *UsersService) ValidateUserPassword(data *ValidateUserPasswordDto) error
 	return errors.New("Wrong password")
 }
 
-func (s *UsersService) CreateUser(data *CreateUserDto) (res *GetUserDto, err error) {
+func (s *UsersService) CreateUser(data *urpc.CreateUserRequest) (res *urpc.UserMessage, err error) {
 	hashedPassword, err := hashPassword(data.Password)
 	if err != nil {
 		return nil, err
@@ -68,8 +68,8 @@ func (s *UsersService) CreateUser(data *CreateUserDto) (res *GetUserDto, err err
 		RETURNING id, useraname`
 	row := s.db.QueryRow(q, data.Username, hashedPassword)
 
-	res = &GetUserDto{}
-	err = row.Scan(res.ID, res.Username)
+	res = &urpc.UserMessage{}
+	err = row.Scan(res.Id, res.Username)
 	if err != nil {
 		return nil, err
 	}
