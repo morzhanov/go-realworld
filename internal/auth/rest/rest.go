@@ -20,7 +20,18 @@ func handleError(c *gin.Context, err error) {
 }
 
 func (c *AuthRestController) handleAuthValidation(ctx *gin.Context) {
-	// TODO: review how to properly get and validate token and proxy response
+	input := arpc.ValidateRestRequestInput{}
+	if err := sender.ParseRestBody(ctx, &input); err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	res, err := c.service.ValidateRestRequest(&input)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	ctx.JSON(http.StatusOK, res)
 }
 
 func (c *AuthRestController) handleLogin(ctx *gin.Context) {

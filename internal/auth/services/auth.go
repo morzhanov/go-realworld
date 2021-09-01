@@ -78,11 +78,11 @@ func createJwt(userId string) (res string, err error) {
 	return token, nil
 }
 
-// TODO: should return userId
 func verifyJwt(tokenString string) (res *authrpc.ValidationResponse, err error) {
+	// TODO: get from env vars
 	const secret = "jdnfksdmfksd"
 
-	_, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		//Make sure that the token method conform to "SigningMethodHMAC"
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -90,9 +90,10 @@ func verifyJwt(tokenString string) (res *authrpc.ValidationResponse, err error) 
 		return []byte(secret), nil
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	// TODO: test this spot, we should get user id and return it
+	return &authrpc.ValidationResponse{UserId: token.Raw}, nil
 }
 
 func (s *AuthService) ValidateRestRequest(data *authrpc.ValidateRestRequestInput) (res *authrpc.ValidationResponse, err error) {
