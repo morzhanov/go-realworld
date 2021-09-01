@@ -11,6 +11,7 @@ import (
 	. "github.com/morzhanov/go-realworld/internal/auth/config"
 	"github.com/morzhanov/go-realworld/internal/common/events/eventslistener"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
+	"github.com/spf13/viper"
 )
 
 type AuthService struct {
@@ -79,8 +80,7 @@ func createJwt(userId string) (res string, err error) {
 }
 
 func verifyJwt(tokenString string) (res *authrpc.ValidationResponse, err error) {
-	// TODO: get from env vars
-	const secret = "jdnfksdmfksd"
+	secret := viper.GetString("ACCESS_TOKEN_SECRET")
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		//Make sure that the token method conform to "SigningMethodHMAC"
@@ -92,7 +92,6 @@ func verifyJwt(tokenString string) (res *authrpc.ValidationResponse, err error) 
 	if err != nil {
 		return nil, err
 	}
-	// TODO: test this spot, we should get user id and return it
 	return &authrpc.ValidationResponse{UserId: token.Raw}, nil
 }
 

@@ -9,6 +9,7 @@ import (
 	"github.com/morzhanov/go-realworld/internal/common/events"
 	"github.com/morzhanov/go-realworld/internal/common/events/eventscontroller"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
+	"github.com/spf13/viper"
 )
 
 type AuthEventsController struct {
@@ -81,9 +82,9 @@ func (c *AuthEventsController) signup(in *events.EventMessage) error {
 }
 
 func NewAuthEventsController(s *services.AuthService, sender *sender.Sender) *AuthEventsController {
-	// TODO: provide topic from config
+	topic := viper.GetString("AUTH_TOPIC_NAME")
 	return &AuthEventsController{
 		service:              s,
-		BaseEventsController: *eventscontroller.NewEventsController(sender, "auth"),
+		BaseEventsController: *eventscontroller.NewEventsController(sender, topic),
 	}
 }

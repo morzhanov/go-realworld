@@ -8,6 +8,7 @@ import (
 	"github.com/morzhanov/go-realworld/internal/common/events"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
 	"github.com/segmentio/kafka-go"
+	"github.com/spf13/viper"
 )
 
 type BaseEventsController struct {
@@ -16,9 +17,8 @@ type BaseEventsController struct {
 }
 
 func createKafkaConnection(topic string, partition int) *kafka.Conn {
-	// TODO: provide kafka uri
-	uri := "192.168.0.180:32181"
-	conn, _ := kafka.DialLeader(context.Background(), "tcp", uri, topic, partition)
+	kafkaUri := viper.GetString("KAFKA_URI")
+	conn, _ := kafka.DialLeader(context.Background(), "tcp", kafkaUri, topic, partition)
 	conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 	return conn

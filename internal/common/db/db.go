@@ -1,23 +1,22 @@
 package db
 
 import (
-	"log"
-
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
+	"github.com/spf13/viper"
 )
 
 func NewDb() (*sqlx.DB, error) {
-	// TODO: handle config values from app or config package
-	return sqlx.Connect("postgres", "user=foo dbname=bar sslmode=disable")
+	psqlConnectionString := viper.GetString("PSQL_CONNECTION_STRING")
+	return sqlx.Connect("postgres", psqlConnectionString)
 }
 
 func RunMigrations(db *sqlx.DB) error {
 	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
 	if err != nil {
-		log.Fatalf("Error %v\n", err)
+		return err
 	}
 
 	m, err := migrate.NewWithDatabaseInstance(

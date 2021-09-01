@@ -4,7 +4,9 @@ import (
 	"context"
 
 	urpc "github.com/morzhanov/go-realworld/api/rpc/users"
+	"github.com/morzhanov/go-realworld/internal/common/helper"
 	"github.com/morzhanov/go-realworld/internal/users/services"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -12,6 +14,7 @@ import (
 type UsersRpcServer struct {
 	urpc.UnimplementedUsersServer
 	usersService *services.UsersService
+	server       *grpc.Server
 }
 
 func (s *UsersRpcServer) GetUserData(ctx context.Context, in *urpc.GetUserDataRequest) (res *urpc.UserMessage, err error) {
@@ -36,21 +39,12 @@ func (s *UsersRpcServer) DeleteUser(ctx context.Context, in *urpc.DeleteUserRequ
 	return res, err
 }
 
-func NewUsersRpcService(usersService services.UsersService) (s *grpc.Server) {
-	// TODO: get port from env vars
-	// TODO: call those lines in the main app to start rpc server
-	// port := ":5000"
+func (s *UsersRpcServer) Listen() error {
+	port := viper.GetString("USERS_GRPC_PORT")
+	return helper.StartGrpcServer(s.server, port)
+}
 
-	// lis, err := net.Listen("tcp", port)
-	// if err != nil {
-	// 	log.Fatalf("failed to listen: %v", err)
-	// }
-
-	// if err := s.Serve(lis); err != nil {
-	// 	log.Fatalf("failed to serve: %v", err)
-	// }
-	// log.Printf("Server started at: localhost%v", port)
-
+func NewAnalyticsRpcService(usersService services.UsersService) (s *grpc.Server) {
 	s = grpc.NewServer()
 	urpc.RegisterUsersServer(s, &UsersRpcServer{usersService: &usersService})
 	return s

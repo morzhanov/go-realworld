@@ -8,6 +8,7 @@ import (
 	"github.com/morzhanov/go-realworld/internal/common/events"
 	"github.com/morzhanov/go-realworld/internal/common/events/eventscontroller"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
+	"github.com/spf13/viper"
 )
 
 type AnalyticsEventsController struct {
@@ -58,9 +59,9 @@ func (c *AnalyticsEventsController) getLogs(in *events.EventMessage) error {
 }
 
 func NewAnalyticsEventsController(s *services.AnalyticsService, sender *sender.Sender) *AnalyticsEventsController {
-	// TODO: provide topic from config
+	topic := viper.GetString("ANALYTICS_TOPIC_NAME")
 	return &AnalyticsEventsController{
 		service:              s,
-		BaseEventsController: *eventscontroller.NewEventsController(sender, "analytics"),
+		BaseEventsController: *eventscontroller.NewEventsController(sender, topic),
 	}
 }

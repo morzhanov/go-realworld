@@ -4,7 +4,9 @@ import (
 	"context"
 
 	prpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
+	"github.com/morzhanov/go-realworld/internal/common/helper"
 	"github.com/morzhanov/go-realworld/internal/pictures/services"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -12,6 +14,7 @@ import (
 type PicturesRpcServer struct {
 	prpc.UnimplementedPicturesServer
 	picturesService *services.PictureService
+	server          *grpc.Server
 }
 
 func (s *PicturesRpcServer) GetUserPictures(ctx context.Context, in *prpc.GetUserPicturesRequest) (res *prpc.PicturesMessage, err error) {
@@ -31,22 +34,13 @@ func (s *PicturesRpcServer) DeleteUserPicture(ctx context.Context, in *prpc.Dele
 	return res, err
 }
 
-func NewPicturesRpcService(picturesService services.PictureService) (s *grpc.Server) {
-	// TODO: get port from env vars
-	// TODO: call those lines in the main app to start rpc server
-	// port := ":5000"
+func (s *PicturesRpcServer) Listen() error {
+	port := viper.GetString("PICTURES_GRPC_PORT")
+	return helper.StartGrpcServer(s.server, port)
+}
 
-	// lis, err := net.Listen("tcp", port)
-	// if err != nil {
-	// 	log.Fatalf("failed to listen: %v", err)
-	// }
-
-	// if err := s.Serve(lis); err != nil {
-	// 	log.Fatalf("failed to serve: %v", err)
-	// }
-	// log.Printf("Server started at: localhost%v", port)
-
+func NewAnalyticsRpcService(picturesService services.PictureService) (s *grpc.Server) {
 	s = grpc.NewServer()
-	prpc.RegisterPicturesServer(s, &PicturesRpcServer{picturesService: &picturesService})
+	prpc.RegisterPicturesServer(s, &PicturesRpcServer{picturesService: &picturesService, server: s})
 	return s
 }

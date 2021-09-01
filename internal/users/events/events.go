@@ -8,6 +8,7 @@ import (
 	"github.com/morzhanov/go-realworld/internal/common/events/eventscontroller"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
 	"github.com/morzhanov/go-realworld/internal/users/services"
+	"github.com/spf13/viper"
 )
 
 type UsersEventsController struct {
@@ -109,9 +110,9 @@ func (c *UsersEventsController) deleteUser(in *events.EventMessage) error {
 }
 
 func NewUsersEventsController(s *services.UsersService, sender *sender.Sender) *UsersEventsController {
-	// TODO: provide topic from config
+	topic := viper.GetString("USERS_TOPIC_NAME")
 	return &UsersEventsController{
 		service:              s,
-		BaseEventsController: *eventscontroller.NewEventsController(sender, "users"),
+		BaseEventsController: *eventscontroller.NewEventsController(sender, topic),
 	}
 }

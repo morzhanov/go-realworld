@@ -20,6 +20,7 @@ import (
 	"github.com/morzhanov/go-realworld/internal/common/helper"
 	uuid "github.com/satori/go.uuid"
 	"github.com/segmentio/kafka-go"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 )
 
@@ -232,11 +233,10 @@ func setupRestClient() *http.Client {
 }
 
 func setupGrpcClient() (*GrpcClient, error) {
-	// TODO: get addresses from env vars
-	picturesAddr := ""
-	usersAddr := ""
-	analyticsAddr := ""
-	authAddr := ""
+	picturesAddr := viper.GetString("PICTURES_GRPC_ADDR")
+	usersAddr := viper.GetString("USERS_GRPC_ADDR")
+	analyticsAddr := viper.GetString("ANALYTICS_GRPC_ADDR")
+	authAddr := viper.GetString("AUTH_GRPC_ADDR")
 
 	conn, err := grpc.Dial(picturesAddr, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
@@ -266,17 +266,23 @@ func setupGrpcClient() (*GrpcClient, error) {
 }
 
 func setupEventsClient() *EventsClient {
-	// TODO: get values from env vars
-	authConnectionUri := ""
-	topic := ""
-	// ...
+	authConnectionUri := viper.GetString("AUTH_KAFKA_URI")
+	authTopic := viper.GetString("AUTH_KAFKA_TOPIC")
+	analyticsConnectionUri := viper.GetString("ANALYTICS_KAFKA_URI")
+	analyticsTopic := viper.GetString("ANALYTICS_KAFKA_TOPIC")
+	picturesConnectionUri := viper.GetString("PICTURES_KAFKA_URI")
+	picturesTopic := viper.GetString("PICTURES_KAFKA_TOPIC")
+	usersConnectionUri := viper.GetString("USERS_KAFKA_URI")
+	usersTopic := viper.GetString("USERS_KAFKA_TOPIC")
+	resultsConnectionUri := viper.GetString("RESULTS_KAFKA_URI")
+	resultsTopic := viper.GetString("RESULTS_KAFKA_TOPIC")
 
 	return &EventsClient{
-		Auth:      &EventsClientItem{[]string{authConnectionUri}, topic},
-		Analytics: &EventsClientItem{[]string{connectionUri}, topic},
-		Pictures:  &EventsClientItem{[]string{connectionUri}, topic},
-		Users:     &EventsClientItem{[]string{connectionUri}, topic},
-		Results:   &EventsClientItem{[]string{connectionUri}, topic},
+		Auth:      &EventsClientItem{[]string{authConnectionUri}, authTopic},
+		Analytics: &EventsClientItem{[]string{analyticsConnectionUri}, analyticsTopic},
+		Pictures:  &EventsClientItem{[]string{picturesConnectionUri}, picturesTopic},
+		Users:     &EventsClientItem{[]string{usersConnectionUri}, usersTopic},
+		Results:   &EventsClientItem{[]string{resultsConnectionUri}, resultsTopic},
 	}
 }
 

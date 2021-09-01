@@ -3,47 +3,41 @@ package rpc
 import (
 	"context"
 
-	grpc "github.com/morzhanov/go-realworld/api/rpc/auth"
+	arpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	"github.com/morzhanov/go-realworld/internal/auth/services"
+	"github.com/morzhanov/go-realworld/internal/common/helper"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
-	core_grpc "google.golang.org/grpc"
+	"github.com/spf13/viper"
+	grpc "google.golang.org/grpc"
 )
 
 type AuthRpcServer struct {
-	grpc.UnimplementedAuthServer
+	arpc.UnimplementedAuthServer
 	authService *services.AuthService
+	server      *grpc.Server
 }
 
-func (s *AuthRpcServer) ValidateRpcRequest(ctx context.Context, in *grpc.ValidateRpcRequestInput) (res *grpc.ValidationResponse, err error) {
+func (s *AuthRpcServer) ValidateRpcRequest(ctx context.Context, in *arpc.ValidateRpcRequestInput) (res *arpc.ValidationResponse, err error) {
 	return s.authService.ValidateRpcRequest(in)
 }
 
-func (s *AuthRpcServer) Login(ctx context.Context, in *grpc.LoginInput) (res *grpc.AuthResponse, err error) {
+func (s *AuthRpcServer) Login(ctx context.Context, in *arpc.LoginInput) (res *arpc.AuthResponse, err error) {
 	ctx = context.WithValue(ctx, "transport", sender.RpcTransport)
 	return s.authService.Login(ctx, in)
 }
 
-func (s *AuthRpcServer) Signup(ctx context.Context, in *grpc.SignupInput) (res *grpc.AuthResponse, err error) {
+func (s *AuthRpcServer) Signup(ctx context.Context, in *arpc.SignupInput) (res *arpc.AuthResponse, err error) {
 	ctx = context.WithValue(ctx, "transport", sender.RpcTransport)
 	return s.authService.Signup(ctx, in)
 }
 
-func NewAuthRpcService(authService services.AuthService) (s *core_grpc.Server) {
-	// TODO: get port from env vars
-	// TODO: call those lines in the main app to start rpc server
-	// port := ":5000"
+func (s *AuthRpcServer) Listen() error {
+	port := viper.GetString("AUTH_GRPC_PORT")
+	return helper.StartGrpcServer(s.server, port)
+}
 
-	// lis, err := net.Listen("tcp", port)
-	// if err != nil {
-	// 	log.Fatalf("failed to listen: %v", err)
-	// }
-
-	// if err := s.Serve(lis); err != nil {
-	// 	log.Fatalf("failed to serve: %v", err)
-	// }
-	// log.Printf("Server started at: localhost%v", port)
-
-	s = core_grpc.NewServer()
-	grpc.RegisterAuthServer(s, &AuthRpcServer{authService: &authService})
+func NewAuthRpcService(authService services.AuthService) (s *grpc.Server) {
+	s = grpc.NewServer()
+	arpc.RegisterAuthServer(s, &AuthRpcServer{authService: &authService, server: s})
 	return s
 }

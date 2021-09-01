@@ -8,6 +8,7 @@ import (
 	"github.com/morzhanov/go-realworld/internal/common/events/eventscontroller"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
 	"github.com/morzhanov/go-realworld/internal/pictures/services"
+	"github.com/spf13/viper"
 )
 
 type PicturesEventsController struct {
@@ -87,9 +88,9 @@ func (c *PicturesEventsController) deletePicture(in *events.EventMessage) error 
 }
 
 func NewPicturesEventsController(s *services.PictureService, sender *sender.Sender) *PicturesEventsController {
-	// TODO: provide topic from config
+	topic := viper.GetString("PICTURES_TOPIC_NAME")
 	return &PicturesEventsController{
 		service:              s,
-		BaseEventsController: *eventscontroller.NewEventsController(sender, "pictures"),
+		BaseEventsController: *eventscontroller.NewEventsController(sender, topic),
 	}
 }
