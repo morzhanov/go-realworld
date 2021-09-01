@@ -14,7 +14,6 @@ type MQ struct {
 	Partition int
 }
 
-// TODO: might be common logic
 func NewMq(topic string, partition int) *MQ {
 	const KAFKA_CONNECTION_URI = "192.168.0.180:19092"
 	conn, _ := kafka.DialLeader(context.Background(), "tcp", KAFKA_CONNECTION_URI, topic, partition)

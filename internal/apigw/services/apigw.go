@@ -7,14 +7,14 @@ import (
 	anrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
 	authrpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	prpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
-	"github.com/morzhanov/go-realworld/internal/common/events"
+	"github.com/morzhanov/go-realworld/internal/common/events/eventslistener"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
 	pmodel "github.com/morzhanov/go-realworld/internal/pictures/models"
 )
 
 type APIGatewayService struct {
 	sender        *sender.Sender
-	eventListener *events.EventListener
+	eventListener *eventslistener.EventListener
 }
 
 func (s *APIGatewayService) getAccessToken(ctx *gin.Context) string {
@@ -102,6 +102,6 @@ func (s *APIGatewayService) GetAnalytics(transport sender.Transport, input *anrp
 	return result.(*anrpc.AnalyticsEntryMessage), err
 }
 
-func NewAPIGatewayService(s *sender.Sender, el *events.EventListener) *APIGatewayService {
+func NewAPIGatewayService(s *sender.Sender, el *eventslistener.EventListener) *APIGatewayService {
 	return &APIGatewayService{s, el}
 }

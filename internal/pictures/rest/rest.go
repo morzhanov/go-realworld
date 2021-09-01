@@ -5,7 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	prpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
-	"github.com/morzhanov/go-realworld/internal/common/sender"
+	"github.com/morzhanov/go-realworld/internal/common/helper"
 	. "github.com/morzhanov/go-realworld/internal/pictures/services"
 )
 
@@ -14,14 +14,10 @@ type PicturesRestController struct {
 	router  *gin.Engine
 }
 
-func handleError(c *gin.Context, err error) {
-	c.String(http.StatusInternalServerError, err.Error())
-}
-
 func (c *PicturesRestController) handleCreateUserPicture(ctx *gin.Context) {
 	input := prpc.CreateUserPictureRequest{}
-	if err := sender.ParseRestBody(ctx, &input); err != nil {
-		handleError(ctx, err)
+	if err := helper.ParseRestBody(ctx, &input); err != nil {
+		helper.HandleRestError(ctx, err)
 		return
 	}
 	userId := ctx.Param("userId")
@@ -29,7 +25,7 @@ func (c *PicturesRestController) handleCreateUserPicture(ctx *gin.Context) {
 
 	res, err := c.service.CreateUserPicture(&input)
 	if err != nil {
-		handleError(ctx, err)
+		helper.HandleRestError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusCreated, res)
@@ -39,7 +35,7 @@ func (c *PicturesRestController) handleGetUserPictures(ctx *gin.Context) {
 	userId := ctx.Param("userId")
 	res, err := c.service.GetUserPictures(userId)
 	if err != nil {
-		handleError(ctx, err)
+		helper.HandleRestError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusCreated, res)
@@ -51,7 +47,7 @@ func (c *PicturesRestController) handleGetUserPicture(ctx *gin.Context) {
 
 	res, err := c.service.GetUserPicture(userId, id)
 	if err != nil {
-		handleError(ctx, err)
+		helper.HandleRestError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, res)
@@ -63,7 +59,7 @@ func (c *PicturesRestController) handleDeleteUserPicture(ctx *gin.Context) {
 
 	err := c.service.DeleteUserPicture(userId, id)
 	if err != nil {
-		handleError(ctx, err)
+		helper.HandleRestError(ctx, err)
 		return
 	}
 	ctx.Status(http.StatusOK)

@@ -11,112 +11,24 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	analyticsrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
 	authrpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	picturesrpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
 	usersrpc "github.com/morzhanov/go-realworld/api/rpc/users"
 	"github.com/morzhanov/go-realworld/internal/common/events"
+	"github.com/morzhanov/go-realworld/internal/common/events/eventslistener"
 	"github.com/morzhanov/go-realworld/internal/common/helper"
 	uuid "github.com/satori/go.uuid"
 	"github.com/segmentio/kafka-go"
 	"google.golang.org/grpc"
 )
 
-// TODO: move this to commmon package
-type Transport int
-
-const (
-	RestTransport Transport = iota
-	RpcTransport
-	EventsTransport
-)
-
-type Headers map[string]string
-
-type GrpcClient struct {
-	picturesClient  picturesrpc.PicturesClient
-	usersClient     usersrpc.UsersClient
-	analyticsClient analyticsrpc.AnalyticsClient
-	authClient      authrpc.AuthClient
-}
-
-type RpcClient int
-
-const (
-	UsersRpcClient RpcClient = iota
-	PicturesRpcClient
-	AnalyticsRpcClient
-	AuthRpcClient
-)
-
-type RpcRequestInput struct {
-	Client RpcClient
-	Method string
-	Data   []byte
-}
-
-type EventsClientItem struct {
-	brokers []string
-	topic   string
-}
-
-type EventsClient struct {
-	Auth      *EventsClientItem
-	Analytics *EventsClientItem
-	Pictures  *EventsClientItem
-	Users     *EventsClientItem
-	Results   *EventsClientItem
-}
-
-type BaseEventPayload struct {
-	EventId string `json:"eventId"`
-}
-
-type EventData struct {
-	EventId string
-	Data    string
-}
-
-type EventsRequestInput struct {
-	Service string
-	Event   string
-	Data    string
-}
-
-type Sender struct {
-	API          map[string]*ServiceAPI
-	restClient   *http.Client
-	grpcClient   *GrpcClient
-	eventsClient *EventsClient
-}
-
-type RestServiceAPIItem struct {
-	Method string
-	Url    string
-}
-
-// TODO: move to common package
-type EventMessage struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
-}
-
-type EventsServiceAPIItem struct {
-	Event string
-}
-
-type ServiceAPI struct {
-	Rest   map[string]RestServiceAPIItem
-	Events map[string]EventsServiceAPIItem
-}
-
 func (s *Sender) PerformRequest(
 	transport Transport,
 	service string,
 	method string,
 	input interface{},
-	el *events.EventListener,
+	el *eventslistener.EventListener,
 ) (res interface{}, err error) {
 	switch transport {
 	case RestTransport:
@@ -137,18 +49,6 @@ func (s *Sender) PerformRequest(
 	return
 }
 
-// TODO: maybe parse functions should be moved to some separate package
-func ParseEventsResponse(inputValue string, res interface{}) (payload *EventData, err error) {
-	payload = &EventData{}
-	if err := json.Unmarshal([]byte(inputValue), payload); err != nil {
-		return nil, err
-	}
-
-	result := reflect.ValueOf(res)
-	err = json.Unmarshal([]byte(payload.Data), &result)
-	return
-}
-
 func (s *Sender) SendEventsResponse(eventUuid string, value interface{}) error {
 	if !helper.CheckStruct(value) {
 		log.Fatal("Value is not struct")
@@ -160,16 +60,6 @@ func (s *Sender) SendEventsResponse(eventUuid string, value interface{}) error {
 	}
 	s.eventsRequest("response", "response", string(payload), eventUuid, nil, false, nil)
 	return nil
-}
-
-func ParseRestBody(ctx *gin.Context, input interface{}) error {
-	jsonData, err := ioutil.ReadAll(ctx.Request.Body)
-	if err != nil {
-		return err
-	}
-
-	in := reflect.ValueOf(input)
-	return json.Unmarshal(jsonData, &in)
 }
 
 func (s *Sender) restRequest(
@@ -264,11 +154,11 @@ func (s *Sender) eventsRequest(
 	eventId string,
 	res interface{},
 	wait bool,
-	el *events.EventListener,
+	el *eventslistener.EventListener,
 ) (err error) {
 	params := s.API[api].Events[event]
 
-	eventData := EventData{
+	eventData := events.EventData{
 		EventId: eventId,
 		Data:    data,
 	}
@@ -323,7 +213,7 @@ func (s *Sender) eventsRequest(
 
 	if wait {
 		response := make(chan []byte)
-		l := events.Listener{Uuid: eventId, Response: response}
+		l := eventslistener.Listener{Uuid: eventId, Response: response}
 		err = el.AddListener(&l)
 		if err != nil {
 			return err
@@ -399,11 +289,14 @@ func NewServiceAPI() map[string]*ServiceAPI {
 	return map[string]*ServiceAPI{}
 }
 
-func NewSender() *Sender {
+func NewSender() (*Sender, error) {
 	API := NewServiceAPI()
 	r := setupRestClient()
-	g := setupGrpcClient()
 	e := setupEventsClient()
+	g, err := setupGrpcClient()
+	if err != nil {
+		return nil, err
+	}
 
-	return &Sender{API, r, g, e}
+	return &Sender{API, r, g, e}, err
 }

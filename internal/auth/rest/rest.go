@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	arpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	. "github.com/morzhanov/go-realworld/internal/auth/services"
+	"github.com/morzhanov/go-realworld/internal/common/helper"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
 )
 
@@ -15,20 +16,16 @@ type AuthRestController struct {
 	router  *gin.Engine
 }
 
-func handleError(c *gin.Context, err error) {
-	c.String(http.StatusInternalServerError, err.Error())
-}
-
 func (c *AuthRestController) handleAuthValidation(ctx *gin.Context) {
 	input := arpc.ValidateRestRequestInput{}
-	if err := sender.ParseRestBody(ctx, &input); err != nil {
-		handleError(ctx, err)
+	if err := helper.ParseRestBody(ctx, &input); err != nil {
+		helper.HandleRestError(ctx, err)
 		return
 	}
 
 	res, err := c.service.ValidateRestRequest(&input)
 	if err != nil {
-		handleError(ctx, err)
+		helper.HandleRestError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, res)
@@ -36,15 +33,15 @@ func (c *AuthRestController) handleAuthValidation(ctx *gin.Context) {
 
 func (c *AuthRestController) handleLogin(ctx *gin.Context) {
 	input := arpc.LoginInput{}
-	if err := sender.ParseRestBody(ctx, &input); err != nil {
-		handleError(ctx, err)
+	if err := helper.ParseRestBody(ctx, &input); err != nil {
+		helper.HandleRestError(ctx, err)
 		return
 	}
 
 	reqCtx := context.WithValue(context.Background(), "transport", sender.RestTransport)
 	res, err := c.service.Login(reqCtx, &input)
 	if err != nil {
-		handleError(ctx, err)
+		helper.HandleRestError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, res)
@@ -52,15 +49,15 @@ func (c *AuthRestController) handleLogin(ctx *gin.Context) {
 
 func (c *AuthRestController) handleSignup(ctx *gin.Context) {
 	input := arpc.SignupInput{}
-	if err := sender.ParseRestBody(ctx, &input); err != nil {
-		handleError(ctx, err)
+	if err := helper.ParseRestBody(ctx, &input); err != nil {
+		helper.HandleRestError(ctx, err)
 		return
 	}
 
 	reqCtx := context.WithValue(context.Background(), "transport", sender.RestTransport)
 	res, err := c.service.Signup(reqCtx, &input)
 	if err != nil {
-		handleError(ctx, err)
+		helper.HandleRestError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, res)

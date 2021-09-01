@@ -7,21 +7,22 @@ import (
 	arpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	"github.com/morzhanov/go-realworld/internal/auth/services"
 	"github.com/morzhanov/go-realworld/internal/common/events"
+	"github.com/morzhanov/go-realworld/internal/common/events/eventscontroller"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
 )
 
 type AuthEventsController struct {
-	events.BaseEventsController
+	eventscontroller.BaseEventsController
 	service *services.AuthService
 }
 
 func (c *AuthEventsController) Listen() {
 	c.BaseEventsController.Listen(
-		func(m *sender.EventMessage) { c.processRequest(m) },
+		func(m *events.EventMessage) { c.processRequest(m) },
 	)
 }
 
-func (c *AuthEventsController) processRequest(in *sender.EventMessage) error {
+func (c *AuthEventsController) processRequest(in *events.EventMessage) error {
 	switch in.Key {
 	case "validateEventsRequest":
 		return c.validateEventsRequest(in)
@@ -34,9 +35,9 @@ func (c *AuthEventsController) processRequest(in *sender.EventMessage) error {
 	}
 }
 
-func (c *AuthEventsController) validateEventsRequest(in *sender.EventMessage) error {
+func (c *AuthEventsController) validateEventsRequest(in *events.EventMessage) error {
 	res := arpc.ValidateEventsRequestInput{}
-	payload, err := sender.ParseEventsResponse(in.Value, &res)
+	payload, err := events.ParseEventsResponse(in.Value, &res)
 	if err != nil {
 		return err
 	}
@@ -48,9 +49,9 @@ func (c *AuthEventsController) validateEventsRequest(in *sender.EventMessage) er
 	return nil
 }
 
-func (c *AuthEventsController) login(in *sender.EventMessage) error {
+func (c *AuthEventsController) login(in *events.EventMessage) error {
 	res := arpc.LoginInput{}
-	payload, err := sender.ParseEventsResponse(in.Value, &res)
+	payload, err := events.ParseEventsResponse(in.Value, &res)
 	if err != nil {
 		return err
 	}
@@ -63,9 +64,9 @@ func (c *AuthEventsController) login(in *sender.EventMessage) error {
 	return nil
 }
 
-func (c *AuthEventsController) signup(in *sender.EventMessage) error {
+func (c *AuthEventsController) signup(in *events.EventMessage) error {
 	res := arpc.SignupInput{}
-	payload, err := sender.ParseEventsResponse(in.Value, &res)
+	payload, err := events.ParseEventsResponse(in.Value, &res)
 	if err != nil {
 		return err
 	}
@@ -83,6 +84,6 @@ func NewAuthEventsController(s *services.AuthService, sender *sender.Sender) *Au
 	// TODO: provide topic from config
 	return &AuthEventsController{
 		service:              s,
-		BaseEventsController: *events.NewEventsController(sender, "auth"),
+		BaseEventsController: *eventscontroller.NewEventsController(sender, "auth"),
 	}
 }

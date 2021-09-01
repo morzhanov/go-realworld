@@ -9,14 +9,14 @@ import (
 	authrpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	usersrpc "github.com/morzhanov/go-realworld/api/rpc/users"
 	. "github.com/morzhanov/go-realworld/internal/auth/config"
-	"github.com/morzhanov/go-realworld/internal/common/events"
+	"github.com/morzhanov/go-realworld/internal/common/events/eventslistener"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
 )
 
 type AuthService struct {
 	db     *sqlx.DB
 	sender *sender.Sender
-	el     *events.EventListener
+	el     *eventslistener.EventListener
 }
 
 func getTransport(ctx context.Context) sender.Transport {
@@ -123,6 +123,6 @@ func (s *AuthService) ValidateEventsRequest(data *authrpc.ValidateEventsRequestI
 	return verifyJwt(data.AccessToken)
 }
 
-func NewAuthService(db *sqlx.DB, s *sender.Sender, el *events.EventListener) *AuthService {
+func NewAuthService(db *sqlx.DB, s *sender.Sender, el *eventslistener.EventListener) *AuthService {
 	return &AuthService{db, s, el}
 }

@@ -1,4 +1,4 @@
-package events
+package eventslistener
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/morzhanov/go-realworld/internal/common/sender"
+	"github.com/morzhanov/go-realworld/internal/common/events"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -37,7 +37,7 @@ func (e *EventListener) RemoveListener(l *Listener) error {
 }
 
 func (e *EventListener) processEvent(b *[]byte) error {
-	data := sender.EventMessage{}
+	data := events.EventMessage{}
 	if err := json.Unmarshal(*b, &data); err != nil {
 		return err
 	}

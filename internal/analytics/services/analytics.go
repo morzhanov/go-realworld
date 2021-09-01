@@ -8,12 +8,12 @@ import (
 
 	anrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
 	. "github.com/morzhanov/go-realworld/internal/analytics/models"
-	. "github.com/morzhanov/go-realworld/internal/analytics/mq"
+	"github.com/morzhanov/go-realworld/internal/common/mq"
 	"github.com/segmentio/kafka-go"
 )
 
 type AnalyticsService struct {
-	mq *MQ
+	mq *mq.MQ
 }
 
 func (s *AnalyticsService) LogData(data *anrpc.LogDataRequest) error {
@@ -63,6 +63,6 @@ func (s *AnalyticsService) GetLog(data *anrpc.GetLogRequest) (res *anrpc.Analyti
 	}, nil
 }
 
-func NewAnalyticsService(mq *MQ) *AnalyticsService {
+func NewAnalyticsService(mq *mq.MQ) *AnalyticsService {
 	return &AnalyticsService{mq}
 }

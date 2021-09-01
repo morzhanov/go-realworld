@@ -1,64 +1,27 @@
 package events
 
 import (
-	"context"
 	"encoding/json"
-	"time"
-
-	"github.com/morzhanov/go-realworld/internal/common/sender"
-	"github.com/segmentio/kafka-go"
+	"reflect"
 )
 
-type BaseEventsController struct {
-	sender *sender.Sender
-	conn   *kafka.Conn
+type EventMessage struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
-func createKafkaConnection(topic string, partition int) *kafka.Conn {
-	// TODO: provide kafka uri
-	uri := "192.168.0.180:32181"
-	conn, _ := kafka.DialLeader(context.Background(), "tcp", uri, topic, partition)
-	conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
-	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
-	return conn
+type EventData struct {
+	EventId string
+	Data    string
 }
 
-func (c *BaseEventsController) Listen(processRequest func(*sender.EventMessage)) error {
-	c.conn.SetReadDeadline(time.Now().Add(10 * time.Second))
-	batch := c.conn.ReadBatch(10e3, 1e6) // fetch 10KB min, 1MB max
-
-	b := make([]byte, 10e3) // 10KB max per message
-	for {
-		_, err := batch.Read(b)
-		if err != nil {
-			break
-		}
-
-		input := sender.EventMessage{}
-		err = json.Unmarshal(b, &input)
-		if err != nil {
-			return err
-		}
-		go processRequest(&input)
+func ParseEventsResponse(inputValue string, res interface{}) (payload *EventData, err error) {
+	payload = &EventData{}
+	if err := json.Unmarshal([]byte(inputValue), payload); err != nil {
+		return nil, err
 	}
 
-	if err := batch.Close(); err != nil {
-		return err
-	}
-	if err := c.conn.Close(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *BaseEventsController) SendResponse(eventId string, data interface{}) {
-	c.sender.SendEventsResponse(eventId, data)
-}
-
-func NewEventsController(s *sender.Sender, topic string) *BaseEventsController {
-	conn := createKafkaConnection(topic, 0)
-	return &BaseEventsController{
-		sender: s,
-		conn:   conn,
-	}
+	result := reflect.ValueOf(res)
+	err = json.Unmarshal([]byte(payload.Data), &result)
+	return
 }

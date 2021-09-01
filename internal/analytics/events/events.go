@@ -6,21 +6,22 @@ import (
 	anrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
 	"github.com/morzhanov/go-realworld/internal/analytics/services"
 	"github.com/morzhanov/go-realworld/internal/common/events"
+	"github.com/morzhanov/go-realworld/internal/common/events/eventscontroller"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
 )
 
 type AnalyticsEventsController struct {
-	events.BaseEventsController
+	eventscontroller.BaseEventsController
 	service *services.AnalyticsService
 }
 
 func (c *AnalyticsEventsController) Listen() {
 	c.BaseEventsController.Listen(
-		func(m *sender.EventMessage) { c.processRequest(m) },
+		func(m *events.EventMessage) { c.processRequest(m) },
 	)
 }
 
-func (c *AnalyticsEventsController) processRequest(in *sender.EventMessage) error {
+func (c *AnalyticsEventsController) processRequest(in *events.EventMessage) error {
 	switch in.Key {
 	case "logData":
 		return c.logData(in)
@@ -31,9 +32,9 @@ func (c *AnalyticsEventsController) processRequest(in *sender.EventMessage) erro
 	}
 }
 
-func (c *AnalyticsEventsController) logData(in *sender.EventMessage) error {
+func (c *AnalyticsEventsController) logData(in *events.EventMessage) error {
 	res := anrpc.LogDataRequest{}
-	if _, err := sender.ParseEventsResponse(in.Value, &res); err != nil {
+	if _, err := events.ParseEventsResponse(in.Value, &res); err != nil {
 		return err
 	}
 	if err := c.service.LogData(&res); err != nil {
@@ -42,9 +43,9 @@ func (c *AnalyticsEventsController) logData(in *sender.EventMessage) error {
 	return nil
 }
 
-func (c *AnalyticsEventsController) getLogs(in *sender.EventMessage) error {
+func (c *AnalyticsEventsController) getLogs(in *events.EventMessage) error {
 	res := anrpc.GetLogRequest{}
-	payload, err := sender.ParseEventsResponse(in.Value, &res)
+	payload, err := events.ParseEventsResponse(in.Value, &res)
 	if err != nil {
 		return err
 	}
@@ -60,6 +61,6 @@ func NewAnalyticsEventsController(s *services.AnalyticsService, sender *sender.S
 	// TODO: provide topic from config
 	return &AnalyticsEventsController{
 		service:              s,
-		BaseEventsController: *events.NewEventsController(sender, "analytics"),
+		BaseEventsController: *eventscontroller.NewEventsController(sender, "analytics"),
 	}
 }

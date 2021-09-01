@@ -5,22 +5,23 @@ import (
 
 	prpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
 	"github.com/morzhanov/go-realworld/internal/common/events"
+	"github.com/morzhanov/go-realworld/internal/common/events/eventscontroller"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
 	"github.com/morzhanov/go-realworld/internal/pictures/services"
 )
 
 type PicturesEventsController struct {
-	events.BaseEventsController
+	eventscontroller.BaseEventsController
 	service *services.PictureService
 }
 
 func (c *PicturesEventsController) Listen() {
 	c.BaseEventsController.Listen(
-		func(m *sender.EventMessage) { c.processRequest(m) },
+		func(m *events.EventMessage) { c.processRequest(m) },
 	)
 }
 
-func (c *PicturesEventsController) processRequest(in *sender.EventMessage) error {
+func (c *PicturesEventsController) processRequest(in *events.EventMessage) error {
 	switch in.Key {
 	case "getPictures":
 		return c.getPictures(in)
@@ -35,9 +36,9 @@ func (c *PicturesEventsController) processRequest(in *sender.EventMessage) error
 	}
 }
 
-func (c *PicturesEventsController) getPictures(in *sender.EventMessage) error {
+func (c *PicturesEventsController) getPictures(in *events.EventMessage) error {
 	res := prpc.GetUserPicturesRequest{}
-	payload, err := sender.ParseEventsResponse(in.Value, &res)
+	payload, err := events.ParseEventsResponse(in.Value, &res)
 	if err != nil {
 		return err
 	}
@@ -49,9 +50,9 @@ func (c *PicturesEventsController) getPictures(in *sender.EventMessage) error {
 	return nil
 }
 
-func (c *PicturesEventsController) getPicture(in *sender.EventMessage) error {
+func (c *PicturesEventsController) getPicture(in *events.EventMessage) error {
 	res := prpc.GetUserPictureRequest{}
-	payload, err := sender.ParseEventsResponse(in.Value, &res)
+	payload, err := events.ParseEventsResponse(in.Value, &res)
 	if err != nil {
 		return err
 	}
@@ -63,9 +64,9 @@ func (c *PicturesEventsController) getPicture(in *sender.EventMessage) error {
 	return nil
 }
 
-func (c *PicturesEventsController) createPicture(in *sender.EventMessage) error {
+func (c *PicturesEventsController) createPicture(in *events.EventMessage) error {
 	res := prpc.CreateUserPictureRequest{}
-	payload, err := sender.ParseEventsResponse(in.Value, &res)
+	payload, err := events.ParseEventsResponse(in.Value, &res)
 	if err != nil {
 		return err
 	}
@@ -77,9 +78,9 @@ func (c *PicturesEventsController) createPicture(in *sender.EventMessage) error 
 	return nil
 }
 
-func (c *PicturesEventsController) deletePicture(in *sender.EventMessage) error {
+func (c *PicturesEventsController) deletePicture(in *events.EventMessage) error {
 	res := prpc.DeleteUserPictureRequest{}
-	if _, err := sender.ParseEventsResponse(in.Value, &res); err != nil {
+	if _, err := events.ParseEventsResponse(in.Value, &res); err != nil {
 		return err
 	}
 	return c.service.DeleteUserPicture(res.UserId, res.PictureId)
@@ -89,6 +90,6 @@ func NewPicturesEventsController(s *services.PictureService, sender *sender.Send
 	// TODO: provide topic from config
 	return &PicturesEventsController{
 		service:              s,
-		BaseEventsController: *events.NewEventsController(sender, "pictures"),
+		BaseEventsController: *eventscontroller.NewEventsController(sender, "pictures"),
 	}
 }
