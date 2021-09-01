@@ -1,7 +1,7 @@
 package events
 
 import (
-	"log"
+	"fmt"
 
 	anrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
 	"github.com/morzhanov/go-realworld/internal/analytics/services"
@@ -14,36 +14,46 @@ type AnalyticsEventsController struct {
 	service *services.AnalyticsService
 }
 
-// TODO: common logic
-func check(err error) {
-	// TODO: handle error
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
 func (c *AnalyticsEventsController) Listen() {
 	c.BaseEventsController.Listen(
 		func(m *sender.EventMessage) { c.processRequest(m) },
 	)
 }
 
-func (c *AnalyticsEventsController) processRequest(in *sender.EventMessage) {
+func (c *AnalyticsEventsController) processRequest(in *sender.EventMessage) error {
 	switch in.Key {
 	case "logData":
-		res := anrpc.LogDataRequest{}
-		_, err := sender.ParseEventsResponse(in.Value, &res)
-		check(err)
-		err = c.service.LogData(&res)
-		check(err)
+		return c.logData(in)
 	case "getLogs":
-		res := anrpc.GetLogRequest{}
-		payload, err := sender.ParseEventsResponse(in.Value, &res)
-		check(err)
-		d, err := c.service.GetLog(&res)
-		check(err)
-		c.BaseEventsController.SendResponse(payload.EventId, &d)
+		return c.getLogs(in)
+	default:
+		return fmt.Errorf("Wrong event name")
 	}
+}
+
+func (c *AnalyticsEventsController) logData(in *sender.EventMessage) error {
+	res := anrpc.LogDataRequest{}
+	if _, err := sender.ParseEventsResponse(in.Value, &res); err != nil {
+		return err
+	}
+	if err := c.service.LogData(&res); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *AnalyticsEventsController) getLogs(in *sender.EventMessage) error {
+	res := anrpc.GetLogRequest{}
+	payload, err := sender.ParseEventsResponse(in.Value, &res)
+	if err != nil {
+		return err
+	}
+	d, err := c.service.GetLog(&res)
+	if err != nil {
+		return err
+	}
+	c.BaseEventsController.SendResponse(payload.EventId, &d)
+	return nil
 }
 
 func NewAnalyticsEventsController(s *services.AnalyticsService, sender *sender.Sender) *AnalyticsEventsController {

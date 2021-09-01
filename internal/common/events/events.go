@@ -3,7 +3,6 @@ package events
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"time"
 
 	"github.com/morzhanov/go-realworld/internal/common/sender"
@@ -15,14 +14,6 @@ type BaseEventsController struct {
 	conn   *kafka.Conn
 }
 
-// TODO: common logic
-func check(err error) {
-	// TODO: handle error
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
 func createKafkaConnection(topic string, partition int) *kafka.Conn {
 	// TODO: provide kafka uri
 	uri := "192.168.0.180:32181"
@@ -32,7 +23,7 @@ func createKafkaConnection(topic string, partition int) *kafka.Conn {
 	return conn
 }
 
-func (c *BaseEventsController) Listen(processRequest func(*sender.EventMessage)) {
+func (c *BaseEventsController) Listen(processRequest func(*sender.EventMessage)) error {
 	c.conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 	batch := c.conn.ReadBatch(10e3, 1e6) // fetch 10KB min, 1MB max
 
@@ -45,15 +36,19 @@ func (c *BaseEventsController) Listen(processRequest func(*sender.EventMessage))
 
 		input := sender.EventMessage{}
 		err = json.Unmarshal(b, &input)
-		check(err)
-
+		if err != nil {
+			return err
+		}
 		go processRequest(&input)
 	}
 
-	err := batch.Close()
-	check(err)
-	err = c.conn.Close()
-	check(err)
+	if err := batch.Close(); err != nil {
+		return err
+	}
+	if err := c.conn.Close(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *BaseEventsController) SendResponse(eventId string, data interface{}) {

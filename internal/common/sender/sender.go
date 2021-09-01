@@ -111,12 +111,6 @@ type ServiceAPI struct {
 	Events map[string]EventsServiceAPIItem
 }
 
-func check(err error) {
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
-}
-
 func (s *Sender) PerformRequest(
 	transport Transport,
 	service string,
@@ -146,36 +140,36 @@ func (s *Sender) PerformRequest(
 // TODO: maybe parse functions should be moved to some separate package
 func ParseEventsResponse(inputValue string, res interface{}) (payload *EventData, err error) {
 	payload = &EventData{}
-	err = json.Unmarshal([]byte(inputValue), payload)
-	check(err)
+	if err := json.Unmarshal([]byte(inputValue), payload); err != nil {
+		return nil, err
+	}
 
 	result := reflect.ValueOf(res)
 	err = json.Unmarshal([]byte(payload.Data), &result)
 	return
 }
 
-func (s *Sender) SendEventsResponse(eventUuid string, value interface{}) {
+func (s *Sender) SendEventsResponse(eventUuid string, value interface{}) error {
 	if !helper.CheckStruct(value) {
 		log.Fatal("Value is not struct")
 	}
 
 	payload, err := json.Marshal(&value)
-	check(err)
+	if err != nil {
+		return err
+	}
 	s.eventsRequest("response", "response", string(payload), eventUuid, nil, false, nil)
+	return nil
 }
 
-func ParseRestBody(ctx *gin.Context, input interface{}) (err error) {
+func ParseRestBody(ctx *gin.Context, input interface{}) error {
 	jsonData, err := ioutil.ReadAll(ctx.Request.Body)
 	if err != nil {
-
 		return err
 	}
 
 	in := reflect.ValueOf(input)
-	if err = json.Unmarshal(jsonData, &in); err != nil {
-		return err
-	}
-	return nil
+	return json.Unmarshal(jsonData, &in)
 }
 
 func (s *Sender) restRequest(
@@ -194,17 +188,23 @@ func (s *Sender) restRequest(
 		return err
 	}
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(b))
-	check(err)
+	if err != nil {
+		return err
+	}
 	for k, v := range *headers {
 		req.Header.Set(k, v)
 	}
 
 	response, err := s.restClient.Do(req)
-	check(err)
+	if err != nil {
+		return err
+	}
 	defer response.Body.Close()
 
 	body, err := ioutil.ReadAll(response.Body)
-	check(err)
+	if err != nil {
+		return err
+	}
 
 	return json.Unmarshal(body, &res)
 }
@@ -341,7 +341,7 @@ func setupRestClient() *http.Client {
 	return &http.Client{}
 }
 
-func setupGrpcClient() *GrpcClient {
+func setupGrpcClient() (*GrpcClient, error) {
 	// TODO: get addresses from env vars
 	picturesAddr := ""
 	usersAddr := ""
@@ -349,22 +349,30 @@ func setupGrpcClient() *GrpcClient {
 	authAddr := ""
 
 	conn, err := grpc.Dial(picturesAddr, grpc.WithInsecure(), grpc.WithBlock())
-	check(err)
+	if err != nil {
+		return nil, err
+	}
 	picturesClient := picturesrpc.NewPicturesClient(conn)
 
 	conn, err = grpc.Dial(usersAddr, grpc.WithInsecure(), grpc.WithBlock())
-	check(err)
+	if err != nil {
+		return nil, err
+	}
 	usersClient := usersrpc.NewUsersClient(conn)
 
 	conn, err = grpc.Dial(analyticsAddr, grpc.WithInsecure(), grpc.WithBlock())
-	check(err)
+	if err != nil {
+		return nil, err
+	}
 	analyticsClient := analyticsrpc.NewAnalyticsClient(conn)
 
 	conn, err = grpc.Dial(authAddr, grpc.WithInsecure(), grpc.WithBlock())
-	check(err)
+	if err != nil {
+		return nil, err
+	}
 	authClient := authrpc.NewAuthClient(conn)
 
-	return &GrpcClient{picturesClient, usersClient, analyticsClient, authClient}
+	return &GrpcClient{picturesClient, usersClient, analyticsClient, authClient}, nil
 }
 
 func setupEventsClient() *EventsClient {

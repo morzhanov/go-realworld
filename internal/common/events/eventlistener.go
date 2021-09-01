@@ -20,12 +20,6 @@ type EventListener struct {
 	listeners map[string]*Listener
 }
 
-func check(err error) {
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
-}
-
 func (e *EventListener) AddListener(l *Listener) error {
 	if e.listeners[l.Uuid] != nil {
 		return fmt.Errorf("Listener already exists, uuid: %v", l.Uuid)
@@ -42,15 +36,18 @@ func (e *EventListener) RemoveListener(l *Listener) error {
 	return nil
 }
 
-func (e *EventListener) processEvent(b *[]byte) {
+func (e *EventListener) processEvent(b *[]byte) error {
 	data := sender.EventMessage{}
-	err := json.Unmarshal(*b, &data)
-	check(err)
+	if err := json.Unmarshal(*b, &data); err != nil {
+		return err
+	}
+
 	for _, l := range e.listeners {
 		if data.Key == l.Uuid {
 			l.Response <- []byte(data.Value)
 		}
 	}
+	return nil
 }
 
 func NewEventListener(topic string, partition int) *EventListener {

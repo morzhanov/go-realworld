@@ -1,7 +1,7 @@
 package events
 
 import (
-	"log"
+	"fmt"
 
 	urpc "github.com/morzhanov/go-realworld/api/rpc/users"
 	"github.com/morzhanov/go-realworld/internal/common/events"
@@ -14,57 +14,97 @@ type UsersEventsController struct {
 	service *services.UsersService
 }
 
-func check(err error) {
-	// TODO: handle error
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
 func (c *UsersEventsController) Listen() {
 	c.BaseEventsController.Listen(
 		func(m *sender.EventMessage) { c.processRequest(m) },
 	)
 }
 
-func (c *UsersEventsController) processRequest(in *sender.EventMessage) {
+func (c *UsersEventsController) processRequest(in *sender.EventMessage) error {
 	switch in.Key {
 	case "getUser":
-		res := urpc.GetUserDataRequest{}
-		payload, err := sender.ParseEventsResponse(in.Value, &res)
-		check(err)
-		d, err := c.service.GetUserData(res.UserId)
-		check(err)
-		c.BaseEventsController.SendResponse(payload.EventId, &d)
+		return c.getUser(in)
 	case "getUserByUsername":
-		res := urpc.GetUserDataByUsernameRequest{}
-		payload, err := sender.ParseEventsResponse(in.Value, &res)
-		check(err)
-		d, err := c.service.GetUserData(res.Username)
-		check(err)
-		c.BaseEventsController.SendResponse(payload.EventId, &d)
+		return c.getUserByUsername(in)
 	case "validatePassword":
-		res := urpc.ValidateUserPasswordRequest{}
-		payload, err := sender.ParseEventsResponse(in.Value, &res)
-		check(err)
-		err = c.service.ValidateUserPassword(&res)
-		check(err)
-		c.BaseEventsController.SendResponse(payload.EventId, nil)
+		return c.validatePassword(in)
 	case "createUser":
-		res := urpc.CreateUserRequest{}
-		payload, err := sender.ParseEventsResponse(in.Value, &res)
-		check(err)
-		d, err := c.service.CreateUser(&res)
-		check(err)
-		c.BaseEventsController.SendResponse(payload.EventId, &d)
+		return c.createUser(in)
 	case "deleteUser":
-		res := urpc.DeleteUserRequest{}
-		payload, err := sender.ParseEventsResponse(in.Value, &res)
-		check(err)
-		err = c.service.DeleteUser(res.UserId)
-		check(err)
-		c.BaseEventsController.SendResponse(payload.EventId, nil)
+		return c.deleteUser(in)
+	default:
+		return fmt.Errorf("Wrong event name")
 	}
+}
+
+func (c *UsersEventsController) getUser(in *sender.EventMessage) error {
+	res := urpc.GetUserDataRequest{}
+	payload, err := sender.ParseEventsResponse(in.Value, &res)
+	if err != nil {
+		return err
+	}
+	d, err := c.service.GetUserData(res.UserId)
+	if err != nil {
+		return err
+	}
+	c.BaseEventsController.SendResponse(payload.EventId, &d)
+	return nil
+}
+
+func (c *UsersEventsController) getUserByUsername(in *sender.EventMessage) error {
+	res := urpc.GetUserDataByUsernameRequest{}
+	payload, err := sender.ParseEventsResponse(in.Value, &res)
+	if err != nil {
+		return err
+	}
+	d, err := c.service.GetUserData(res.Username)
+	if err != nil {
+		return err
+	}
+	c.BaseEventsController.SendResponse(payload.EventId, &d)
+	return nil
+}
+
+func (c *UsersEventsController) validatePassword(in *sender.EventMessage) error {
+	res := urpc.ValidateUserPasswordRequest{}
+	payload, err := sender.ParseEventsResponse(in.Value, &res)
+	if err != nil {
+		return err
+	}
+	err = c.service.ValidateUserPassword(&res)
+	if err != nil {
+		return err
+	}
+	c.BaseEventsController.SendResponse(payload.EventId, nil)
+	return nil
+}
+
+func (c *UsersEventsController) createUser(in *sender.EventMessage) error {
+	res := urpc.CreateUserRequest{}
+	payload, err := sender.ParseEventsResponse(in.Value, &res)
+	if err != nil {
+		return err
+	}
+	d, err := c.service.CreateUser(&res)
+	if err != nil {
+		return err
+	}
+	c.BaseEventsController.SendResponse(payload.EventId, &d)
+	return nil
+}
+
+func (c *UsersEventsController) deleteUser(in *sender.EventMessage) error {
+	res := urpc.DeleteUserRequest{}
+	payload, err := sender.ParseEventsResponse(in.Value, &res)
+	if err != nil {
+		return err
+	}
+	err = c.service.DeleteUser(res.UserId)
+	if err != nil {
+		return err
+	}
+	c.BaseEventsController.SendResponse(payload.EventId, nil)
+	return nil
 }
 
 func NewUsersEventsController(s *services.UsersService, sender *sender.Sender) *UsersEventsController {

@@ -2,7 +2,7 @@ package events
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	arpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	"github.com/morzhanov/go-realworld/internal/auth/services"
@@ -15,48 +15,68 @@ type AuthEventsController struct {
 	service *services.AuthService
 }
 
-// TODO: common logic
-func check(err error) {
-	// TODO: handle error
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
 func (c *AuthEventsController) Listen() {
 	c.BaseEventsController.Listen(
 		func(m *sender.EventMessage) { c.processRequest(m) },
 	)
 }
 
-func (c *AuthEventsController) processRequest(in *sender.EventMessage) {
+func (c *AuthEventsController) processRequest(in *sender.EventMessage) error {
 	switch in.Key {
 	case "validateEventsRequest":
-		res := arpc.ValidateEventsRequestInput{}
-		payload, err := sender.ParseEventsResponse(in.Value, &res)
-		check(err)
-		d, err := c.service.ValidateEventsRequest(&res)
-		check(err)
-		c.BaseEventsController.SendResponse(payload.EventId, &d)
+		return c.validateEventsRequest(in)
 	case "login":
-		res := arpc.LoginInput{}
-		payload, err := sender.ParseEventsResponse(in.Value, &res)
-		check(err)
-
-		ctx := context.WithValue(context.Background(), "transport", sender.EventsTransport)
-		d, err := c.service.Login(ctx, &res)
-		check(err)
-		c.BaseEventsController.SendResponse(payload.EventId, &d)
+		return c.login(in)
 	case "signup":
-		res := arpc.SignupInput{}
-		payload, err := sender.ParseEventsResponse(in.Value, &res)
-		check(err)
-
-		ctx := context.WithValue(context.Background(), "transport", sender.EventsTransport)
-		d, err := c.service.Signup(ctx, &res)
-		check(err)
-		c.BaseEventsController.SendResponse(payload.EventId, &d)
+		return c.signup(in)
+	default:
+		return fmt.Errorf("Wrong event name")
 	}
+}
+
+func (c *AuthEventsController) validateEventsRequest(in *sender.EventMessage) error {
+	res := arpc.ValidateEventsRequestInput{}
+	payload, err := sender.ParseEventsResponse(in.Value, &res)
+	if err != nil {
+		return err
+	}
+	d, err := c.service.ValidateEventsRequest(&res)
+	if err != nil {
+		return err
+	}
+	c.BaseEventsController.SendResponse(payload.EventId, &d)
+	return nil
+}
+
+func (c *AuthEventsController) login(in *sender.EventMessage) error {
+	res := arpc.LoginInput{}
+	payload, err := sender.ParseEventsResponse(in.Value, &res)
+	if err != nil {
+		return err
+	}
+	ctx := context.WithValue(context.Background(), "transport", sender.EventsTransport)
+	d, err := c.service.Login(ctx, &res)
+	if err != nil {
+		return err
+	}
+	c.BaseEventsController.SendResponse(payload.EventId, &d)
+	return nil
+}
+
+func (c *AuthEventsController) signup(in *sender.EventMessage) error {
+	res := arpc.SignupInput{}
+	payload, err := sender.ParseEventsResponse(in.Value, &res)
+	if err != nil {
+		return err
+	}
+
+	ctx := context.WithValue(context.Background(), "transport", sender.EventsTransport)
+	d, err := c.service.Signup(ctx, &res)
+	if err != nil {
+		return err
+	}
+	c.BaseEventsController.SendResponse(payload.EventId, &d)
+	return nil
 }
 
 func NewAuthEventsController(s *services.AuthService, sender *sender.Sender) *AuthEventsController {
