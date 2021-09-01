@@ -16,7 +16,8 @@ import (
 	authrpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	picturesrpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
 	usersrpc "github.com/morzhanov/go-realworld/api/rpc/users"
-	"github.com/morzhanov/go-realworld/internal/common/eventlistener"
+	"github.com/morzhanov/go-realworld/internal/common/events"
+	"github.com/morzhanov/go-realworld/internal/common/helper"
 	uuid "github.com/satori/go.uuid"
 	"github.com/segmentio/kafka-go"
 	"google.golang.org/grpc"
@@ -65,6 +66,7 @@ type EventsClient struct {
 	Analytics *EventsClientItem
 	Pictures  *EventsClientItem
 	Users     *EventsClientItem
+	Results   *EventsClientItem
 }
 
 type BaseEventPayload struct {
@@ -120,7 +122,7 @@ func (s *Sender) PerformRequest(
 	service string,
 	method string,
 	input interface{},
-	el *eventlistener.EventListener,
+	el *events.EventListener,
 ) (res interface{}, err error) {
 	switch transport {
 	case RestTransport:
@@ -152,6 +154,16 @@ func ParseEventsResponse(inputValue string, res interface{}) (payload *EventData
 	return
 }
 
+func (s *Sender) SendEventsResponse(eventUuid string, value interface{}) {
+	if !helper.CheckStruct(value) {
+		log.Fatal("Value is not struct")
+	}
+
+	payload, err := json.Marshal(&value)
+	check(err)
+	s.eventsRequest("response", "response", string(payload), eventUuid, nil, false, nil)
+}
+
 func ParseRestBody(ctx *gin.Context, input interface{}) (err error) {
 	jsonData, err := ioutil.ReadAll(ctx.Request.Body)
 	if err != nil {
@@ -173,6 +185,10 @@ func (s *Sender) restRequest(
 	headers *Headers,
 	res interface{},
 ) (err error) {
+	if !helper.CheckStruct(data) {
+		log.Fatal("Value is not struct")
+	}
+
 	b, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -213,6 +229,10 @@ func (s *Sender) rpcRequest(
 	method string,
 	input interface{},
 ) (res interface{}, err error) {
+	if !helper.CheckStruct(input) {
+		log.Fatal("Value is not struct")
+	}
+
 	c, err := s.getRpcClient(client)
 	if err != nil {
 		return nil, err
@@ -244,7 +264,7 @@ func (s *Sender) eventsRequest(
 	eventId string,
 	res interface{},
 	wait bool,
-	el *eventlistener.EventListener,
+	el *events.EventListener,
 ) (err error) {
 	params := s.API[api].Events[event]
 
@@ -285,6 +305,12 @@ func (s *Sender) eventsRequest(
 			Topic:    s.eventsClient.Users.topic,
 			Balancer: &kafka.LeastBytes{},
 		})
+	case "results":
+		w = kafka.NewWriter(kafka.WriterConfig{
+			Brokers:  s.eventsClient.Users.brokers,
+			Topic:    s.eventsClient.Results.topic,
+			Balancer: &kafka.LeastBytes{},
+		})
 	}
 	defer w.Close()
 
@@ -297,7 +323,7 @@ func (s *Sender) eventsRequest(
 
 	if wait {
 		response := make(chan []byte)
-		l := eventlistener.Listener{Uuid: eventId, Response: response}
+		l := events.Listener{Uuid: eventId, Response: response}
 		err = el.AddListener(&l)
 		if err != nil {
 			return err
@@ -352,6 +378,7 @@ func setupEventsClient() *EventsClient {
 		Analytics: &EventsClientItem{[]string{connectionUri}, topic},
 		Pictures:  &EventsClientItem{[]string{connectionUri}, topic},
 		Users:     &EventsClientItem{[]string{connectionUri}, topic},
+		Results:   &EventsClientItem{[]string{connectionUri}, topic},
 	}
 }
 

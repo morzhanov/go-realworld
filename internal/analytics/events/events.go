@@ -1,23 +1,20 @@
 package events
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
 	"log"
-	"time"
 
 	anrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
 	"github.com/morzhanov/go-realworld/internal/analytics/services"
+	"github.com/morzhanov/go-realworld/internal/common/events"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
-	"github.com/segmentio/kafka-go"
 )
 
 type AnalyticsEventsController struct {
+	events.BaseEventsController
 	service *services.AnalyticsService
-	Conn    *kafka.Conn
 }
 
+// TODO: common logic
 func check(err error) {
 	// TODO: handle error
 	if err != nil {
@@ -25,72 +22,34 @@ func check(err error) {
 	}
 }
 
-// TODO: looks like common function for all controllers
-// TODO: topic name should be service name
-func CreateKafkaConnection(topic string, partition int) *kafka.Conn {
-	// TODO: provide kafka uri
-	uri := "192.168.0.180:32181"
-	conn, _ := kafka.DialLeader(context.Background(), "tcp", uri, topic, partition)
-	conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
-	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
-	return conn
-}
-
-// TODO: looks like common function for all controllers
 func (c *AnalyticsEventsController) Listen() {
-	c.Conn.SetReadDeadline(time.Now().Add(10 * time.Second))
-	batch := c.Conn.ReadBatch(10e3, 1e6) // fetch 10KB min, 1MB max
-
-	b := make([]byte, 10e3) // 10KB max per message
-	for {
-		_, err := batch.Read(b)
-		if err != nil {
-			break
-		}
-		go c.processRequest(&b)
-	}
-
-	if err := batch.Close(); err != nil {
-		log.Fatal("failed to close batch:", err)
-	}
-	if err := c.Conn.Close(); err != nil {
-		log.Fatal("failed to close connection:", err)
-	}
+	c.BaseEventsController.Listen(
+		func(m *sender.EventMessage) { c.processRequest(m) },
+	)
 }
 
-func (c *AnalyticsEventsController) processRequest(b *[]byte) {
-	input := sender.EventMessage{}
-	err := json.Unmarshal(*b, &input)
-	check(err)
-
-	switch input.Key {
+func (c *AnalyticsEventsController) processRequest(in *sender.EventMessage) {
+	switch in.Key {
 	case "logData":
 		res := anrpc.LogDataRequest{}
-		_, err := sender.ParseEventsResponse(input.Value, &res)
+		_, err := sender.ParseEventsResponse(in.Value, &res)
 		check(err)
 		err = c.service.LogData(&res)
 		check(err)
 	case "getLogs":
 		res := anrpc.GetLogRequest{}
-		payload, err := sender.ParseEventsResponse(input.Value, &res)
+		payload, err := sender.ParseEventsResponse(in.Value, &res)
 		check(err)
 		d, err := c.service.GetLog(&res)
 		check(err)
-		c.sendResponse(payload.EventId, &d)
+		c.BaseEventsController.SendResponse(payload.EventId, &d)
 	}
 }
 
-// TODO: seems like common
-// TODO: send the response with client module and use payload.EventId as event_uuid
-func (c *AnalyticsEventsController) sendResponse(eventUuid string, value interface{}) {
-	// TODO: send response via client kafka
-	payload, err := json.Marshal(&value)
-	check(err)
-	fmt.Printf("payload %v\n", payload)
-}
-
-func NewAnalyticsEventsController(s *services.AnalyticsService) *AnalyticsEventsController {
-	// TODO: provide topic and partition from config
-	conn := CreateKafkaConnection("topic", 0)
-	return &AnalyticsEventsController{service: s, Conn: conn}
+func NewAnalyticsEventsController(s *services.AnalyticsService, sender *sender.Sender) *AnalyticsEventsController {
+	// TODO: provide topic from config
+	return &AnalyticsEventsController{
+		service:              s,
+		BaseEventsController: *events.NewEventsController(sender, "analytics"),
+	}
 }

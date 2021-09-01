@@ -1,4 +1,4 @@
-package eventlistener
+package events
 
 import (
 	"context"
@@ -16,7 +16,6 @@ type Listener struct {
 	Response chan []byte
 }
 
-// TODO: rename if name not fits
 type EventListener struct {
 	listeners map[string]*Listener
 }
