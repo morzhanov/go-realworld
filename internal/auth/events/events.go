@@ -6,10 +6,10 @@ import (
 
 	arpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	"github.com/morzhanov/go-realworld/internal/auth/services"
+	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/common/events"
 	"github.com/morzhanov/go-realworld/internal/common/events/eventscontroller"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
-	"github.com/spf13/viper"
 )
 
 type AuthEventsController struct {
@@ -81,10 +81,14 @@ func (c *AuthEventsController) signup(in *events.EventMessage) error {
 	return nil
 }
 
-func NewAuthEventsController(s *services.AuthService, sender *sender.Sender) *AuthEventsController {
-	topic := viper.GetString("AUTH_TOPIC_NAME")
+func NewAuthEventsController(
+	s *services.AuthService,
+	c *config.Config,
+	sender *sender.Sender,
+) *AuthEventsController {
+	controller := eventscontroller.NewEventsController(sender, c.AuthKafkaTopic, c.KafkaUri)
 	return &AuthEventsController{
 		service:              s,
-		BaseEventsController: *eventscontroller.NewEventsController(sender, topic),
+		BaseEventsController: *controller,
 	}
 }

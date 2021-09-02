@@ -1,0 +1,57 @@
+analytics:
+  rest:
+    - method: POST
+      url: /analytics
+    - method: GET
+      url: /analytics/:offset
+  events:
+    - event: logData
+    - event: getLogs
+
+auth:
+  rest:
+    - method: GET
+      url: auth
+    - method: POST
+      url: login
+    - method: POST
+      url: signup
+  events:
+    - event: validateEventsRequest
+    - event: login
+    - event: signup
+
+pictures:
+  rest:
+    - method: POST
+      url: /pictures
+    - method: GET
+      url: /pictures/:userId
+    - method: GET
+      url: /pictures/:userId/:id
+    - method: DELETE
+      url: /pictures/:userId/:id
+  events:
+    - event: getPictures
+    - event: getPicture
+    - event: createPicture
+    - event: deletePicture
+
+users:
+  rest:
+    - method: GET
+      url: /users/:id
+    - method: GET
+      url: /users
+    - method: POST
+      url: /users/validate-password
+    - method: POST
+      url: /users
+    - method: DELETE
+      url: /users/:id
+  events:
+    - event: getUser
+    - event: getUserByUsername
+    - event: validatePassword
+    - event: createUser
+    - event: deleteUser

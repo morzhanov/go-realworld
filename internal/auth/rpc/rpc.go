@@ -5,15 +5,16 @@ import (
 
 	arpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	"github.com/morzhanov/go-realworld/internal/auth/services"
+	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/common/helper"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
-	"github.com/spf13/viper"
 	grpc "google.golang.org/grpc"
 )
 
 type AuthRpcServer struct {
 	arpc.UnimplementedAuthServer
 	authService *services.AuthService
+	port        string
 	server      *grpc.Server
 }
 
@@ -32,12 +33,14 @@ func (s *AuthRpcServer) Signup(ctx context.Context, in *arpc.SignupInput) (res *
 }
 
 func (s *AuthRpcServer) Listen() error {
-	port := viper.GetString("AUTH_GRPC_PORT")
-	return helper.StartGrpcServer(s.server, port)
+	return helper.StartGrpcServer(s.server, s.port)
 }
 
-func NewAuthRpcService(authService services.AuthService) (s *grpc.Server) {
-	s = grpc.NewServer()
-	arpc.RegisterAuthServer(s, &AuthRpcServer{authService: &authService, server: s})
-	return s
+func NewAuthRpcService(
+	authService services.AuthService,
+	c *config.Config,
+) (server *AuthRpcServer) {
+	server = &AuthRpcServer{authService: &authService, port: c.AuthGrpcPort}
+	arpc.RegisterAuthServer(grpc.NewServer(), server)
+	return
 }

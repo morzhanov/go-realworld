@@ -4,9 +4,9 @@ import (
 	"context"
 
 	urpc "github.com/morzhanov/go-realworld/api/rpc/users"
+	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/common/helper"
 	"github.com/morzhanov/go-realworld/internal/users/services"
-	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -14,6 +14,7 @@ import (
 type UsersRpcServer struct {
 	urpc.UnimplementedUsersServer
 	usersService *services.UsersService
+	port         string
 	server       *grpc.Server
 }
 
@@ -40,12 +41,14 @@ func (s *UsersRpcServer) DeleteUser(ctx context.Context, in *urpc.DeleteUserRequ
 }
 
 func (s *UsersRpcServer) Listen() error {
-	port := viper.GetString("USERS_GRPC_PORT")
-	return helper.StartGrpcServer(s.server, port)
+	return helper.StartGrpcServer(s.server, s.port)
 }
 
-func NewAnalyticsRpcService(usersService services.UsersService) (s *grpc.Server) {
-	s = grpc.NewServer()
-	urpc.RegisterUsersServer(s, &UsersRpcServer{usersService: &usersService})
-	return s
+func NewAnalyticsRpcService(
+	usersService services.UsersService,
+	c *config.Config,
+) (server *UsersRpcServer) {
+	server = &UsersRpcServer{usersService: &usersService, port: c.AnalyticsGrpcPort}
+	urpc.RegisterUsersServer(grpc.NewServer(), server)
+	return
 }

@@ -7,6 +7,7 @@ import (
 	authrpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	picturesrpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
 	usersrpc "github.com/morzhanov/go-realworld/api/rpc/users"
+	"github.com/morzhanov/go-realworld/internal/common/config"
 )
 
 type Transport int
@@ -61,22 +62,8 @@ type EventsRequestInput struct {
 }
 
 type Sender struct {
-	API          map[string]*ServiceAPI
+	API          *config.ApiConfig
 	restClient   *http.Client
 	grpcClient   *GrpcClient
 	eventsClient *EventsClient
-}
-
-type RestServiceAPIItem struct {
-	Method string
-	Url    string
-}
-
-type EventsServiceAPIItem struct {
-	Event string
-}
-
-type ServiceAPI struct {
-	Rest   map[string]RestServiceAPIItem
-	Events map[string]EventsServiceAPIItem
 }

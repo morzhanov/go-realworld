@@ -4,9 +4,9 @@ import (
 	"context"
 
 	prpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
+	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/common/helper"
 	"github.com/morzhanov/go-realworld/internal/pictures/services"
-	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -14,6 +14,7 @@ import (
 type PicturesRpcServer struct {
 	prpc.UnimplementedPicturesServer
 	picturesService *services.PictureService
+	port            string
 	server          *grpc.Server
 }
 
@@ -35,12 +36,14 @@ func (s *PicturesRpcServer) DeleteUserPicture(ctx context.Context, in *prpc.Dele
 }
 
 func (s *PicturesRpcServer) Listen() error {
-	port := viper.GetString("PICTURES_GRPC_PORT")
-	return helper.StartGrpcServer(s.server, port)
+	return helper.StartGrpcServer(s.server, s.port)
 }
 
-func NewAnalyticsRpcService(picturesService services.PictureService) (s *grpc.Server) {
-	s = grpc.NewServer()
-	prpc.RegisterPicturesServer(s, &PicturesRpcServer{picturesService: &picturesService, server: s})
-	return s
+func NewAnalyticsRpcService(
+	picturesService services.PictureService,
+	c *config.Config,
+) (server *PicturesRpcServer) {
+	server = &PicturesRpcServer{picturesService: &picturesService, server: s}
+	prpc.RegisterPicturesServer(grpc.NewServer(), server)
+	return
 }

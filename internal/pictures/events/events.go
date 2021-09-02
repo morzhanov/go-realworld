@@ -4,11 +4,11 @@ import (
 	"fmt"
 
 	prpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
+	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/common/events"
 	"github.com/morzhanov/go-realworld/internal/common/events/eventscontroller"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
 	"github.com/morzhanov/go-realworld/internal/pictures/services"
-	"github.com/spf13/viper"
 )
 
 type PicturesEventsController struct {
@@ -87,10 +87,14 @@ func (c *PicturesEventsController) deletePicture(in *events.EventMessage) error 
 	return c.service.DeleteUserPicture(res.UserId, res.PictureId)
 }
 
-func NewPicturesEventsController(s *services.PictureService, sender *sender.Sender) *PicturesEventsController {
-	topic := viper.GetString("PICTURES_TOPIC_NAME")
+func NewPicturesEventsController(
+	s *services.PictureService,
+	c *config.Config,
+	sender *sender.Sender,
+) *PicturesEventsController {
+	controller := eventscontroller.NewEventsController(sender, c.PicturesKafkaTopic, c.KafkaUri)
 	return &PicturesEventsController{
 		service:              s,
-		BaseEventsController: *eventscontroller.NewEventsController(sender, topic),
+		BaseEventsController: *controller,
 	}
 }

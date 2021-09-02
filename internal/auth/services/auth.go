@@ -9,15 +9,16 @@ import (
 	authrpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	usersrpc "github.com/morzhanov/go-realworld/api/rpc/users"
 	. "github.com/morzhanov/go-realworld/internal/auth/config"
+	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/common/events/eventslistener"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
-	"github.com/spf13/viper"
 )
 
 type AuthService struct {
-	db     *sqlx.DB
-	sender *sender.Sender
-	el     *eventslistener.EventListener
+	db                *sqlx.DB
+	sender            *sender.Sender
+	el                *eventslistener.EventListener
+	accessTokenSecret string
 }
 
 func getTransport(ctx context.Context) sender.Transport {
@@ -79,15 +80,12 @@ func createJwt(userId string) (res string, err error) {
 	return token, nil
 }
 
-func verifyJwt(tokenString string) (res *authrpc.ValidationResponse, err error) {
-	secret := viper.GetString("ACCESS_TOKEN_SECRET")
-
+func (s *AuthService) verifyJwt(tokenString string) (res *authrpc.ValidationResponse, err error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		//Make sure that the token method conform to "SigningMethodHMAC"
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte(secret), nil
+		return []byte(s.accessTokenSecret), nil
 	})
 	if err != nil {
 		return nil, err
@@ -101,7 +99,7 @@ func (s *AuthService) ValidateRestRequest(data *authrpc.ValidateRestRequestInput
 			return nil, nil
 		}
 	}
-	return verifyJwt(data.AccessToken)
+	return s.verifyJwt(data.AccessToken)
 }
 
 func (s *AuthService) ValidateRpcRequest(data *authrpc.ValidateRpcRequestInput) (res *authrpc.ValidationResponse, err error) {
@@ -110,7 +108,7 @@ func (s *AuthService) ValidateRpcRequest(data *authrpc.ValidateRpcRequestInput) 
 			return nil, nil
 		}
 	}
-	return verifyJwt(data.AccessToken)
+	return s.verifyJwt(data.AccessToken)
 }
 
 func (s *AuthService) ValidateEventsRequest(data *authrpc.ValidateEventsRequestInput) (res *authrpc.ValidationResponse, err error) {
@@ -119,9 +117,14 @@ func (s *AuthService) ValidateEventsRequest(data *authrpc.ValidateEventsRequestI
 			return nil, nil
 		}
 	}
-	return verifyJwt(data.AccessToken)
+	return s.verifyJwt(data.AccessToken)
 }
 
-func NewAuthService(db *sqlx.DB, s *sender.Sender, el *eventslistener.EventListener) *AuthService {
-	return &AuthService{db, s, el}
+func NewAuthService(
+	db *sqlx.DB,
+	s *sender.Sender,
+	el *eventslistener.EventListener,
+	c *config.Config,
+) *AuthService {
+	return &AuthService{db, s, el, c.AccessTokenSecret}
 }

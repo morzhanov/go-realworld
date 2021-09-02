@@ -5,10 +5,10 @@ import (
 
 	anrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
 	"github.com/morzhanov/go-realworld/internal/analytics/services"
+	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/common/events"
 	"github.com/morzhanov/go-realworld/internal/common/events/eventscontroller"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
-	"github.com/spf13/viper"
 )
 
 type AnalyticsEventsController struct {
@@ -58,10 +58,14 @@ func (c *AnalyticsEventsController) getLogs(in *events.EventMessage) error {
 	return nil
 }
 
-func NewAnalyticsEventsController(s *services.AnalyticsService, sender *sender.Sender) *AnalyticsEventsController {
-	topic := viper.GetString("ANALYTICS_TOPIC_NAME")
+func NewAnalyticsEventsController(
+	s *services.AnalyticsService,
+	c *config.Config,
+	sender *sender.Sender,
+) *AnalyticsEventsController {
+	controller := eventscontroller.NewEventsController(sender, c.AnalyticsKafkaTopic, c.KafkaUri)
 	return &AnalyticsEventsController{
 		service:              s,
-		BaseEventsController: *eventscontroller.NewEventsController(sender, topic),
+		BaseEventsController: *controller,
 	}
 }

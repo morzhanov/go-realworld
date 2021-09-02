@@ -8,16 +8,15 @@ import (
 	"github.com/morzhanov/go-realworld/internal/common/events"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
 	"github.com/segmentio/kafka-go"
-	"github.com/spf13/viper"
 )
 
 type BaseEventsController struct {
-	sender *sender.Sender
-	conn   *kafka.Conn
+	sender   *sender.Sender
+	kafkaUri string
+	conn     *kafka.Conn
 }
 
-func createKafkaConnection(topic string, partition int) *kafka.Conn {
-	kafkaUri := viper.GetString("KAFKA_URI")
+func createKafkaConnection(topic string, partition int, kafkaUri string) *kafka.Conn {
 	conn, _ := kafka.DialLeader(context.Background(), "tcp", kafkaUri, topic, partition)
 	conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
@@ -56,10 +55,7 @@ func (c *BaseEventsController) SendResponse(eventId string, data interface{}) {
 	c.sender.SendEventsResponse(eventId, data)
 }
 
-func NewEventsController(s *sender.Sender, topic string) *BaseEventsController {
-	conn := createKafkaConnection(topic, 0)
-	return &BaseEventsController{
-		sender: s,
-		conn:   conn,
-	}
+func NewEventsController(s *sender.Sender, topic string, kafkaUri string) *BaseEventsController {
+	conn := createKafkaConnection(topic, 0, kafkaUri)
+	return &BaseEventsController{sender: s, conn: conn}
 }

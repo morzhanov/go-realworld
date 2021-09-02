@@ -5,8 +5,8 @@ import (
 
 	anrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
 	"github.com/morzhanov/go-realworld/internal/analytics/services"
+	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/common/helper"
-	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -14,6 +14,7 @@ import (
 type AnalyticsRpcServer struct {
 	anrpc.UnimplementedAnalyticsServer
 	analyticsService *services.AnalyticsService
+	port             string
 	server           *grpc.Server
 }
 
@@ -27,12 +28,14 @@ func (s *AnalyticsRpcServer) GetLog(ctx context.Context, in *anrpc.GetLogRequest
 }
 
 func (s *AnalyticsRpcServer) Listen() error {
-	port := viper.GetString("ANALYTICS_GRPC_PORT")
-	return helper.StartGrpcServer(s.server, port)
+	return helper.StartGrpcServer(s.server, s.port)
 }
 
-func NewAnalyticsRpcService(analyticsService services.AnalyticsService) (s *grpc.Server) {
-	s = grpc.NewServer()
-	anrpc.RegisterAnalyticsServer(s, &AnalyticsRpcServer{analyticsService: &analyticsService})
-	return s
+func NewAnalyticsRpcService(
+	analyticsService services.AnalyticsService,
+	c *config.Config,
+) (server *AnalyticsRpcServer) {
+	server = &AnalyticsRpcServer{analyticsService: &analyticsService, port: c.AnalyticsGrpcPort}
+	anrpc.RegisterAnalyticsServer(grpc.NewServer(), server)
+	return
 }

@@ -86,6 +86,6 @@ func NewRestController(s *UsersService) *UsersRestController {
 	router.GET("/users", c.handleGetUserDataByUsername)
 	router.POST("/users/validate-password", c.handleValidateUserPassword)
 	router.POST("/users", c.handleCreateUser)
-	router.POST("/users/:id", c.handleDeleteUser)
+	router.DELETE("/users/:id", c.handleDeleteUser)
 	return &c
 }

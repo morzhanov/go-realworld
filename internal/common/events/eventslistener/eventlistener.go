@@ -7,9 +7,9 @@ import (
 	"log"
 	"time"
 
+	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/common/events"
 	"github.com/segmentio/kafka-go"
-	"github.com/spf13/viper"
 )
 
 type Listener struct {
@@ -51,9 +51,8 @@ func (e *EventListener) processEvent(b *[]byte) error {
 	return nil
 }
 
-func NewEventListener(topic string, partition int) *EventListener {
-	kafkaUri := viper.GetString("KAFKA_URI")
-	conn, _ := kafka.DialLeader(context.Background(), "tcp", kafkaUri, topic, partition)
+func NewEventListener(topic string, partition int, c *config.Config) *EventListener {
+	conn, _ := kafka.DialLeader(context.Background(), "tcp", c.KafkaUri, topic, partition)
 	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 	batch := conn.ReadBatch(10e3, 1e6) // fetch 10KB min, 1MB max
 

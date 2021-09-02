@@ -5,12 +5,11 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
-	"github.com/spf13/viper"
+	"github.com/morzhanov/go-realworld/internal/common/config"
 )
 
-func NewDb() (*sqlx.DB, error) {
-	psqlConnectionString := viper.GetString("PSQL_CONNECTION_STRING")
-	return sqlx.Connect("postgres", psqlConnectionString)
+func NewDb(c *config.Config) (*sqlx.DB, error) {
+	return sqlx.Connect("postgres", c.PsqlConnectionString)
 }
 
 func RunMigrations(db *sqlx.DB) error {

@@ -4,11 +4,11 @@ import (
 	"fmt"
 
 	urpc "github.com/morzhanov/go-realworld/api/rpc/users"
+	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/common/events"
 	"github.com/morzhanov/go-realworld/internal/common/events/eventscontroller"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
 	"github.com/morzhanov/go-realworld/internal/users/services"
-	"github.com/spf13/viper"
 )
 
 type UsersEventsController struct {
@@ -109,10 +109,14 @@ func (c *UsersEventsController) deleteUser(in *events.EventMessage) error {
 	return nil
 }
 
-func NewUsersEventsController(s *services.UsersService, sender *sender.Sender) *UsersEventsController {
-	topic := viper.GetString("USERS_TOPIC_NAME")
+func NewUsersEventsController(
+	s *services.UsersService,
+	c *config.Config,
+	sender *sender.Sender,
+) *UsersEventsController {
+	controller := eventscontroller.NewEventsController(sender, c.UsersKafkaTopic, c.KafkaUri)
 	return &UsersEventsController{
 		service:              s,
-		BaseEventsController: *eventscontroller.NewEventsController(sender, topic),
+		BaseEventsController: *controller,
 	}
 }

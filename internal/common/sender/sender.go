@@ -15,12 +15,12 @@ import (
 	authrpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	picturesrpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
 	usersrpc "github.com/morzhanov/go-realworld/api/rpc/users"
+	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/common/events"
 	"github.com/morzhanov/go-realworld/internal/common/events/eventslistener"
 	"github.com/morzhanov/go-realworld/internal/common/helper"
 	uuid "github.com/satori/go.uuid"
 	"github.com/segmentio/kafka-go"
-	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 )
 
@@ -33,8 +33,15 @@ func (s *Sender) PerformRequest(
 ) (res interface{}, err error) {
 	switch transport {
 	case RestTransport:
-		params := s.API[service].Rest[method]
+		apiConfig, err := s.API.GetApiItem(service)
+		if err != nil {
+			return nil, err
+		}
+		params := apiConfig.Rest[method]
 		err = s.restRequest(params.Method, params.Url, input, nil, &res)
+		if err != nil {
+			return nil, err
+		}
 	case RpcTransport:
 		res, err = s.rpcRequest(AuthRpcClient, method, input)
 	case EventsTransport:
@@ -44,8 +51,11 @@ func (s *Sender) PerformRequest(
 			return nil, err
 		}
 		err = s.eventsRequest(service, method, string(json), uuid, &res, true, el)
+		if err != nil {
+			return nil, err
+		}
 	default:
-		return nil, fmt.Errorf("Wrong transport type")
+		return nil, fmt.Errorf("wrong transport type")
 	}
 	return
 }
@@ -121,7 +131,7 @@ func (s *Sender) rpcRequest(
 	input interface{},
 ) (res interface{}, err error) {
 	if !helper.CheckStruct(input) {
-		log.Fatal("Value is not struct")
+		return nil, err
 	}
 
 	c, err := s.getRpcClient(client)
@@ -157,7 +167,11 @@ func (s *Sender) eventsRequest(
 	wait bool,
 	el *eventslistener.EventListener,
 ) (err error) {
-	params := s.API[api].Events[event]
+	apiConfig, err := s.API.GetApiItem(api)
+	if err != nil {
+		return err
+	}
+	params := apiConfig.Events[event]
 
 	eventData := events.EventData{
 		EventId: eventId,
@@ -232,31 +246,26 @@ func setupRestClient() *http.Client {
 	return &http.Client{}
 }
 
-func setupGrpcClient() (*GrpcClient, error) {
-	picturesAddr := viper.GetString("PICTURES_GRPC_ADDR")
-	usersAddr := viper.GetString("USERS_GRPC_ADDR")
-	analyticsAddr := viper.GetString("ANALYTICS_GRPC_ADDR")
-	authAddr := viper.GetString("AUTH_GRPC_ADDR")
-
-	conn, err := grpc.Dial(picturesAddr, grpc.WithInsecure(), grpc.WithBlock())
+func setupGrpcClient(c *config.Config) (*GrpcClient, error) {
+	conn, err := grpc.Dial(c.PicturesGrpcAddr, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return nil, err
 	}
 	picturesClient := picturesrpc.NewPicturesClient(conn)
 
-	conn, err = grpc.Dial(usersAddr, grpc.WithInsecure(), grpc.WithBlock())
+	conn, err = grpc.Dial(c.UsersGrpcAddr, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return nil, err
 	}
 	usersClient := usersrpc.NewUsersClient(conn)
 
-	conn, err = grpc.Dial(analyticsAddr, grpc.WithInsecure(), grpc.WithBlock())
+	conn, err = grpc.Dial(c.AnalyticsGrpcAddr, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return nil, err
 	}
 	analyticsClient := analyticsrpc.NewAnalyticsClient(conn)
 
-	conn, err = grpc.Dial(authAddr, grpc.WithInsecure(), grpc.WithBlock())
+	conn, err = grpc.Dial(c.AuthGrpcAddr, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return nil, err
 	}
@@ -265,44 +274,25 @@ func setupGrpcClient() (*GrpcClient, error) {
 	return &GrpcClient{picturesClient, usersClient, analyticsClient, authClient}, nil
 }
 
-func setupEventsClient() *EventsClient {
-	authConnectionUri := viper.GetString("AUTH_KAFKA_URI")
-	authTopic := viper.GetString("AUTH_KAFKA_TOPIC")
-	analyticsConnectionUri := viper.GetString("ANALYTICS_KAFKA_URI")
-	analyticsTopic := viper.GetString("ANALYTICS_KAFKA_TOPIC")
-	picturesConnectionUri := viper.GetString("PICTURES_KAFKA_URI")
-	picturesTopic := viper.GetString("PICTURES_KAFKA_TOPIC")
-	usersConnectionUri := viper.GetString("USERS_KAFKA_URI")
-	usersTopic := viper.GetString("USERS_KAFKA_TOPIC")
-	resultsConnectionUri := viper.GetString("RESULTS_KAFKA_URI")
-	resultsTopic := viper.GetString("RESULTS_KAFKA_TOPIC")
+func setupEventsClient(c *config.Config) *EventsClient {
+	kafkaUri := c.KafkaUri
 
 	return &EventsClient{
-		Auth:      &EventsClientItem{[]string{authConnectionUri}, authTopic},
-		Analytics: &EventsClientItem{[]string{analyticsConnectionUri}, analyticsTopic},
-		Pictures:  &EventsClientItem{[]string{picturesConnectionUri}, picturesTopic},
-		Users:     &EventsClientItem{[]string{usersConnectionUri}, usersTopic},
-		Results:   &EventsClientItem{[]string{resultsConnectionUri}, resultsTopic},
+		Auth:      &EventsClientItem{[]string{kafkaUri}, c.AuthKafkaTopic},
+		Analytics: &EventsClientItem{[]string{kafkaUri}, c.AnalyticsKafkaTopic},
+		Pictures:  &EventsClientItem{[]string{kafkaUri}, c.PicturesKafkaTopic},
+		Users:     &EventsClientItem{[]string{kafkaUri}, c.UsersKafkaTopic},
+		Results:   &EventsClientItem{[]string{kafkaUri}, c.ResultsKafkaTopic},
 	}
 }
 
-func NewServiceAPI() map[string]*ServiceAPI {
-	// TODO: get services's apis from json files and create ServiceAPI
-	// TODO: parse data (json) and create service api struct
-	authRestData := make([]byte, 0)
-	authEventsData := make([]byte, 0)
-	// ...
-	return map[string]*ServiceAPI{}
-}
-
-func NewSender() (*Sender, error) {
-	API := NewServiceAPI()
+func NewSender(c *config.Config, ac *config.ApiConfig) (*Sender, error) {
 	r := setupRestClient()
-	e := setupEventsClient()
-	g, err := setupGrpcClient()
+	e := setupEventsClient(c)
+	g, err := setupGrpcClient(c)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Sender{API, r, g, e}, err
+	return &Sender{ac, r, g, e}, err
 }
