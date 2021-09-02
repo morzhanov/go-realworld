@@ -17,12 +17,6 @@ type AuthEventsController struct {
 	service *services.AuthService
 }
 
-func (c *AuthEventsController) Listen() {
-	c.BaseEventsController.Listen(
-		func(m *events.EventMessage) { c.processRequest(m) },
-	)
-}
-
 func (c *AuthEventsController) processRequest(in *events.EventMessage) error {
 	switch in.Key {
 	case "validateEventsRequest":
@@ -79,6 +73,13 @@ func (c *AuthEventsController) signup(in *events.EventMessage) error {
 	}
 	c.BaseEventsController.SendResponse(payload.EventId, &d)
 	return nil
+}
+
+func (c *AuthEventsController) Listen(ctx context.Context) {
+	c.BaseEventsController.Listen(
+		ctx,
+		func(m *events.EventMessage) { c.processRequest(m) },
+	)
 }
 
 func NewAuthEventsController(

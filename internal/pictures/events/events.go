@@ -1,6 +1,7 @@
 package events
 
 import (
+	"context"
 	"fmt"
 
 	prpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
@@ -14,12 +15,6 @@ import (
 type PicturesEventsController struct {
 	eventscontroller.BaseEventsController
 	service *services.PictureService
-}
-
-func (c *PicturesEventsController) Listen() {
-	c.BaseEventsController.Listen(
-		func(m *events.EventMessage) { c.processRequest(m) },
-	)
 }
 
 func (c *PicturesEventsController) processRequest(in *events.EventMessage) error {
@@ -85,6 +80,13 @@ func (c *PicturesEventsController) deletePicture(in *events.EventMessage) error 
 		return err
 	}
 	return c.service.DeleteUserPicture(res.UserId, res.PictureId)
+}
+
+func (c *PicturesEventsController) Listen(ctx context.Context) {
+	c.BaseEventsController.Listen(
+		ctx,
+		func(m *events.EventMessage) { c.processRequest(m) },
+	)
 }
 
 func NewPicturesEventsController(

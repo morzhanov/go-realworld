@@ -60,6 +60,7 @@ func NewEventListener(topic string, partition int, c *config.Config) *EventListe
 
 	go func() {
 		// TODO: maybe this initialization should be in a loop
+		// TODO: change error handling here
 		b := make([]byte, 10e3) // 10KB max per message
 		for {
 			_, err := batch.Read(b)

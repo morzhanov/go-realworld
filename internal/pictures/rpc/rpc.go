@@ -35,15 +35,15 @@ func (s *PicturesRpcServer) DeleteUserPicture(ctx context.Context, in *prpc.Dele
 	return res, err
 }
 
-func (s *PicturesRpcServer) Listen() error {
-	return helper.StartGrpcServer(s.server, s.port)
+func (s *PicturesRpcServer) Listen(ctx context.Context) error {
+	return helper.StartGrpcServer(ctx, s.server, s.port)
 }
 
-func NewAnalyticsRpcService(
-	picturesService services.PictureService,
+func NewPicturesRpcServer(
+	picturesService *services.PictureService,
 	c *config.Config,
 ) (server *PicturesRpcServer) {
-	server = &PicturesRpcServer{picturesService: &picturesService, server: s}
+	server = &PicturesRpcServer{picturesService: picturesService, port: c.PicturesRestPort}
 	prpc.RegisterPicturesServer(grpc.NewServer(), server)
 	return
 }

@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 
@@ -167,6 +168,10 @@ func (c *APIGatewayRestController) handleGetAnalytics(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, res)
+}
+
+func (c *APIGatewayRestController) Listen(ctx context.Context, port string) {
+	helper.StartRestServer(ctx, port, c.router)
 }
 
 func NewAPIGatewayRestController(s *APIGatewayService) *APIGatewayRestController {

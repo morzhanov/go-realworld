@@ -27,15 +27,15 @@ func (s *AnalyticsRpcServer) GetLog(ctx context.Context, in *anrpc.GetLogRequest
 	return s.analyticsService.GetLog(in)
 }
 
-func (s *AnalyticsRpcServer) Listen() error {
-	return helper.StartGrpcServer(s.server, s.port)
+func (s *AnalyticsRpcServer) Listen(ctx context.Context) error {
+	return helper.StartGrpcServer(ctx, s.server, s.port)
 }
 
-func NewAnalyticsRpcService(
-	analyticsService services.AnalyticsService,
+func NewAnalyticsRpcServer(
+	analyticsService *services.AnalyticsService,
 	c *config.Config,
 ) (server *AnalyticsRpcServer) {
-	server = &AnalyticsRpcServer{analyticsService: &analyticsService, port: c.AnalyticsGrpcPort}
+	server = &AnalyticsRpcServer{analyticsService: analyticsService, port: c.AnalyticsGrpcPort}
 	anrpc.RegisterAnalyticsServer(grpc.NewServer(), server)
 	return
 }

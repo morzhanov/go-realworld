@@ -40,15 +40,15 @@ func (s *UsersRpcServer) DeleteUser(ctx context.Context, in *urpc.DeleteUserRequ
 	return res, err
 }
 
-func (s *UsersRpcServer) Listen() error {
-	return helper.StartGrpcServer(s.server, s.port)
+func (s *UsersRpcServer) Listen(ctx context.Context) error {
+	return helper.StartGrpcServer(ctx, s.server, s.port)
 }
 
-func NewAnalyticsRpcService(
-	usersService services.UsersService,
+func NewUsersRpcServer(
+	usersService *services.UsersService,
 	c *config.Config,
 ) (server *UsersRpcServer) {
-	server = &UsersRpcServer{usersService: &usersService, port: c.AnalyticsGrpcPort}
+	server = &UsersRpcServer{usersService: usersService, port: c.AnalyticsGrpcPort}
 	urpc.RegisterUsersServer(grpc.NewServer(), server)
 	return
 }

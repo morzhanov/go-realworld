@@ -5,11 +5,12 @@ import "github.com/spf13/viper"
 type Config struct {
 	KafkaUri string `mapstructure:"KAFKA_URI"`
 
-	AnalyticsKafkaTopic string `mapstructure:"ANALYTICS_KAFKA_TOPIC"`
-	AuthKafkaTopic      string `mapstructure:"AUTH_KAFKA_TOPIC"`
-	PicturesKafkaTopic  string `mapstructure:"PICTURES_KAFKA_TOPIC"`
-	UsersKafkaTopic     string `mapstructure:"USERS_KAFKA_TOPIC"`
-	ResultsKafkaTopic   string `mapstructure:"RESULTS_KAFKA_TOPIC"`
+	AnalyticsKafkaTopic  string `mapstructure:"ANALYTICS_KAFKA_TOPIC"`
+	AuthKafkaTopic       string `mapstructure:"AUTH_KAFKA_TOPIC"`
+	PicturesKafkaTopic   string `mapstructure:"PICTURES_KAFKA_TOPIC"`
+	UsersKafkaTopic      string `mapstructure:"USERS_KAFKA_TOPIC"`
+	ResultsKafkaTopic    string `mapstructure:"RESULTS_KAFKA_TOPIC"`
+	ApiGatewayKafkaTopic string `mapstructure:"API_GATEWAY_KAFKA_TOPIC"`
 
 	PsqlConnectionString string `mapstructure:"PSQL_CONNECTION_STRING"`
 
@@ -25,13 +26,14 @@ type Config struct {
 	PicturesGrpcPort  string `mapstructure:"PICTURES_GRPC_PORT"`
 	UsersGrpcPort     string `mapstructure:"USERS_GRPC_PORT"`
 
-	AnalyticsRestPort string `mapstructure:"ANALYTICS_REST_PORT"`
-	AuthRestPort      string `mapstructure:"AUTH_REST_PORT"`
-	PicturesRestPort  string `mapstructure:"PICTURES_REST_PORT"`
-	UsersRestPort     string `mapstructure:"USERS_REST_PORT"`
+	AnalyticsRestPort  string `mapstructure:"ANALYTICS_REST_PORT"`
+	AuthRestPort       string `mapstructure:"AUTH_REST_PORT"`
+	PicturesRestPort   string `mapstructure:"PICTURES_REST_PORT"`
+	UsersRestPort      string `mapstructure:"USERS_REST_PORT"`
+	ApiGatewayRestPort string `mapstructure:"API_GATEWAY_REST_PORT"`
 }
 
-func LoadConfig(path string) (config Config, err error) {
+func NewConfig(path string) (config *Config, err error) {
 	viper.AddConfigPath(path)
 	viper.SetConfigName("app")
 	viper.SetConfigType("env")

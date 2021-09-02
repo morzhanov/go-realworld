@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -65,7 +66,11 @@ func (c *PicturesRestController) handleDeleteUserPicture(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
-func NewRestController(s *PictureService) *PicturesRestController {
+func (c *PicturesRestController) Listen(ctx context.Context, port string) {
+	helper.StartRestServer(ctx, port, c.router)
+}
+
+func NewPicturesRestController(s *PictureService) *PicturesRestController {
 	router := gin.Default()
 	c := PicturesRestController{s, router}
 

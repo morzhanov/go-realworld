@@ -1,6 +1,7 @@
 package events
 
 import (
+	"context"
 	"fmt"
 
 	anrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
@@ -14,12 +15,6 @@ import (
 type AnalyticsEventsController struct {
 	eventscontroller.BaseEventsController
 	service *services.AnalyticsService
-}
-
-func (c *AnalyticsEventsController) Listen() {
-	c.BaseEventsController.Listen(
-		func(m *events.EventMessage) { c.processRequest(m) },
-	)
 }
 
 func (c *AnalyticsEventsController) processRequest(in *events.EventMessage) error {
@@ -56,6 +51,13 @@ func (c *AnalyticsEventsController) getLogs(in *events.EventMessage) error {
 	}
 	c.BaseEventsController.SendResponse(payload.EventId, &d)
 	return nil
+}
+
+func (c *AnalyticsEventsController) Listen(ctx context.Context) {
+	c.BaseEventsController.Listen(
+		ctx,
+		func(m *events.EventMessage) { c.processRequest(m) },
+	)
 }
 
 func NewAnalyticsEventsController(

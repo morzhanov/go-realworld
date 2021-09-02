@@ -1,6 +1,7 @@
 package events
 
 import (
+	"context"
 	"fmt"
 
 	urpc "github.com/morzhanov/go-realworld/api/rpc/users"
@@ -14,12 +15,6 @@ import (
 type UsersEventsController struct {
 	eventscontroller.BaseEventsController
 	service *services.UsersService
-}
-
-func (c *UsersEventsController) Listen() {
-	c.BaseEventsController.Listen(
-		func(m *events.EventMessage) { c.processRequest(m) },
-	)
 }
 
 func (c *UsersEventsController) processRequest(in *events.EventMessage) error {
@@ -107,6 +102,13 @@ func (c *UsersEventsController) deleteUser(in *events.EventMessage) error {
 	}
 	c.BaseEventsController.SendResponse(payload.EventId, nil)
 	return nil
+}
+
+func (c *UsersEventsController) Listen(ctx context.Context) {
+	c.BaseEventsController.Listen(
+		ctx,
+		func(m *events.EventMessage) { c.processRequest(m) },
+	)
 }
 
 func NewUsersEventsController(

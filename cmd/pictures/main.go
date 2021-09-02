@@ -10,10 +10,10 @@ import (
 	"github.com/morzhanov/go-realworld/internal/common/db"
 	"github.com/morzhanov/go-realworld/internal/common/helper"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
-	"github.com/morzhanov/go-realworld/internal/users/events"
-	"github.com/morzhanov/go-realworld/internal/users/rest"
-	"github.com/morzhanov/go-realworld/internal/users/rpc"
-	"github.com/morzhanov/go-realworld/internal/users/services"
+	"github.com/morzhanov/go-realworld/internal/pictures/events"
+	"github.com/morzhanov/go-realworld/internal/pictures/rest"
+	"github.com/morzhanov/go-realworld/internal/pictures/rpc"
+	"github.com/morzhanov/go-realworld/internal/pictures/services"
 )
 
 func main() {
@@ -41,13 +41,13 @@ func main() {
 		helper.HandleInitializationError(err, "database")
 	}
 
-	service := services.NewUsersService(db)
-	rpcServer := rpc.NewUsersRpcServer(service, c)
-	restController := rest.NewUsersRestController(service)
-	eventsController := events.NewUsersEventsController(service, c, sender)
+	service := services.NewPicturesService(db)
+	rpcServer := rpc.NewPicturesRpcServer(service, c)
+	restController := rest.NewPicturesRestController(service)
+	eventsController := events.NewPicturesEventsController(service, c, sender)
 
 	go rpcServer.Listen(ctx)
-	go restController.Listen(ctx, c.UsersRestPort)
+	go restController.Listen(ctx, c.PicturesRestPort)
 	go eventsController.Listen(ctx)
 
 	quit := make(chan os.Signal, 1)

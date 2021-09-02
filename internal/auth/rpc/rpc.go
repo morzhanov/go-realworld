@@ -32,15 +32,15 @@ func (s *AuthRpcServer) Signup(ctx context.Context, in *arpc.SignupInput) (res *
 	return s.authService.Signup(ctx, in)
 }
 
-func (s *AuthRpcServer) Listen() error {
-	return helper.StartGrpcServer(s.server, s.port)
+func (s *AuthRpcServer) Listen(ctx context.Context) error {
+	return helper.StartGrpcServer(ctx, s.server, s.port)
 }
 
-func NewAuthRpcService(
-	authService services.AuthService,
+func NewAuthRpcServer(
+	authService *services.AuthService,
 	c *config.Config,
 ) (server *AuthRpcServer) {
-	server = &AuthRpcServer{authService: &authService, port: c.AuthGrpcPort}
+	server = &AuthRpcServer{authService: authService, port: c.AuthGrpcPort}
 	arpc.RegisterAuthServer(grpc.NewServer(), server)
 	return
 }

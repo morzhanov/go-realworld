@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -79,7 +80,11 @@ func (c *UsersRestController) handleDeleteUser(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
-func NewRestController(s *UsersService) *UsersRestController {
+func (c *UsersRestController) Listen(ctx context.Context, port string) {
+	helper.StartRestServer(ctx, port, c.router)
+}
+
+func NewUsersRestController(s *UsersService) *UsersRestController {
 	router := gin.Default()
 	c := UsersRestController{s, router}
 

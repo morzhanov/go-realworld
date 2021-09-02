@@ -11,9 +11,8 @@ import (
 )
 
 type BaseEventsController struct {
-	sender   *sender.Sender
-	kafkaUri string
-	conn     *kafka.Conn
+	sender *sender.Sender
+	conn   *kafka.Conn
 }
 
 func createKafkaConnection(topic string, partition int, kafkaUri string) *kafka.Conn {
@@ -23,11 +22,15 @@ func createKafkaConnection(topic string, partition int, kafkaUri string) *kafka.
 	return conn
 }
 
-func (c *BaseEventsController) Listen(processRequest func(*events.EventMessage)) error {
+func (c *BaseEventsController) Listen(
+	ctx context.Context,
+	processRequest func(*events.EventMessage),
+) error {
 	c.conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 	batch := c.conn.ReadBatch(10e3, 1e6) // fetch 10KB min, 1MB max
+	b := make([]byte, 10e3)              // 10KB max per message
 
-	b := make([]byte, 10e3) // 10KB max per message
+loop:
 	for {
 		_, err := batch.Read(b)
 		if err != nil {
@@ -40,6 +43,13 @@ func (c *BaseEventsController) Listen(processRequest func(*events.EventMessage))
 			return err
 		}
 		go processRequest(&input)
+
+		select {
+		case <-ctx.Done():
+			break loop
+		default:
+			continue
+		}
 	}
 
 	if err := batch.Close(); err != nil {

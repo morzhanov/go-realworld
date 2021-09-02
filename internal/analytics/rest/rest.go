@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 
@@ -43,11 +44,15 @@ func (c *AnalyticsRestController) handleGetData(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func NewRestController(s *AnalyticsService) *AnalyticsRestController {
+func (c *AnalyticsRestController) Listen(ctx context.Context, port string) {
+	helper.StartRestServer(ctx, port, c.router)
+}
+
+func NewAnalyticsRestController(s *AnalyticsService) (c *AnalyticsRestController) {
 	router := gin.Default()
-	c := AnalyticsRestController{s, router}
+	c = &AnalyticsRestController{s, router}
 
 	router.GET("/analytics", c.handleLogData)
 	router.GET("/analytics/:offset", c.handleGetData)
-	return &c
+	return
 }

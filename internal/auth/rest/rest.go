@@ -63,7 +63,11 @@ func (c *AuthRestController) handleSignup(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func NewRestController(s *AuthService) *AuthRestController {
+func (c *AuthRestController) Listen(ctx context.Context, port string) {
+	helper.StartRestServer(ctx, port, c.router)
+}
+
+func NewAuthRestController(s *AuthService) *AuthRestController {
 	router := gin.Default()
 	c := AuthRestController{s, router}
 
