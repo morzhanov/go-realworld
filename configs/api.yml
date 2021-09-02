@@ -1,57 +1,85 @@
 analytics:
   rest:
-    - method: POST
-      url: /analytics
-    - method: GET
-      url: /analytics/:offset
+    - logData:
+        method: POST
+        url: /analytics
+    - getLogs:
+        method: GET
+        url: /analytics/:offset
   events:
-    - event: logData
-    - event: getLogs
+    - logData:
+        event: logData
+    - getLogs:
+        event: getLogs
 
 auth:
   rest:
-    - method: GET
+    - validateEventsRequest:
+      method: GET
       url: auth
-    - method: POST
+    - login:
+      method: POST
       url: login
-    - method: POST
+    - signup:
+      method: POST
       url: signup
   events:
-    - event: validateEventsRequest
-    - event: login
-    - event: signup
+    - validateEventsRequest:
+      event: validateEventsRequest
+    - login:
+      event: login
+    - signup:
+      event: signup
 
 pictures:
   rest:
-    - method: POST
-      url: /pictures
-    - method: GET
+    - getPictures:
+      method: GET
       url: /pictures/:userId
-    - method: GET
+    - getPicture:
+      method: GET
       url: /pictures/:userId/:id
-    - method: DELETE
+    - createPicture:
+      method: POST
+      url: /pictures
+    - deletePicture:
+      method: DELETE
       url: /pictures/:userId/:id
   events:
-    - event: getPictures
-    - event: getPicture
-    - event: createPicture
-    - event: deletePicture
+    - getPictures:
+      event: getPictures
+    - getPicture:
+      event: getPicture
+    - createPicture:
+      event: createPicture
+    - deletePicture:
+      event: deletePicture
 
 users:
   rest:
-    - method: GET
+    - getUser:
+      method: GET
       url: /users/:id
-    - method: GET
+    - getUserByUsername:
+      method: GET
       url: /users
-    - method: POST
+    - validatePassword:
+      method: POST
       url: /users/validate-password
-    - method: POST
+    - createUser:
+      method: POST
       url: /users
-    - method: DELETE
+    - deleteUser:
+      method: DELETE
       url: /users/:id
   events:
-    - event: getUser
-    - event: getUserByUsername
-    - event: validatePassword
-    - event: createUser
-    - event: deleteUser
+    - getUser:
+      event: getUser
+    - getUserByUsername:
+      event: getUserByUsername
+    - validatePassword:
+      event: validatePassword
+    - createUser:
+      event: createUser
+    - deleteUser:
+      event: deleteUser

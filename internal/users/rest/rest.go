@@ -30,6 +30,7 @@ func (c *UsersRestController) handleGetUserDataByUsername(ctx *gin.Context) {
 
 	if username == "" {
 		ctx.String(http.StatusBadRequest, "username should be provided in query params")
+		return
 	}
 
 	res, err := c.service.GetUserDataByUsername(username)
