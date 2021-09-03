@@ -2,7 +2,7 @@ package events
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	arpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	"github.com/morzhanov/go-realworld/internal/auth/services"
@@ -26,7 +26,7 @@ func (c *AuthEventsController) processRequest(in *events.EventMessage) error {
 	case "signup":
 		return c.signup(in)
 	default:
-		return fmt.Errorf("Wrong event name")
+		return errors.New("wrong event name")
 	}
 }
 

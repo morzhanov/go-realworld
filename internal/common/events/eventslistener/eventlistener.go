@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/common/events"
 	"github.com/segmentio/kafka-go"
+	"go.uber.org/zap"
 )
 
 type Listener struct {
@@ -23,7 +23,7 @@ type EventListener struct {
 
 func (e *EventListener) AddListener(l *Listener) error {
 	if e.listeners[l.Uuid] != nil {
-		return fmt.Errorf("Listener already exists, uuid: %v", l.Uuid)
+		return fmt.Errorf("listener already exists, uuid: %v", l.Uuid)
 	}
 	e.listeners[l.Uuid] = l
 	return nil
@@ -31,7 +31,7 @@ func (e *EventListener) AddListener(l *Listener) error {
 
 func (e *EventListener) RemoveListener(l *Listener) error {
 	if e.listeners[l.Uuid] == nil {
-		return fmt.Errorf("Listener not found, uuid: %v", l.Uuid)
+		return fmt.Errorf("listener not found, uuid: %v", l.Uuid)
 	}
 	delete(e.listeners, l.Uuid)
 	return nil
@@ -51,7 +51,7 @@ func (e *EventListener) processEvent(b *[]byte) error {
 	return nil
 }
 
-func NewEventListener(topic string, partition int, c *config.Config) *EventListener {
+func NewEventListener(topic string, partition int, c *config.Config, log *zap.Logger) *EventListener {
 	conn, _ := kafka.DialLeader(context.Background(), "tcp", c.KafkaUri, topic, partition)
 	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 	batch := conn.ReadBatch(10e3, 1e6) // fetch 10KB min, 1MB max
@@ -60,7 +60,6 @@ func NewEventListener(topic string, partition int, c *config.Config) *EventListe
 
 	go func() {
 		// TODO: maybe this initialization should be in a loop
-		// TODO: change error handling here
 		b := make([]byte, 10e3) // 10KB max per message
 		for {
 			_, err := batch.Read(b)
@@ -71,10 +70,10 @@ func NewEventListener(topic string, partition int, c *config.Config) *EventListe
 		}
 
 		if err := batch.Close(); err != nil {
-			log.Fatal("failed to close batch:", err)
+			log.Error("failed to close batch in event listener")
 		}
 		if err := conn.Close(); err != nil {
-			log.Fatal("failed to close connection:", err)
+			log.Error("failed to close connection in event listener")
 		}
 	}()
 	return &el

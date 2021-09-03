@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"reflect"
 	"time"
@@ -62,7 +62,7 @@ func (s *Sender) PerformRequest(
 
 func (s *Sender) SendEventsResponse(eventUuid string, value interface{}) error {
 	if !helper.CheckStruct(value) {
-		log.Fatal("Value is not struct")
+		return errors.New("value is not struct")
 	}
 
 	payload, err := json.Marshal(&value)
@@ -81,7 +81,7 @@ func (s *Sender) restRequest(
 	res interface{},
 ) (err error) {
 	if !helper.CheckStruct(data) {
-		log.Fatal("Value is not struct")
+		return errors.New("value is not struct")
 	}
 
 	b, err := json.Marshal(data)

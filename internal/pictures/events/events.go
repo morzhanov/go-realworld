@@ -2,7 +2,7 @@ package events
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	prpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
 	"github.com/morzhanov/go-realworld/internal/common/config"
@@ -28,7 +28,7 @@ func (c *PicturesEventsController) processRequest(in *events.EventMessage) error
 	case "deletePicture":
 		return c.deletePicture(in)
 	default:
-		return fmt.Errorf("Wrong event name")
+		return errors.New("wrong event name")
 	}
 }
 

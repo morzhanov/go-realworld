@@ -2,7 +2,7 @@ package events
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	anrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
 	"github.com/morzhanov/go-realworld/internal/analytics/services"
@@ -24,7 +24,7 @@ func (c *AnalyticsEventsController) processRequest(in *events.EventMessage) erro
 	case "getLogs":
 		return c.getLogs(in)
 	default:
-		return fmt.Errorf("Wrong event name")
+		return errors.New("wrong event name")
 	}
 }
 

@@ -2,7 +2,7 @@ package events
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	urpc "github.com/morzhanov/go-realworld/api/rpc/users"
 	"github.com/morzhanov/go-realworld/internal/common/config"
@@ -30,7 +30,7 @@ func (c *UsersEventsController) processRequest(in *events.EventMessage) error {
 	case "deleteUser":
 		return c.deleteUser(in)
 	default:
-		return fmt.Errorf("Wrong event name")
+		return errors.New("wrong event name")
 	}
 }
 

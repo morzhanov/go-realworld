@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"reflect"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
@@ -34,7 +34,7 @@ func HandleRestError(c *gin.Context, err error) {
 }
 
 // TODO: maybe we should move this somwhere else like in BaseEventsController
-func StartGrpcServer(ctx context.Context, s *grpc.Server, port string) error {
+func StartGrpcServer(ctx context.Context, s *grpc.Server, port string, log *zap.Logger) error {
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		return fmt.Errorf("failed to listen: %v", err)
@@ -43,20 +43,21 @@ func StartGrpcServer(ctx context.Context, s *grpc.Server, port string) error {
 	if err := s.Serve(lis); err != nil {
 		return fmt.Errorf("failed to serve: %v", err)
 	}
-	log.Printf("Grpc server started at: localhost%v", port)
+	log.Info("Grpc server started", zap.String("port", port))
 	<-ctx.Done()
 	lis.Close()
 	return nil
 }
 
-func HandleInitializationError(err error, step string) {
+func HandleInitializationError(err error, step string, log *zap.Logger) {
 	log.Fatal(
-		fmt.Errorf("an error occurred during %step initialization step: %w", step, err),
+		fmt.Sprintf("an error occurred during %step initialization step: %s", step, err),
+		zap.String("step", step),
 	)
 }
 
 // TODO: maybe we should move this somwhere else like in BaseEventsController
-func StartRestServer(ctx context.Context, port string, router *gin.Engine) {
+func StartRestServer(ctx context.Context, port string, router *gin.Engine, log *zap.Logger) {
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%s", port),
 		Handler: router,
@@ -64,18 +65,16 @@ func StartRestServer(ctx context.Context, port string, router *gin.Engine) {
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen: %s\n", err)
+			log.Fatal("REST Server Failed to start", zap.Error(err))
 		}
 	}()
 
-	// TODO: refactor with appropriate error handling
 	<-ctx.Done()
-	log.Println("Shutdown Server ...")
+	log.Info("Shutdown REST Server ...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatal("Server Shutdown:", err)
+		log.Fatal("REST Server shutdown failed", zap.Error(err))
 	}
-	log.Println("Server exiting")
 }
