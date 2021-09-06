@@ -5,17 +5,12 @@ import (
 	"reflect"
 )
 
-type EventMessage struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
-}
-
 type EventData struct {
 	EventId string
 	Data    string
 }
 
-func ParseEventsResponse(inputValue string, res interface{}) (payload *EventData, err error) {
+func ParseEventsResponse(inputValue []byte, res interface{}) (payload *EventData, err error) {
 	payload = &EventData{}
 	if err := json.Unmarshal([]byte(inputValue), payload); err != nil {
 		return nil, err

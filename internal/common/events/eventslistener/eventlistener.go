@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/morzhanov/go-realworld/internal/common/config"
-	"github.com/morzhanov/go-realworld/internal/common/events"
 	"github.com/segmentio/kafka-go"
 	"go.uber.org/zap"
 )
@@ -38,7 +37,7 @@ func (e *EventListener) RemoveListener(l *Listener) error {
 }
 
 func (e *EventListener) processEvent(b *[]byte) error {
-	data := events.EventMessage{}
+	data := kafka.Message{}
 	if err := json.Unmarshal(*b, &data); err != nil {
 		return err
 	}

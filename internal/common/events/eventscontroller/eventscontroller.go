@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/morzhanov/go-realworld/internal/common/events"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
+	"github.com/opentracing/opentracing-go"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -24,7 +24,7 @@ func createKafkaConnection(topic string, partition int, kafkaUri string) *kafka.
 
 func (c *BaseEventsController) Listen(
 	ctx context.Context,
-	processRequest func(*events.EventMessage),
+	processRequest func(*kafka.Message),
 ) error {
 	c.conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 	batch := c.conn.ReadBatch(10e3, 1e6) // fetch 10KB min, 1MB max
@@ -37,7 +37,7 @@ loop:
 			break
 		}
 
-		input := events.EventMessage{}
+		input := kafka.Message{}
 		err = json.Unmarshal(b, &input)
 		if err != nil {
 			return err
@@ -61,8 +61,8 @@ loop:
 	return nil
 }
 
-func (c *BaseEventsController) SendResponse(eventId string, data interface{}) {
-	c.sender.SendEventsResponse(eventId, data)
+func (c *BaseEventsController) SendResponse(eventId string, data interface{}, span *opentracing.Span) {
+	c.sender.SendEventsResponse(eventId, data, span)
 }
 
 func NewEventsController(s *sender.Sender, topic string, kafkaUri string) *BaseEventsController {

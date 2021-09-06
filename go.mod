@@ -3,6 +3,7 @@ module github.com/morzhanov/go-realworld
 go 1.16
 
 require (
+	cloud.google.com/go/functions v0.1.0 // indirect
 	cloud.google.com/go/spanner v1.9.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
 	github.com/ClickHouse/clickhouse-go v1.3.12 // indirect
@@ -69,7 +70,7 @@ require (
 	github.com/prometheus/procfs v0.0.0-20190117184657-bf6a532e95b1 // indirect
 	github.com/rs/zerolog v1.15.0 // indirect
 	github.com/satori/go.uuid v1.2.0 // indirect
-	github.com/segmentio/kafka-go v0.4.16 // indirect
+	github.com/segmentio/kafka-go v0.4.17 // indirect
 	github.com/snowflakedb/gosnowflake v1.3.5 // indirect
 	github.com/spf13/viper v1.8.1 // indirect
 	github.com/stretchr/objx v0.2.0 // indirect
@@ -84,12 +85,9 @@ require (
 	go.uber.org/zap v1.19.0 // indirect
 	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e // indirect
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
-	golang.org/x/sys v0.0.0-20210616094352-59db8d763f22 // indirect
 	golang.org/x/text v0.3.6 // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
-	google.golang.org/genproto v0.0.0-20210617175327-b9e0b3197ced // indirect
-	google.golang.org/grpc v1.38.0 // indirect
-	google.golang.org/protobuf v1.26.0 // indirect
+	google.golang.org/grpc v1.40.0 // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6 // indirect
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/go-playground/validator.v8 v8.18.2 // indirect

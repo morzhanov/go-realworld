@@ -19,6 +19,8 @@ import (
 	"github.com/morzhanov/go-realworld/internal/common/events"
 	"github.com/morzhanov/go-realworld/internal/common/events/eventslistener"
 	"github.com/morzhanov/go-realworld/internal/common/helper"
+	"github.com/morzhanov/go-realworld/internal/common/tracing"
+	"github.com/opentracing/opentracing-go"
 	uuid "github.com/satori/go.uuid"
 	"github.com/segmentio/kafka-go"
 	"google.golang.org/grpc"
@@ -60,7 +62,7 @@ func (s *Sender) PerformRequest(
 	return
 }
 
-func (s *Sender) SendEventsResponse(eventUuid string, value interface{}) error {
+func (s *Sender) SendEventsResponse(eventUuid string, value interface{}, span *opentracing.Span) error {
 	if !helper.CheckStruct(value) {
 		return errors.New("value is not struct")
 	}
@@ -69,7 +71,16 @@ func (s *Sender) SendEventsResponse(eventUuid string, value interface{}) error {
 	if err != nil {
 		return err
 	}
-	s.eventsRequest("response", "response", string(payload), eventUuid, nil, false, nil)
+	s.eventsRequest(
+		"response",
+		"response",
+		string(payload),
+		eventUuid,
+		nil,
+		false,
+		nil,
+		span,
+	)
 	return nil
 }
 
@@ -166,6 +177,7 @@ func (s *Sender) eventsRequest(
 	res interface{},
 	wait bool,
 	el *eventslistener.EventListener,
+	span *opentracing.Span,
 ) (err error) {
 	apiConfig, err := s.API.GetApiItem(api)
 	if err != nil {
@@ -219,12 +231,12 @@ func (s *Sender) eventsRequest(
 	}
 	defer w.Close()
 
-	w.WriteMessages(context.Background(),
-		kafka.Message{
-			Key:   []byte(input.Event),
-			Value: []byte(input.Data),
-		},
-	)
+	m := kafka.Message{
+		Key:   []byte(input.Event),
+		Value: []byte(input.Data),
+	}
+	tracing.InjectEventsSpan(*span, &m)
+	w.WriteMessages(context.Background(), m)
 
 	if wait {
 		response := make(chan []byte)

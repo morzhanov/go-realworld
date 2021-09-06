@@ -8,7 +8,7 @@ import (
 	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/common/helper"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
-	grpc "google.golang.org/grpc"
+	"google.golang.org/grpc"
 )
 
 type AuthRpcServer struct {
@@ -40,7 +40,7 @@ func NewAuthRpcServer(
 	authService *services.AuthService,
 	c *config.Config,
 ) (server *AuthRpcServer) {
-	server = &AuthRpcServer{authService: authService, port: c.AuthGrpcPort}
+	server = &AuthRpcServer{authService: authService, port: c.GrpcPort}
 	arpc.RegisterAuthServer(grpc.NewServer(), server)
 	return
 }
