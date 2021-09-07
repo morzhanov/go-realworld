@@ -38,7 +38,7 @@ func (c *APIGatewayRestController) handleLogin(ctx *gin.Context) {
 		return
 	}
 
-	res, err := c.service.Login(sender.Transport(transport), &input)
+	res, err := c.service.Login(sender.Transport(transport), &input, &span)
 	if err != nil {
 		helper.HandleRestError(ctx, err)
 		return
@@ -61,7 +61,7 @@ func (c *APIGatewayRestController) handleSignup(ctx *gin.Context) {
 		return
 	}
 
-	res, err := c.service.Signup(sender.Transport(transport), &input)
+	res, err := c.service.Signup(sender.Transport(transport), &input, &span)
 	if err != nil {
 		helper.HandleRestError(ctx, err)
 		return
@@ -78,7 +78,11 @@ func (c *APIGatewayRestController) handleCreatePicture(ctx *gin.Context) {
 		helper.HandleRestError(ctx, err)
 		return
 	}
-	validationRes, err := c.service.CheckAuth(ctx, sender.Transport(transport), "pictures", "createUserPicture")
+	validationRes, err := c.service.CheckAuth(ctx, sender.Transport(transport), "pictures", "createUserPicture", &span)
+	if err != nil {
+		helper.HandleRestError(ctx, err)
+		return
+	}
 
 	input := prpc.CreateUserPictureRequest{}
 	if err := helper.ParseRestBody(ctx, &input); err != nil {
@@ -87,7 +91,7 @@ func (c *APIGatewayRestController) handleCreatePicture(ctx *gin.Context) {
 	}
 	input.UserId = validationRes.UserId
 
-	res, err := c.service.CreatePicture(sender.Transport(transport), &input)
+	res, err := c.service.CreatePicture(sender.Transport(transport), &input, &span)
 	if err != nil {
 		helper.HandleRestError(ctx, err)
 		return
@@ -104,7 +108,11 @@ func (c *APIGatewayRestController) handleGetPictures(ctx *gin.Context) {
 		helper.HandleRestError(ctx, err)
 		return
 	}
-	validationRes, err := c.service.CheckAuth(ctx, sender.Transport(transport), "pictures", "getUserPictures")
+	validationRes, err := c.service.CheckAuth(ctx, sender.Transport(transport), "pictures", "getUserPictures", &span)
+	if err != nil {
+		helper.HandleRestError(ctx, err)
+		return
+	}
 
 	input := prpc.GetUserPicturesRequest{}
 	if err := helper.ParseRestBody(ctx, &input); err != nil {
@@ -112,7 +120,7 @@ func (c *APIGatewayRestController) handleGetPictures(ctx *gin.Context) {
 		return
 	}
 
-	res, err := c.service.GetPictures(sender.Transport(transport), validationRes.UserId)
+	res, err := c.service.GetPictures(sender.Transport(transport), validationRes.UserId, &span)
 	if err != nil {
 		helper.HandleRestError(ctx, err)
 		return
@@ -129,7 +137,11 @@ func (c *APIGatewayRestController) handleGetPicture(ctx *gin.Context) {
 		helper.HandleRestError(ctx, err)
 		return
 	}
-	validationRes, err := c.service.CheckAuth(ctx, sender.Transport(transport), "pictures", "getUserPicture")
+	validationRes, err := c.service.CheckAuth(ctx, sender.Transport(transport), "pictures", "getUserPicture", &span)
+	if err != nil {
+		helper.HandleRestError(ctx, err)
+		return
+	}
 
 	input := prpc.GetUserPictureRequest{}
 	if err := helper.ParseRestBody(ctx, &input); err != nil {
@@ -137,7 +149,7 @@ func (c *APIGatewayRestController) handleGetPicture(ctx *gin.Context) {
 		return
 	}
 
-	res, err := c.service.GetPicture(sender.Transport(transport), validationRes.UserId, input.PictureId)
+	res, err := c.service.GetPicture(sender.Transport(transport), validationRes.UserId, input.PictureId, &span)
 	if err != nil {
 		helper.HandleRestError(ctx, err)
 		return
@@ -154,7 +166,11 @@ func (c *APIGatewayRestController) handleDeletePicture(ctx *gin.Context) {
 		helper.HandleRestError(ctx, err)
 		return
 	}
-	validationRes, err := c.service.CheckAuth(ctx, sender.Transport(transport), "pictures", "deletePicture")
+	validationRes, err := c.service.CheckAuth(ctx, sender.Transport(transport), "pictures", "deletePicture", &span)
+	if err != nil {
+		helper.HandleRestError(ctx, err)
+		return
+	}
 
 	input := prpc.DeleteUserPictureRequest{}
 	if err := helper.ParseRestBody(ctx, &input); err != nil {
@@ -162,7 +178,7 @@ func (c *APIGatewayRestController) handleDeletePicture(ctx *gin.Context) {
 		return
 	}
 
-	err = c.service.DeletePicture(sender.Transport(transport), validationRes.UserId, input.PictureId)
+	err = c.service.DeletePicture(sender.Transport(transport), validationRes.UserId, input.PictureId, &span)
 	if err != nil {
 		helper.HandleRestError(ctx, err)
 		return
@@ -179,7 +195,11 @@ func (c *APIGatewayRestController) handleGetAnalytics(ctx *gin.Context) {
 		helper.HandleRestError(ctx, err)
 		return
 	}
-	_, err = c.service.CheckAuth(ctx, sender.Transport(transport), "analytics", "getLogs")
+	_, err = c.service.CheckAuth(ctx, sender.Transport(transport), "analytics", "getLogs", &span)
+	if err != nil {
+		helper.HandleRestError(ctx, err)
+		return
+	}
 
 	input := anrpc.GetLogRequest{}
 	if err := helper.ParseRestBody(ctx, &input); err != nil {
@@ -187,7 +207,7 @@ func (c *APIGatewayRestController) handleGetAnalytics(ctx *gin.Context) {
 		return
 	}
 
-	res, err := c.service.GetAnalytics(sender.Transport(transport), &input)
+	res, err := c.service.GetAnalytics(sender.Transport(transport), &input, &span)
 	if err != nil {
 		helper.HandleRestError(ctx, err)
 		return

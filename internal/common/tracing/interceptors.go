@@ -21,7 +21,7 @@ func InjectHttpSpan(span opentracing.Span, request *http.Request) error {
 		opentracing.HTTPHeadersCarrier(request.Header))
 }
 
-func InjectGrpcSpan(span opentracing.Span, ctx context.Context) (*context.Context, error) {
+func InjectGrpcSpan(span opentracing.Span, ctx context.Context) (context.Context, error) {
 	meta := make(map[string]string, 0)
 	err := span.Tracer().Inject(
 		span.Context(),
@@ -38,7 +38,7 @@ func InjectGrpcSpan(span opentracing.Span, ctx context.Context) (*context.Contex
 	}
 
 	ct := metadata.AppendToOutgoingContext(ctx, md...)
-	return &ct, nil
+	return ct, nil
 }
 
 func InjectEventsSpan(span opentracing.Span, m *kafka.Message) error {

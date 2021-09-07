@@ -10,6 +10,7 @@ import (
 	"github.com/morzhanov/go-realworld/internal/common/events/eventslistener"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
 	pmodel "github.com/morzhanov/go-realworld/internal/pictures/models"
+	"github.com/opentracing/opentracing-go"
 )
 
 type APIGatewayService struct {
@@ -25,8 +26,9 @@ func (s *APIGatewayService) getAccessToken(ctx *gin.Context) string {
 func (s *APIGatewayService) CheckAuth(
 	ctx *gin.Context,
 	transport sender.Transport,
-	api string,
+	apiName string,
 	key string,
+	span *opentracing.Span,
 ) (res *authrpc.ValidationResponse, err error) {
 	accessToken := s.getAccessToken(ctx)
 
@@ -34,8 +36,12 @@ func (s *APIGatewayService) CheckAuth(
 	var method string
 	switch transport {
 	case sender.RestTransport:
+		api, err := s.sender.API.GetApiItem(apiName)
+		if err != nil {
+			return nil, err
+		}
 		input = &authrpc.ValidateRestRequestInput{
-			Path:        s.sender.API[api].Rest[key].Url,
+			Path:        api.Rest[key].Url,
 			AccessToken: accessToken,
 		}
 		method = "verifyRestRequest"
@@ -46,67 +52,93 @@ func (s *APIGatewayService) CheckAuth(
 		}
 		method = "verifyRpcRequest"
 	case sender.EventsTransport:
+		api, err := s.sender.API.GetApiItem(apiName)
+		if err != nil {
+			return nil, err
+		}
 		input = &authrpc.ValidateEventsRequestInput{
-			Event:       s.sender.API[api].Events[key].Event,
+			Event:       api.Events[key].Event,
 			AccessToken: accessToken,
 		}
 		method = "verifyEventsRequest"
 	default:
 		return nil, fmt.Errorf("not valid transport %v", transport)
 	}
-	// TODO: pass create span to request
-	result, err := s.sender.PerformRequest(transport, "auth", method, input, s.eventListener)
+	result, err := s.sender.PerformRequest(transport, "auth", method, input, s.eventListener, span)
 	return result.(*authrpc.ValidationResponse), err
 }
 
-func (s *APIGatewayService) Login(transport sender.Transport, input *authrpc.LoginInput) (res *authrpc.AuthResponse, err error) {
-	// TODO: pass create span to request
-	result, err := s.sender.PerformRequest(transport, "auth", "login", input, s.eventListener)
+func (s *APIGatewayService) Login(
+	transport sender.Transport,
+	input *authrpc.LoginInput,
+	span *opentracing.Span,
+) (res *authrpc.AuthResponse, err error) {
+	result, err := s.sender.PerformRequest(transport, "auth", "login", input, s.eventListener, span)
 	return result.(*authrpc.AuthResponse), err
 }
 
-func (s *APIGatewayService) Signup(transport sender.Transport, input *authrpc.SignupInput) (res *authrpc.AuthResponse, err error) {
-	// TODO: pass create span to request
-	result, err := s.sender.PerformRequest(transport, "auth", "signup", input, s.eventListener)
+func (s *APIGatewayService) Signup(
+	transport sender.Transport,
+	input *authrpc.SignupInput,
+	span *opentracing.Span,
+) (res *authrpc.AuthResponse, err error) {
+	result, err := s.sender.PerformRequest(transport, "auth", "signup", input, s.eventListener, span)
 	return result.(*authrpc.AuthResponse), err
 }
 
-func (s *APIGatewayService) GetPictures(transport sender.Transport, userId string) (res []*pmodel.Picture, err error) {
-	// TODO: pass create span to request
+func (s *APIGatewayService) GetPictures(
+	transport sender.Transport,
+	userId string,
+	span *opentracing.Span,
+) (res []*pmodel.Picture, err error) {
 	input := prpc.GetUserPicturesRequest{UserId: userId}
-	result, err := s.sender.PerformRequest(transport, "pictures", "getPictures", &input, s.eventListener)
+	result, err := s.sender.PerformRequest(transport, "pictures", "getPictures", &input, s.eventListener, span)
 	return result.([]*pmodel.Picture), err
 }
 
-func (s *APIGatewayService) GetPicture(transport sender.Transport, userId string, pictureId string) (res *pmodel.Picture, err error) {
+func (s *APIGatewayService) GetPicture(
+	transport sender.Transport,
+	userId string,
+	pictureId string,
+	span *opentracing.Span,
+) (res *pmodel.Picture, err error) {
 	input := prpc.GetUserPictureRequest{
 		UserId:    userId,
 		PictureId: pictureId,
 	}
-	// TODO: pass create span to request
-	result, err := s.sender.PerformRequest(transport, "pictures", "getPicture", &input, s.eventListener)
+	result, err := s.sender.PerformRequest(transport, "pictures", "getPicture", &input, s.eventListener, span)
 	return result.(*pmodel.Picture), err
 }
 
-func (s *APIGatewayService) CreatePicture(transport sender.Transport, input *prpc.CreateUserPictureRequest) (res *pmodel.Picture, err error) {
-	// TODO: pass create span to request
-	result, err := s.sender.PerformRequest(transport, "pictures", "createPicture", &input, s.eventListener)
+func (s *APIGatewayService) CreatePicture(
+	transport sender.Transport,
+	input *prpc.CreateUserPictureRequest,
+	span *opentracing.Span,
+) (res *pmodel.Picture, err error) {
+	result, err := s.sender.PerformRequest(transport, "pictures", "createPicture", &input, s.eventListener, span)
 	return result.(*pmodel.Picture), err
 }
 
-func (s *APIGatewayService) DeletePicture(transport sender.Transport, userId string, pictureId string) error {
+func (s *APIGatewayService) DeletePicture(
+	transport sender.Transport,
+	userId string,
+	pictureId string,
+	span *opentracing.Span,
+) error {
 	input := prpc.DeleteUserPictureRequest{
 		UserId:    userId,
 		PictureId: pictureId,
 	}
-	// TODO: pass create span to request
-	_, err := s.sender.PerformRequest(transport, "pictures", "deletePicture", &input, s.eventListener)
+	_, err := s.sender.PerformRequest(transport, "pictures", "deletePicture", &input, s.eventListener, span)
 	return err
 }
 
-func (s *APIGatewayService) GetAnalytics(transport sender.Transport, input *anrpc.GetLogRequest) (res *anrpc.AnalyticsEntryMessage, err error) {
-	// TODO: pass create span to request
-	result, err := s.sender.PerformRequest(transport, "pictures", "deletePicture", &input, s.eventListener)
+func (s *APIGatewayService) GetAnalytics(
+	transport sender.Transport,
+	input *anrpc.GetLogRequest,
+	span *opentracing.Span,
+) (res *anrpc.AnalyticsEntryMessage, err error) {
+	result, err := s.sender.PerformRequest(transport, "pictures", "deletePicture", &input, s.eventListener, span)
 	return result.(*anrpc.AnalyticsEntryMessage), err
 }
 

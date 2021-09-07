@@ -12,6 +12,7 @@ import (
 	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/common/events/eventslistener"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
+	"github.com/opentracing/opentracing-go"
 )
 
 type AuthService struct {
@@ -26,18 +27,21 @@ func getTransport(ctx context.Context) sender.Transport {
 	return val.(sender.Transport)
 }
 
-func (s *AuthService) Login(ctx context.Context, data *authrpc.LoginInput) (res *authrpc.AuthResponse, err error) {
-	// TODO: pass create span to request
+func (s *AuthService) Login(
+	ctx context.Context,
+	data *authrpc.LoginInput,
+	span *opentracing.Span,
+) (res *authrpc.AuthResponse, err error) {
 	transport := getTransport(ctx)
 
 	d := usersrpc.ValidateUserPasswordRequest{Username: data.Username, Password: data.Password}
-	_, err = s.sender.PerformRequest(transport, "users", "validateUserPasswordRequest", &d, s.el)
+	_, err = s.sender.PerformRequest(transport, "users", "validateUserPasswordRequest", &d, s.el, span)
 	if err != nil {
 		return nil, err
 	}
 
 	d2 := usersrpc.GetUserDataByUsernameRequest{Username: data.Username}
-	r, err := s.sender.PerformRequest(transport, "users", "getUserDataByUsername", &d2, s.el)
+	r, err := s.sender.PerformRequest(transport, "users", "getUserDataByUsername", &d2, s.el, span)
 	if err != nil {
 		return nil, err
 	}
@@ -50,12 +54,15 @@ func (s *AuthService) Login(ctx context.Context, data *authrpc.LoginInput) (res 
 	return &authrpc.AuthResponse{AccessToken: token}, nil
 }
 
-func (s *AuthService) Signup(ctx context.Context, data *authrpc.SignupInput) (res *authrpc.AuthResponse, err error) {
-	// TODO: pass create span to request
+func (s *AuthService) Signup(
+	ctx context.Context,
+	data *authrpc.SignupInput,
+	span *opentracing.Span,
+) (res *authrpc.AuthResponse, err error) {
 	transport := getTransport(ctx)
 
 	d := usersrpc.CreateUserRequest{Username: data.Username, Password: data.Password}
-	r, err := s.sender.PerformRequest(transport, "users", "createUser", &d, s.el)
+	r, err := s.sender.PerformRequest(transport, "users", "createUser", &d, s.el, span)
 	if err != nil {
 		return nil, err
 	}

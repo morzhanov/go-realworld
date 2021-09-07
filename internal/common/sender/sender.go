@@ -41,12 +41,12 @@ func (s *Sender) PerformRequest(
 			return nil, err
 		}
 		params := apiConfig.Rest[method]
-		err = s.restRequest(params.Method, params.Url, input, nil, &res)
+		err = s.restRequest(params.Method, params.Url, input, nil, &res, span)
 		if err != nil {
 			return nil, err
 		}
 	case RpcTransport:
-		res, err = s.rpcRequest(AuthRpcClient, method, input)
+		res, err = s.rpcRequest(AuthRpcClient, method, input, span)
 	case EventsTransport:
 		uuid := uuid.NewV4().String()
 		json, err := json.Marshal(input)
@@ -89,8 +89,9 @@ func (s *Sender) restRequest(
 	method string,
 	url string,
 	data interface{},
-	headers *Headers,
+	headers *http.Header,
 	res interface{},
+	span *opentracing.Span,
 ) (err error) {
 	if !helper.CheckStruct(data) {
 		return errors.New("value is not struct")
@@ -105,7 +106,12 @@ func (s *Sender) restRequest(
 		return err
 	}
 	for k, v := range *headers {
-		req.Header.Set(k, v)
+		req.Header.Set(k, v[0])
+	}
+
+	err = tracing.InjectHttpSpan(*span, req)
+	if err != nil {
+		return err
 	}
 
 	response, err := s.restClient.Do(req)
@@ -141,6 +147,7 @@ func (s *Sender) rpcRequest(
 	client RpcClient,
 	method string,
 	input interface{},
+	span *opentracing.Span,
 ) (res interface{}, err error) {
 	if !helper.CheckStruct(input) {
 		return nil, err
@@ -152,6 +159,10 @@ func (s *Sender) rpcRequest(
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*5))
 	defer cancel()
+	ctx, err = tracing.InjectGrpcSpan(*span, ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	fn := reflect.ValueOf(c).Elem().MethodByName(method)
 

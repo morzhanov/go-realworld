@@ -49,7 +49,7 @@ func (c *AuthRestController) handleLogin(ctx *gin.Context) {
 	}
 
 	reqCtx := context.WithValue(context.Background(), "transport", sender.RestTransport)
-	res, err := c.service.Login(reqCtx, &input)
+	res, err := c.service.Login(reqCtx, &input, &span)
 	if err != nil {
 		helper.HandleRestError(ctx, err)
 		return
@@ -68,7 +68,7 @@ func (c *AuthRestController) handleSignup(ctx *gin.Context) {
 	}
 
 	reqCtx := context.WithValue(context.Background(), "transport", sender.RestTransport)
-	res, err := c.service.Signup(reqCtx, &input)
+	res, err := c.service.Signup(reqCtx, &input, &span)
 	if err != nil {
 		helper.HandleRestError(ctx, err)
 		return
