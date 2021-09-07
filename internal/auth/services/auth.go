@@ -8,7 +8,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	authrpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	usersrpc "github.com/morzhanov/go-realworld/api/rpc/users"
-	. "github.com/morzhanov/go-realworld/internal/auth/config"
+	aconfig "github.com/morzhanov/go-realworld/internal/auth/config"
 	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/common/events/eventslistener"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
@@ -27,6 +27,7 @@ func getTransport(ctx context.Context) sender.Transport {
 }
 
 func (s *AuthService) Login(ctx context.Context, data *authrpc.LoginInput) (res *authrpc.AuthResponse, err error) {
+	// TODO: pass create span to request
 	transport := getTransport(ctx)
 
 	d := usersrpc.ValidateUserPasswordRequest{Username: data.Username, Password: data.Password}
@@ -50,6 +51,7 @@ func (s *AuthService) Login(ctx context.Context, data *authrpc.LoginInput) (res 
 }
 
 func (s *AuthService) Signup(ctx context.Context, data *authrpc.SignupInput) (res *authrpc.AuthResponse, err error) {
+	// TODO: pass create span to request
 	transport := getTransport(ctx)
 
 	d := usersrpc.CreateUserRequest{Username: data.Username, Password: data.Password}
@@ -94,7 +96,7 @@ func (s *AuthService) verifyJwt(tokenString string) (res *authrpc.ValidationResp
 }
 
 func (s *AuthService) ValidateRestRequest(data *authrpc.ValidateRestRequestInput) (res *authrpc.ValidationResponse, err error) {
-	for _, route := range PUBLIC_ROUTES {
+	for _, route := range aconfig.PUBLIC_ROUTES {
 		if route == data.Path {
 			return nil, nil
 		}
@@ -103,7 +105,7 @@ func (s *AuthService) ValidateRestRequest(data *authrpc.ValidateRestRequestInput
 }
 
 func (s *AuthService) ValidateRpcRequest(data *authrpc.ValidateRpcRequestInput) (res *authrpc.ValidationResponse, err error) {
-	for _, route := range PUBLIC_RPC_METHODS {
+	for _, route := range aconfig.PUBLIC_RPC_METHODS {
 		if route == data.Method {
 			return nil, nil
 		}
@@ -112,7 +114,7 @@ func (s *AuthService) ValidateRpcRequest(data *authrpc.ValidateRpcRequestInput) 
 }
 
 func (s *AuthService) ValidateEventsRequest(data *authrpc.ValidateEventsRequestInput) (res *authrpc.ValidationResponse, err error) {
-	for _, route := range PUBLIC_EVENTS {
+	for _, route := range aconfig.PUBLIC_EVENTS {
 		if route == data.Event {
 			return nil, nil
 		}

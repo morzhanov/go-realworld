@@ -43,7 +43,7 @@ func (e *EventListener) processEvent(b *[]byte) error {
 	}
 
 	for _, l := range e.listeners {
-		if data.Key == l.Uuid {
+		if string(data.Key) == l.Uuid {
 			l.Response <- []byte(data.Value)
 		}
 	}

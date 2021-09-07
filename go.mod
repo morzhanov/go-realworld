@@ -23,7 +23,7 @@ require (
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200618181300-9dc6525e6118+incompatible // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/fsouza/fake-gcs-server v1.9.0 // indirect
-	github.com/gin-gonic/gin v1.7.2 // indirect
+	github.com/gin-gonic/gin v1.7.4 // indirect
 	github.com/go-kit/kit v0.8.0 // indirect
 	github.com/go-logfmt/logfmt v0.3.0 // indirect
 	github.com/go-playground/validator/v10 v10.6.1 // indirect
@@ -88,6 +88,7 @@ require (
 	golang.org/x/text v0.3.6 // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
 	google.golang.org/grpc v1.40.0 // indirect
+	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6 // indirect
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/go-playground/validator.v8 v8.18.2 // indirect

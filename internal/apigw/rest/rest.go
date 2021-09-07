@@ -9,17 +9,24 @@ import (
 	anrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
 	arpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	prpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
-	. "github.com/morzhanov/go-realworld/internal/apigw/services"
+	"github.com/morzhanov/go-realworld/internal/apigw/services"
 	"github.com/morzhanov/go-realworld/internal/common/helper"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
+	"github.com/morzhanov/go-realworld/internal/common/tracing"
+	"github.com/opentracing/opentracing-go"
+	"go.uber.org/zap"
 )
 
 type APIGatewayRestController struct {
-	service *APIGatewayService
+	service *services.APIGatewayService
 	router  *gin.Engine
+	tracer  *opentracing.Tracer
 }
 
 func (c *APIGatewayRestController) handleLogin(ctx *gin.Context) {
+	span := tracing.StartSpanFromHttpRequest(*c.tracer, ctx.Request)
+	defer span.Finish()
+
 	transport, err := strconv.Atoi(ctx.Param("transport"))
 	if err != nil {
 		helper.HandleRestError(ctx, err)
@@ -40,6 +47,9 @@ func (c *APIGatewayRestController) handleLogin(ctx *gin.Context) {
 }
 
 func (c *APIGatewayRestController) handleSignup(ctx *gin.Context) {
+	span := tracing.StartSpanFromHttpRequest(*c.tracer, ctx.Request)
+	defer span.Finish()
+
 	transport, err := strconv.Atoi(ctx.Param("transport"))
 	if err != nil {
 		helper.HandleRestError(ctx, err)
@@ -60,6 +70,9 @@ func (c *APIGatewayRestController) handleSignup(ctx *gin.Context) {
 }
 
 func (c *APIGatewayRestController) handleCreatePicture(ctx *gin.Context) {
+	span := tracing.StartSpanFromHttpRequest(*c.tracer, ctx.Request)
+	defer span.Finish()
+
 	transport, err := strconv.Atoi(ctx.Param("transport"))
 	if err != nil {
 		helper.HandleRestError(ctx, err)
@@ -83,6 +96,9 @@ func (c *APIGatewayRestController) handleCreatePicture(ctx *gin.Context) {
 }
 
 func (c *APIGatewayRestController) handleGetPictures(ctx *gin.Context) {
+	span := tracing.StartSpanFromHttpRequest(*c.tracer, ctx.Request)
+	defer span.Finish()
+
 	transport, err := strconv.Atoi(ctx.Param("transport"))
 	if err != nil {
 		helper.HandleRestError(ctx, err)
@@ -105,6 +121,9 @@ func (c *APIGatewayRestController) handleGetPictures(ctx *gin.Context) {
 }
 
 func (c *APIGatewayRestController) handleGetPicture(ctx *gin.Context) {
+	span := tracing.StartSpanFromHttpRequest(*c.tracer, ctx.Request)
+	defer span.Finish()
+
 	transport, err := strconv.Atoi(ctx.Param("transport"))
 	if err != nil {
 		helper.HandleRestError(ctx, err)
@@ -127,6 +146,9 @@ func (c *APIGatewayRestController) handleGetPicture(ctx *gin.Context) {
 }
 
 func (c *APIGatewayRestController) handleDeletePicture(ctx *gin.Context) {
+	span := tracing.StartSpanFromHttpRequest(*c.tracer, ctx.Request)
+	defer span.Finish()
+
 	transport, err := strconv.Atoi(ctx.Param("transport"))
 	if err != nil {
 		helper.HandleRestError(ctx, err)
@@ -149,6 +171,9 @@ func (c *APIGatewayRestController) handleDeletePicture(ctx *gin.Context) {
 }
 
 func (c *APIGatewayRestController) handleGetAnalytics(ctx *gin.Context) {
+	span := tracing.StartSpanFromHttpRequest(*c.tracer, ctx.Request)
+	defer span.Finish()
+
 	transport, err := strconv.Atoi(ctx.Param("transport"))
 	if err != nil {
 		helper.HandleRestError(ctx, err)
@@ -170,13 +195,13 @@ func (c *APIGatewayRestController) handleGetAnalytics(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func (c *APIGatewayRestController) Listen(ctx context.Context, port string) {
-	helper.StartRestServer(ctx, port, c.router)
+func (c *APIGatewayRestController) Listen(ctx context.Context, port string, logger *zap.Logger) {
+	helper.StartRestServer(ctx, port, c.router, logger)
 }
 
-func NewAPIGatewayRestController(s *APIGatewayService) *APIGatewayRestController {
+func NewAPIGatewayRestController(s *services.APIGatewayService, tracer *opentracing.Tracer) *APIGatewayRestController {
 	router := gin.Default()
-	c := APIGatewayRestController{s, router}
+	c := APIGatewayRestController{s, router, tracer}
 
 	router.POST("/:transport/login", c.handleLogin)
 	router.POST("/:transport/signup", c.handleSignup)

@@ -32,6 +32,7 @@ func (s *Sender) PerformRequest(
 	method string,
 	input interface{},
 	el *eventslistener.EventListener,
+	span *opentracing.Span,
 ) (res interface{}, err error) {
 	switch transport {
 	case RestTransport:
@@ -52,7 +53,7 @@ func (s *Sender) PerformRequest(
 		if err != nil {
 			return nil, err
 		}
-		err = s.eventsRequest(service, method, string(json), uuid, &res, true, el)
+		err = s.eventsRequest(service, method, string(json), uuid, &res, true, el, span)
 		if err != nil {
 			return nil, err
 		}

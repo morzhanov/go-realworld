@@ -6,17 +6,24 @@ import (
 
 	"github.com/gin-gonic/gin"
 	arpc "github.com/morzhanov/go-realworld/api/rpc/auth"
-	. "github.com/morzhanov/go-realworld/internal/auth/services"
+	"github.com/morzhanov/go-realworld/internal/auth/services"
 	"github.com/morzhanov/go-realworld/internal/common/helper"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
+	"github.com/morzhanov/go-realworld/internal/common/tracing"
+	"github.com/opentracing/opentracing-go"
+	"go.uber.org/zap"
 )
 
 type AuthRestController struct {
-	service *AuthService
+	service *services.AuthService
 	router  *gin.Engine
+	tracer  *opentracing.Tracer
 }
 
 func (c *AuthRestController) handleAuthValidation(ctx *gin.Context) {
+	span := tracing.StartSpanFromHttpRequest(*c.tracer, ctx.Request)
+	defer span.Finish()
+
 	input := arpc.ValidateRestRequestInput{}
 	if err := helper.ParseRestBody(ctx, &input); err != nil {
 		helper.HandleRestError(ctx, err)
@@ -32,6 +39,9 @@ func (c *AuthRestController) handleAuthValidation(ctx *gin.Context) {
 }
 
 func (c *AuthRestController) handleLogin(ctx *gin.Context) {
+	span := tracing.StartSpanFromHttpRequest(*c.tracer, ctx.Request)
+	defer span.Finish()
+
 	input := arpc.LoginInput{}
 	if err := helper.ParseRestBody(ctx, &input); err != nil {
 		helper.HandleRestError(ctx, err)
@@ -48,6 +58,9 @@ func (c *AuthRestController) handleLogin(ctx *gin.Context) {
 }
 
 func (c *AuthRestController) handleSignup(ctx *gin.Context) {
+	span := tracing.StartSpanFromHttpRequest(*c.tracer, ctx.Request)
+	defer span.Finish()
+
 	input := arpc.SignupInput{}
 	if err := helper.ParseRestBody(ctx, &input); err != nil {
 		helper.HandleRestError(ctx, err)
@@ -63,13 +76,13 @@ func (c *AuthRestController) handleSignup(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func (c *AuthRestController) Listen(ctx context.Context, port string) {
-	helper.StartRestServer(ctx, port, c.router)
+func (c *AuthRestController) Listen(ctx context.Context, port string, logger *zap.Logger) {
+	helper.StartRestServer(ctx, port, c.router, logger)
 }
 
-func NewAuthRestController(s *AuthService) *AuthRestController {
+func NewAuthRestController(s *services.AuthService, tracer *opentracing.Tracer) *AuthRestController {
 	router := gin.Default()
-	c := AuthRestController{s, router}
+	c := AuthRestController{s, router, tracer}
 
 	router.GET("/auth", c.handleAuthValidation)
 	router.POST("/login", c.handleLogin)

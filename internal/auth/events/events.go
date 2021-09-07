@@ -101,10 +101,12 @@ func NewAuthEventsController(
 	s *services.AuthService,
 	c *config.Config,
 	sender *sender.Sender,
+	tracer *opentracing.Tracer,
 ) *AuthEventsController {
 	controller := eventscontroller.NewEventsController(sender, c.KafkaTopic, c.KafkaUri)
 	return &AuthEventsController{
 		service:              s,
 		BaseEventsController: *controller,
+		tracer:               tracer,
 	}
 }
