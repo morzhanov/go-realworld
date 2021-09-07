@@ -9,6 +9,7 @@ import (
 	anrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
 	"github.com/morzhanov/go-realworld/internal/analytics/services"
 	"github.com/morzhanov/go-realworld/internal/common/helper"
+	"github.com/morzhanov/go-realworld/internal/common/metrics"
 	"github.com/morzhanov/go-realworld/internal/common/tracing"
 	"github.com/opentracing/opentracing-go"
 	"go.uber.org/zap"
@@ -60,11 +61,12 @@ func (c *AnalyticsRestController) Listen(ctx context.Context, port string, logge
 	helper.StartRestServer(ctx, port, c.router, logger)
 }
 
-func NewAnalyticsRestController(s *services.AnalyticsService, tracer *opentracing.Tracer) (c *AnalyticsRestController) {
+func NewAnalyticsRestController(s *services.AnalyticsService, tracer *opentracing.Tracer, mc *metrics.MetricsCollector) (c *AnalyticsRestController) {
 	router := gin.Default()
 	c = &AnalyticsRestController{s, router, tracer}
 
 	router.GET("/analytics", c.handleLogData)
 	router.GET("/analytics/:offset", c.handleGetData)
+	mc.RegisterMetricsEndpoint(router)
 	return
 }

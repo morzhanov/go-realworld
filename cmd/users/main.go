@@ -11,7 +11,9 @@ import (
 	"github.com/morzhanov/go-realworld/internal/common/db"
 	"github.com/morzhanov/go-realworld/internal/common/helper"
 	"github.com/morzhanov/go-realworld/internal/common/logger"
+	"github.com/morzhanov/go-realworld/internal/common/metrics"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
+	"github.com/morzhanov/go-realworld/internal/common/tracing"
 	"github.com/morzhanov/go-realworld/internal/users/events"
 	"github.com/morzhanov/go-realworld/internal/users/rest"
 	"github.com/morzhanov/go-realworld/internal/users/rpc"
@@ -32,6 +34,14 @@ func main() {
 		cancel()
 		log.Fatal(err)
 	}
+	t, err := tracing.NewTracer(ctx, c, l)
+	if err != nil {
+		cancel()
+		log.Fatal(err)
+	}
+
+	mc := metrics.NewMetricsCollector(c)
+	mc.RecordBaseMetrics(ctx)
 
 	apiConfig, err := config.NewApiConfig()
 	if err != nil {
@@ -50,12 +60,12 @@ func main() {
 	}
 
 	service := services.NewUsersService(db)
-	rpcServer := rpc.NewUsersRpcServer(service, c)
-	restController := rest.NewUsersRestController(service)
+	rpcServer := rpc.NewUsersRpcServer(service, c, t)
+	restController := rest.NewUsersRestController(service, t, mc)
 	eventsController := events.NewUsersEventsController(service, c, sender)
 
-	go rpcServer.Listen(ctx)
-	go restController.Listen(ctx, c.RestPort)
+	go rpcServer.Listen(ctx, l)
+	go restController.Listen(ctx, c.RestPort, l)
 	go eventsController.Listen(ctx)
 
 	quit := make(chan os.Signal, 1)

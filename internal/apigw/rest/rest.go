@@ -11,6 +11,7 @@ import (
 	prpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
 	"github.com/morzhanov/go-realworld/internal/apigw/services"
 	"github.com/morzhanov/go-realworld/internal/common/helper"
+	"github.com/morzhanov/go-realworld/internal/common/metrics"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
 	"github.com/morzhanov/go-realworld/internal/common/tracing"
 	"github.com/opentracing/opentracing-go"
@@ -219,7 +220,7 @@ func (c *APIGatewayRestController) Listen(ctx context.Context, port string, logg
 	helper.StartRestServer(ctx, port, c.router, logger)
 }
 
-func NewAPIGatewayRestController(s *services.APIGatewayService, tracer *opentracing.Tracer) *APIGatewayRestController {
+func NewAPIGatewayRestController(s *services.APIGatewayService, tracer *opentracing.Tracer, mc *metrics.MetricsCollector) *APIGatewayRestController {
 	router := gin.Default()
 	c := APIGatewayRestController{s, router, tracer}
 
@@ -230,5 +231,6 @@ func NewAPIGatewayRestController(s *services.APIGatewayService, tracer *opentrac
 	router.GET("/:transport/pictures/:id", c.handleGetPicture)
 	router.DELETE("/:transport/pictures/:id", c.handleDeletePicture)
 	router.GET("/:transport/analytics", c.handleGetAnalytics)
+	mc.RegisterMetricsEndpoint(router)
 	return &c
 }

@@ -8,6 +8,7 @@ import (
 	arpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	"github.com/morzhanov/go-realworld/internal/auth/services"
 	"github.com/morzhanov/go-realworld/internal/common/helper"
+	"github.com/morzhanov/go-realworld/internal/common/metrics"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
 	"github.com/morzhanov/go-realworld/internal/common/tracing"
 	"github.com/opentracing/opentracing-go"
@@ -80,12 +81,13 @@ func (c *AuthRestController) Listen(ctx context.Context, port string, logger *za
 	helper.StartRestServer(ctx, port, c.router, logger)
 }
 
-func NewAuthRestController(s *services.AuthService, tracer *opentracing.Tracer) *AuthRestController {
+func NewAuthRestController(s *services.AuthService, tracer *opentracing.Tracer, mc *metrics.MetricsCollector) *AuthRestController {
 	router := gin.Default()
 	c := AuthRestController{s, router, tracer}
 
 	router.GET("/auth", c.handleAuthValidation)
 	router.POST("/login", c.handleLogin)
 	router.POST("/signup", c.handleSignup)
+	mc.RegisterMetricsEndpoint(router)
 	return &c
 }

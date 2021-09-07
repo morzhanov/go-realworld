@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	urpc "github.com/morzhanov/go-realworld/api/rpc/users"
 	"github.com/morzhanov/go-realworld/internal/common/helper"
+	"github.com/morzhanov/go-realworld/internal/common/metrics"
 	"github.com/morzhanov/go-realworld/internal/common/tracing"
 	"github.com/morzhanov/go-realworld/internal/users/services"
 	"github.com/opentracing/opentracing-go"
@@ -103,7 +104,7 @@ func (c *UsersRestController) Listen(ctx context.Context, port string, logger *z
 	helper.StartRestServer(ctx, port, c.router, logger)
 }
 
-func NewUsersRestController(s *services.UsersService, tracer *opentracing.Tracer) *UsersRestController {
+func NewUsersRestController(s *services.UsersService, tracer *opentracing.Tracer, mc *metrics.MetricsCollector) *UsersRestController {
 	router := gin.Default()
 	c := UsersRestController{s, router, tracer}
 
@@ -112,5 +113,6 @@ func NewUsersRestController(s *services.UsersService, tracer *opentracing.Tracer
 	router.POST("/users/validate-password", c.handleValidateUserPassword)
 	router.POST("/users", c.handleCreateUser)
 	router.DELETE("/users/:id", c.handleDeleteUser)
+	mc.RegisterMetricsEndpoint(router)
 	return &c
 }

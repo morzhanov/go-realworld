@@ -13,7 +13,9 @@ import (
 	"github.com/morzhanov/go-realworld/internal/common/events/eventslistener"
 	"github.com/morzhanov/go-realworld/internal/common/helper"
 	"github.com/morzhanov/go-realworld/internal/common/logger"
+	"github.com/morzhanov/go-realworld/internal/common/metrics"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
+	"github.com/morzhanov/go-realworld/internal/common/tracing"
 )
 
 func main() {
@@ -30,6 +32,14 @@ func main() {
 		cancel()
 		log.Fatal(err)
 	}
+	t, err := tracing.NewTracer(ctx, c, l)
+	if err != nil {
+		cancel()
+		log.Fatal(err)
+	}
+
+	mc := metrics.NewMetricsCollector(c)
+	mc.RecordBaseMetrics(ctx)
 
 	apiConfig, err := config.NewApiConfig()
 	if err != nil {
@@ -44,9 +54,9 @@ func main() {
 	el := eventslistener.NewEventListener(c.KafkaTopic, 0, c, l)
 
 	service := services.NewAPIGatewayService(sender, el)
-	restController := rest.NewAPIGatewayRestController(service)
+	restController := rest.NewAPIGatewayRestController(service, t, mc)
 
-	go restController.Listen(ctx, c.RestPort)
+	go restController.Listen(ctx, c.RestPort, l)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)

@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	prpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
 	"github.com/morzhanov/go-realworld/internal/common/helper"
+	"github.com/morzhanov/go-realworld/internal/common/metrics"
 	"github.com/morzhanov/go-realworld/internal/common/tracing"
 	"github.com/morzhanov/go-realworld/internal/pictures/services"
 	"github.com/opentracing/opentracing-go"
@@ -86,7 +87,7 @@ func (c *PicturesRestController) Listen(ctx context.Context, port string, logger
 	helper.StartRestServer(ctx, port, c.router, logger)
 }
 
-func NewPicturesRestController(s *services.PictureService, tracer *opentracing.Tracer) *PicturesRestController {
+func NewPicturesRestController(s *services.PictureService, tracer *opentracing.Tracer, mc *metrics.MetricsCollector) *PicturesRestController {
 	router := gin.Default()
 	c := PicturesRestController{s, router, tracer}
 
@@ -94,5 +95,6 @@ func NewPicturesRestController(s *services.PictureService, tracer *opentracing.T
 	router.GET("/pictures/:userId", c.handleGetUserPictures)
 	router.GET("/pictures/:userId/:id", c.handleGetUserPicture)
 	router.DELETE("/pictures/:userId/:id", c.handleDeleteUserPicture)
+	mc.RegisterMetricsEndpoint(router)
 	return &c
 }
