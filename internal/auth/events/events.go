@@ -3,6 +3,7 @@ package events
 import (
 	"context"
 	"errors"
+	"go.uber.org/zap"
 
 	arpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	"github.com/morzhanov/go-realworld/internal/auth/services"
@@ -10,7 +11,6 @@ import (
 	"github.com/morzhanov/go-realworld/internal/common/events"
 	"github.com/morzhanov/go-realworld/internal/common/events/eventscontroller"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
-	"github.com/morzhanov/go-realworld/internal/common/tracing"
 	"github.com/opentracing/opentracing-go"
 	"github.com/segmentio/kafka-go"
 )
@@ -18,7 +18,7 @@ import (
 type AuthEventsController struct {
 	eventscontroller.BaseEventsController
 	service *services.AuthService
-	tracer  *opentracing.Tracer
+	logger  *zap.Logger
 }
 
 func (c *AuthEventsController) processRequest(in *kafka.Message) error {
@@ -35,9 +35,7 @@ func (c *AuthEventsController) processRequest(in *kafka.Message) error {
 }
 
 func (c *AuthEventsController) validateEventsRequest(in *kafka.Message) error {
-	// TODO: maybe we should somehow generalize this step via middleware or something
-	// TODO: because we'are using the same code for tracing in all controllers
-	span := tracing.StartSpanFromEventsRequest(*c.tracer, in)
+	span := c.CreateSpan(in)
 	defer span.Finish()
 
 	res := arpc.ValidateEventsRequestInput{}
@@ -49,12 +47,11 @@ func (c *AuthEventsController) validateEventsRequest(in *kafka.Message) error {
 	if err != nil {
 		return err
 	}
-	c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
-	return nil
+	return c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
 }
 
 func (c *AuthEventsController) login(in *kafka.Message) error {
-	span := tracing.StartSpanFromEventsRequest(*c.tracer, in)
+	span := c.CreateSpan(in)
 	defer span.Finish()
 
 	res := arpc.LoginInput{}
@@ -63,16 +60,15 @@ func (c *AuthEventsController) login(in *kafka.Message) error {
 		return err
 	}
 	ctx := context.WithValue(context.Background(), "transport", sender.EventsTransport)
-	d, err := c.service.Login(ctx, &res)
+	d, err := c.service.Login(ctx, &res, &span)
 	if err != nil {
 		return err
 	}
-	c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
-	return nil
+	return c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
 }
 
 func (c *AuthEventsController) signup(in *kafka.Message) error {
-	span := tracing.StartSpanFromEventsRequest(*c.tracer, in)
+	span := c.CreateSpan(in)
 	defer span.Finish()
 
 	res := arpc.SignupInput{}
@@ -82,18 +78,22 @@ func (c *AuthEventsController) signup(in *kafka.Message) error {
 	}
 
 	ctx := context.WithValue(context.Background(), "transport", sender.EventsTransport)
-	d, err := c.service.Signup(ctx, &res)
+	d, err := c.service.Signup(ctx, &res, &span)
 	if err != nil {
 		return err
 	}
-	c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
-	return nil
+	return c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
 }
 
-func (c *AuthEventsController) Listen(ctx context.Context) {
-	c.BaseEventsController.Listen(
+func (c *AuthEventsController) Listen(ctx context.Context) error {
+	return c.BaseEventsController.Listen(
 		ctx,
-		func(m *kafka.Message) { c.processRequest(m) },
+		func(m *kafka.Message) {
+			err := c.processRequest(m)
+			if err != nil {
+				c.logger.Error(err.Error())
+			}
+		},
 	)
 }
 
@@ -102,11 +102,17 @@ func NewAuthEventsController(
 	c *config.Config,
 	sender *sender.Sender,
 	tracer *opentracing.Tracer,
-) *AuthEventsController {
-	controller := eventscontroller.NewEventsController(sender, c.KafkaTopic, c.KafkaUri)
+	logger *zap.Logger,
+) (*AuthEventsController, error) {
+	controller, err := eventscontroller.NewEventsController(
+		sender,
+		tracer,
+		c.KafkaTopic,
+		c.KafkaUri,
+	)
 	return &AuthEventsController{
 		service:              s,
 		BaseEventsController: *controller,
-		tracer:               tracer,
-	}
+		logger:               logger,
+	}, err
 }

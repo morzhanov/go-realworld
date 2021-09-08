@@ -15,20 +15,20 @@ import (
 )
 
 type AuthRestController struct {
-	service        *services.AuthService
-	baseController *restcontroller.BaseRestController
+	*restcontroller.BaseRestController
+	service *services.AuthService
 }
 
 func (c *AuthRestController) handleAuthValidation(ctx *gin.Context) {
 	input := arpc.ValidateRestRequestInput{}
-	if err := c.baseController.ParseRestBody(ctx, &input); err != nil {
-		c.baseController.HandleRestError(ctx, err)
+	if err := c.ParseRestBody(ctx, &input); err != nil {
+		c.HandleRestError(ctx, err)
 		return
 	}
 
 	res, err := c.service.ValidateRestRequest(&input)
 	if err != nil {
-		c.baseController.HandleRestError(ctx, err)
+		c.HandleRestError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, res)
@@ -36,16 +36,16 @@ func (c *AuthRestController) handleAuthValidation(ctx *gin.Context) {
 
 func (c *AuthRestController) handleLogin(ctx *gin.Context) {
 	input := arpc.LoginInput{}
-	if err := c.baseController.ParseRestBody(ctx, &input); err != nil {
-		c.baseController.HandleRestError(ctx, err)
+	if err := c.ParseRestBody(ctx, &input); err != nil {
+		c.HandleRestError(ctx, err)
 		return
 	}
 
-	span := c.baseController.GetSpan(ctx)
+	span := c.GetSpan(ctx)
 	reqCtx := context.WithValue(context.Background(), "transport", sender.RestTransport)
 	res, err := c.service.Login(reqCtx, &input, span)
 	if err != nil {
-		c.baseController.HandleRestError(ctx, err)
+		c.HandleRestError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, res)
@@ -53,16 +53,16 @@ func (c *AuthRestController) handleLogin(ctx *gin.Context) {
 
 func (c *AuthRestController) handleSignup(ctx *gin.Context) {
 	input := arpc.SignupInput{}
-	if err := c.baseController.ParseRestBody(ctx, &input); err != nil {
-		c.baseController.HandleRestError(ctx, err)
+	if err := c.ParseRestBody(ctx, &input); err != nil {
+		c.HandleRestError(ctx, err)
 		return
 	}
 
-	span := c.baseController.GetSpan(ctx)
+	span := c.GetSpan(ctx)
 	reqCtx := context.WithValue(context.Background(), "transport", sender.RestTransport)
 	res, err := c.service.Signup(reqCtx, &input, span)
 	if err != nil {
-		c.baseController.HandleRestError(ctx, err)
+		c.HandleRestError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, res)
@@ -72,7 +72,7 @@ func (c *AuthRestController) Listen(
 	ctx context.Context,
 	port string,
 ) error {
-	return c.baseController.Listen(ctx, port)
+	return c.Listen(ctx, port)
 }
 
 func NewAuthRestController(
@@ -87,8 +87,8 @@ func NewAuthRestController(
 		mc,
 	)
 	c := AuthRestController{
-		service:        s,
-		baseController: bc,
+		service:            s,
+		BaseRestController: bc,
 	}
 
 	bc.Router.GET("/auth", bc.Handler(c.handleAuthValidation))

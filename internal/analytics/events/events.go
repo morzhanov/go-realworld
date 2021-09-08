@@ -3,6 +3,7 @@ package events
 import (
 	"context"
 	"errors"
+	"go.uber.org/zap"
 
 	anrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
 	"github.com/morzhanov/go-realworld/internal/analytics/services"
@@ -10,7 +11,6 @@ import (
 	"github.com/morzhanov/go-realworld/internal/common/events"
 	"github.com/morzhanov/go-realworld/internal/common/events/eventscontroller"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
-	"github.com/morzhanov/go-realworld/internal/common/tracing"
 	"github.com/opentracing/opentracing-go"
 	"github.com/segmentio/kafka-go"
 )
@@ -18,7 +18,7 @@ import (
 type AnalyticsEventsController struct {
 	eventscontroller.BaseEventsController
 	service *services.AnalyticsService
-	tracer  *opentracing.Tracer
+	logger  *zap.Logger
 }
 
 func (c *AnalyticsEventsController) processRequest(in *kafka.Message) error {
@@ -33,7 +33,7 @@ func (c *AnalyticsEventsController) processRequest(in *kafka.Message) error {
 }
 
 func (c *AnalyticsEventsController) logData(in *kafka.Message) error {
-	span := tracing.StartSpanFromEventsRequest(*c.tracer, in)
+	span := c.CreateSpan(in)
 	defer span.Finish()
 
 	res := anrpc.LogDataRequest{}
@@ -47,7 +47,7 @@ func (c *AnalyticsEventsController) logData(in *kafka.Message) error {
 }
 
 func (c *AnalyticsEventsController) getLogs(in *kafka.Message) error {
-	span := tracing.StartSpanFromEventsRequest(*c.tracer, in)
+	span := c.CreateSpan(in)
 	defer span.Finish()
 
 	res := anrpc.GetLogRequest{}
@@ -59,14 +59,18 @@ func (c *AnalyticsEventsController) getLogs(in *kafka.Message) error {
 	if err != nil {
 		return err
 	}
-	c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
-	return nil
+	return c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
 }
 
-func (c *AnalyticsEventsController) Listen(ctx context.Context) {
-	c.BaseEventsController.Listen(
+func (c *AnalyticsEventsController) Listen(ctx context.Context) error {
+	return c.BaseEventsController.Listen(
 		ctx,
-		func(m *kafka.Message) { c.processRequest(m) },
+		func(m *kafka.Message) {
+			err := c.processRequest(m)
+			if err != nil {
+				c.logger.Error(err.Error())
+			}
+		},
 	)
 }
 
@@ -74,10 +78,18 @@ func NewAnalyticsEventsController(
 	s *services.AnalyticsService,
 	c *config.Config,
 	sender *sender.Sender,
-) *AnalyticsEventsController {
-	controller := eventscontroller.NewEventsController(sender, c.KafkaTopic, c.KafkaUri)
+	tracer *opentracing.Tracer,
+	logger *zap.Logger,
+) (*AnalyticsEventsController, error) {
+	controller, err := eventscontroller.NewEventsController(
+		sender,
+		tracer,
+		c.KafkaTopic,
+		c.KafkaUri,
+	)
 	return &AnalyticsEventsController{
 		service:              s,
 		BaseEventsController: *controller,
-	}
+		logger:               logger,
+	}, err
 }

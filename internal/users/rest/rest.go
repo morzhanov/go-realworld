@@ -14,15 +14,15 @@ import (
 )
 
 type UsersRestController struct {
-	service        *services.UsersService
-	baseController *restcontroller.BaseRestController
+	*restcontroller.BaseRestController
+	service *services.UsersService
 }
 
 func (c *UsersRestController) handleGetUserData(ctx *gin.Context) {
 	id := ctx.Param("id")
 	res, err := c.service.GetUserData(id)
 	if err != nil {
-		c.baseController.HandleRestError(ctx, err)
+		c.HandleRestError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, res)
@@ -37,7 +37,7 @@ func (c *UsersRestController) handleGetUserDataByUsername(ctx *gin.Context) {
 
 	res, err := c.service.GetUserDataByUsername(username)
 	if err != nil {
-		c.baseController.HandleRestError(ctx, err)
+		c.HandleRestError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, res)
@@ -45,13 +45,13 @@ func (c *UsersRestController) handleGetUserDataByUsername(ctx *gin.Context) {
 
 func (c *UsersRestController) handleValidateUserPassword(ctx *gin.Context) {
 	input := urpc.ValidateUserPasswordRequest{}
-	if err := c.baseController.ParseRestBody(ctx, &input); err != nil {
-		c.baseController.HandleRestError(ctx, err)
+	if err := c.ParseRestBody(ctx, &input); err != nil {
+		c.HandleRestError(ctx, err)
 		return
 	}
 
 	if err := c.service.ValidateUserPassword(&input); err != nil {
-		c.baseController.HandleRestError(ctx, err)
+		c.HandleRestError(ctx, err)
 		return
 	}
 	ctx.Status(http.StatusOK)
@@ -59,14 +59,14 @@ func (c *UsersRestController) handleValidateUserPassword(ctx *gin.Context) {
 
 func (c *UsersRestController) handleCreateUser(ctx *gin.Context) {
 	input := urpc.CreateUserRequest{}
-	if err := c.baseController.ParseRestBody(ctx, &input); err != nil {
-		c.baseController.HandleRestError(ctx, err)
+	if err := c.ParseRestBody(ctx, &input); err != nil {
+		c.HandleRestError(ctx, err)
 		return
 	}
 
 	res, err := c.service.CreateUser(&input)
 	if err != nil {
-		c.baseController.HandleRestError(ctx, err)
+		c.HandleRestError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusCreated, res)
@@ -75,7 +75,7 @@ func (c *UsersRestController) handleCreateUser(ctx *gin.Context) {
 func (c *UsersRestController) handleDeleteUser(ctx *gin.Context) {
 	id := ctx.Param("id")
 	if err := c.service.DeleteUser(id); err != nil {
-		c.baseController.HandleRestError(ctx, err)
+		c.HandleRestError(ctx, err)
 		return
 	}
 	ctx.Status(http.StatusOK)
@@ -85,7 +85,7 @@ func (c *UsersRestController) Listen(
 	ctx context.Context,
 	port string,
 ) error {
-	return c.baseController.Listen(ctx, port)
+	return c.Listen(ctx, port)
 }
 
 func NewUsersRestController(
@@ -100,8 +100,8 @@ func NewUsersRestController(
 		mc,
 	)
 	c := UsersRestController{
-		service:        s,
-		baseController: bc,
+		service:            s,
+		BaseRestController: bc,
 	}
 
 	bc.Router.GET("/users/:id", bc.Handler(c.handleGetUserData))

@@ -3,13 +3,13 @@ package events
 import (
 	"context"
 	"errors"
+	"go.uber.org/zap"
 
 	urpc "github.com/morzhanov/go-realworld/api/rpc/users"
 	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/common/events"
 	"github.com/morzhanov/go-realworld/internal/common/events/eventscontroller"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
-	"github.com/morzhanov/go-realworld/internal/common/tracing"
 	"github.com/morzhanov/go-realworld/internal/users/services"
 	"github.com/opentracing/opentracing-go"
 	"github.com/segmentio/kafka-go"
@@ -18,7 +18,7 @@ import (
 type UsersEventsController struct {
 	eventscontroller.BaseEventsController
 	service *services.UsersService
-	tracer  *opentracing.Tracer
+	logger  *zap.Logger
 }
 
 func (c *UsersEventsController) processRequest(in *kafka.Message) error {
@@ -39,7 +39,7 @@ func (c *UsersEventsController) processRequest(in *kafka.Message) error {
 }
 
 func (c *UsersEventsController) getUser(in *kafka.Message) error {
-	span := tracing.StartSpanFromEventsRequest(*c.tracer, in)
+	span := c.CreateSpan(in)
 	defer span.Finish()
 
 	res := urpc.GetUserDataRequest{}
@@ -51,12 +51,11 @@ func (c *UsersEventsController) getUser(in *kafka.Message) error {
 	if err != nil {
 		return err
 	}
-	c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
-	return nil
+	return c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
 }
 
 func (c *UsersEventsController) getUserByUsername(in *kafka.Message) error {
-	span := tracing.StartSpanFromEventsRequest(*c.tracer, in)
+	span := c.CreateSpan(in)
 	defer span.Finish()
 
 	res := urpc.GetUserDataByUsernameRequest{}
@@ -68,12 +67,11 @@ func (c *UsersEventsController) getUserByUsername(in *kafka.Message) error {
 	if err != nil {
 		return err
 	}
-	c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
-	return nil
+	return c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
 }
 
 func (c *UsersEventsController) validatePassword(in *kafka.Message) error {
-	span := tracing.StartSpanFromEventsRequest(*c.tracer, in)
+	span := c.CreateSpan(in)
 	defer span.Finish()
 
 	res := urpc.ValidateUserPasswordRequest{}
@@ -85,12 +83,11 @@ func (c *UsersEventsController) validatePassword(in *kafka.Message) error {
 	if err != nil {
 		return err
 	}
-	c.BaseEventsController.SendResponse(payload.EventId, nil, &span)
-	return nil
+	return c.BaseEventsController.SendResponse(payload.EventId, nil, &span)
 }
 
 func (c *UsersEventsController) createUser(in *kafka.Message) error {
-	span := tracing.StartSpanFromEventsRequest(*c.tracer, in)
+	span := c.CreateSpan(in)
 	defer span.Finish()
 
 	res := urpc.CreateUserRequest{}
@@ -102,12 +99,11 @@ func (c *UsersEventsController) createUser(in *kafka.Message) error {
 	if err != nil {
 		return err
 	}
-	c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
-	return nil
+	return c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
 }
 
 func (c *UsersEventsController) deleteUser(in *kafka.Message) error {
-	span := tracing.StartSpanFromEventsRequest(*c.tracer, in)
+	span := c.CreateSpan(in)
 	defer span.Finish()
 
 	res := urpc.DeleteUserRequest{}
@@ -119,14 +115,18 @@ func (c *UsersEventsController) deleteUser(in *kafka.Message) error {
 	if err != nil {
 		return err
 	}
-	c.BaseEventsController.SendResponse(payload.EventId, nil, &span)
-	return nil
+	return c.BaseEventsController.SendResponse(payload.EventId, nil, &span)
 }
 
-func (c *UsersEventsController) Listen(ctx context.Context) {
-	c.BaseEventsController.Listen(
+func (c *UsersEventsController) Listen(ctx context.Context) error {
+	return c.BaseEventsController.Listen(
 		ctx,
-		func(m *kafka.Message) { c.processRequest(m) },
+		func(m *kafka.Message) {
+			err := c.processRequest(m)
+			if err != nil {
+				c.logger.Error(err.Error())
+			}
+		},
 	)
 }
 
@@ -134,10 +134,18 @@ func NewUsersEventsController(
 	s *services.UsersService,
 	c *config.Config,
 	sender *sender.Sender,
-) *UsersEventsController {
-	controller := eventscontroller.NewEventsController(sender, c.KafkaTopic, c.KafkaUri)
+	tracer *opentracing.Tracer,
+	logger *zap.Logger,
+) (*UsersEventsController, error) {
+	controller, err := eventscontroller.NewEventsController(
+		sender,
+		tracer,
+		c.KafkaTopic,
+		c.KafkaUri,
+	)
 	return &UsersEventsController{
 		service:              s,
 		BaseEventsController: *controller,
-	}
+		logger:               logger,
+	}, err
 }

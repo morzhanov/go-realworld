@@ -15,19 +15,19 @@ import (
 )
 
 type AnalyticsRestController struct {
-	service        *services.AnalyticsService
-	baseController *restcontroller.BaseRestController
+	*restcontroller.BaseRestController
+	service *services.AnalyticsService
 }
 
 func (c *AnalyticsRestController) handleLogData(ctx *gin.Context) {
 	input := anrpc.LogDataRequest{}
-	if err := c.baseController.ParseRestBody(ctx, &input); err != nil {
-		c.baseController.HandleRestError(ctx, err)
+	if err := c.ParseRestBody(ctx, &input); err != nil {
+		c.HandleRestError(ctx, err)
 		return
 	}
 
 	if err := c.service.LogData(&input); err != nil {
-		c.baseController.HandleRestError(ctx, err)
+		c.HandleRestError(ctx, err)
 		return
 	}
 	ctx.Status(http.StatusCreated)
@@ -36,12 +36,12 @@ func (c *AnalyticsRestController) handleLogData(ctx *gin.Context) {
 func (c *AnalyticsRestController) handleGetData(ctx *gin.Context) {
 	offset, err := strconv.Atoi(ctx.Param("offset"))
 	if err != nil {
-		c.baseController.HandleRestError(ctx, err)
+		c.HandleRestError(ctx, err)
 	}
 
 	res, err := c.service.GetLog(&anrpc.GetLogRequest{Offset: int32(offset)})
 	if err != nil {
-		c.baseController.HandleRestError(ctx, err)
+		c.HandleRestError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, res)
@@ -51,7 +51,7 @@ func (c *AnalyticsRestController) Listen(
 	ctx context.Context,
 	port string,
 ) error {
-	return c.baseController.Listen(ctx, port)
+	return c.Listen(ctx, port)
 }
 
 func NewAnalyticsRestController(
@@ -66,8 +66,8 @@ func NewAnalyticsRestController(
 		mc,
 	)
 	c := AnalyticsRestController{
-		service:        s,
-		baseController: bc,
+		service:            s,
+		BaseRestController: bc,
 	}
 
 	bc.Router.GET("/analytics", bc.Handler(c.handleLogData))

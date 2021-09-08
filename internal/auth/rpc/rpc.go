@@ -2,56 +2,56 @@ package rpc
 
 import (
 	"context"
+	"github.com/morzhanov/go-realworld/internal/common/grpc/grpcserver"
+	"go.uber.org/zap"
 
 	arpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	"github.com/morzhanov/go-realworld/internal/auth/services"
 	"github.com/morzhanov/go-realworld/internal/common/config"
-	"github.com/morzhanov/go-realworld/internal/common/helper"
-	"github.com/morzhanov/go-realworld/internal/common/sender"
-	"github.com/morzhanov/go-realworld/internal/common/tracing"
 	"github.com/opentracing/opentracing-go"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
 type AuthRpcServer struct {
 	arpc.UnimplementedAuthServer
+	*grpcserver.BaseGrpcServer
 	authService *services.AuthService
-	port        string
 	server      *grpc.Server
-	tracer      *opentracing.Tracer
 }
 
-func (s *AuthRpcServer) ValidateRpcRequest(ctx context.Context, in *arpc.ValidateRpcRequestInput) (res *arpc.ValidationResponse, err error) {
-	span := tracing.StartSpanFromGrpcRequest(*s.tracer, ctx)
+func (s *AuthRpcServer) ValidateRpcRequest(ctx context.Context, in *arpc.ValidateRpcRequestInput) (*arpc.ValidationResponse, error) {
+	span := s.PrepareContext(ctx)
 	defer span.Finish()
 	return s.authService.ValidateRpcRequest(in)
 }
 
-func (s *AuthRpcServer) Login(ctx context.Context, in *arpc.LoginInput) (res *arpc.AuthResponse, err error) {
-	span := tracing.StartSpanFromGrpcRequest(*s.tracer, ctx)
+func (s *AuthRpcServer) Login(ctx context.Context, in *arpc.LoginInput) (*arpc.AuthResponse, error) {
+	span := s.PrepareContext(ctx)
 	defer span.Finish()
-	ctx = context.WithValue(ctx, "transport", sender.RpcTransport)
-	return s.authService.Login(ctx, in)
+	return s.authService.Login(ctx, in, &span)
 }
 
 func (s *AuthRpcServer) Signup(ctx context.Context, in *arpc.SignupInput) (res *arpc.AuthResponse, err error) {
-	span := tracing.StartSpanFromGrpcRequest(*s.tracer, ctx)
+	span := s.PrepareContext(ctx)
 	defer span.Finish()
-	ctx = context.WithValue(ctx, "transport", sender.RpcTransport)
-	return s.authService.Signup(ctx, in)
+	return s.authService.Signup(ctx, in, &span)
 }
 
-func (s *AuthRpcServer) Listen(ctx context.Context, logger *zap.Logger) error {
-	return helper.StartGrpcServer(ctx, s.server, s.port, logger)
+func (s *AuthRpcServer) Listen(ctx context.Context) error {
+	return s.BaseGrpcServer.Listen(ctx, s.server)
 }
 
 func NewAuthRpcServer(
 	authService *services.AuthService,
 	c *config.Config,
 	tracer *opentracing.Tracer,
-) (server *AuthRpcServer) {
-	server = &AuthRpcServer{authService: authService, port: c.GrpcPort, tracer: tracer}
-	arpc.RegisterAuthServer(grpc.NewServer(), server)
+	logger *zap.Logger,
+) (s *AuthRpcServer) {
+	bs := grpcserver.NewGrpcServer(tracer, logger, c.GrpcPort)
+	s = &AuthRpcServer{
+		authService:    authService,
+		BaseGrpcServer: bs,
+	}
+	arpc.RegisterAuthServer(grpc.NewServer(), s)
 	return
 }

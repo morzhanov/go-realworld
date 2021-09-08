@@ -3,13 +3,13 @@ package events
 import (
 	"context"
 	"errors"
+	"go.uber.org/zap"
 
 	prpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
 	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/common/events"
 	"github.com/morzhanov/go-realworld/internal/common/events/eventscontroller"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
-	"github.com/morzhanov/go-realworld/internal/common/tracing"
 	"github.com/morzhanov/go-realworld/internal/pictures/services"
 	"github.com/opentracing/opentracing-go"
 	"github.com/segmentio/kafka-go"
@@ -18,7 +18,7 @@ import (
 type PicturesEventsController struct {
 	eventscontroller.BaseEventsController
 	service *services.PictureService
-	tracer  *opentracing.Tracer
+	logger  *zap.Logger
 }
 
 func (c *PicturesEventsController) processRequest(in *kafka.Message) error {
@@ -37,7 +37,7 @@ func (c *PicturesEventsController) processRequest(in *kafka.Message) error {
 }
 
 func (c *PicturesEventsController) getPictures(in *kafka.Message) error {
-	span := tracing.StartSpanFromEventsRequest(*c.tracer, in)
+	span := c.CreateSpan(in)
 	defer span.Finish()
 
 	res := prpc.GetUserPicturesRequest{}
@@ -49,12 +49,11 @@ func (c *PicturesEventsController) getPictures(in *kafka.Message) error {
 	if err != nil {
 		return err
 	}
-	c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
-	return nil
+	return c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
 }
 
 func (c *PicturesEventsController) getPicture(in *kafka.Message) error {
-	span := tracing.StartSpanFromEventsRequest(*c.tracer, in)
+	span := c.CreateSpan(in)
 	defer span.Finish()
 
 	res := prpc.GetUserPictureRequest{}
@@ -66,12 +65,11 @@ func (c *PicturesEventsController) getPicture(in *kafka.Message) error {
 	if err != nil {
 		return err
 	}
-	c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
-	return nil
+	return c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
 }
 
 func (c *PicturesEventsController) createPicture(in *kafka.Message) error {
-	span := tracing.StartSpanFromEventsRequest(*c.tracer, in)
+	span := c.CreateSpan(in)
 	defer span.Finish()
 
 	res := prpc.CreateUserPictureRequest{}
@@ -83,12 +81,11 @@ func (c *PicturesEventsController) createPicture(in *kafka.Message) error {
 	if err != nil {
 		return err
 	}
-	c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
-	return nil
+	return c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
 }
 
 func (c *PicturesEventsController) deletePicture(in *kafka.Message) error {
-	span := tracing.StartSpanFromEventsRequest(*c.tracer, in)
+	span := c.CreateSpan(in)
 	defer span.Finish()
 
 	res := prpc.DeleteUserPictureRequest{}
@@ -98,10 +95,15 @@ func (c *PicturesEventsController) deletePicture(in *kafka.Message) error {
 	return c.service.DeleteUserPicture(res.UserId, res.PictureId)
 }
 
-func (c *PicturesEventsController) Listen(ctx context.Context) {
-	c.BaseEventsController.Listen(
+func (c *PicturesEventsController) Listen(ctx context.Context) error {
+	return c.BaseEventsController.Listen(
 		ctx,
-		func(m *kafka.Message) { c.processRequest(m) },
+		func(m *kafka.Message) {
+			err := c.processRequest(m)
+			if err != nil {
+				c.logger.Error(err.Error())
+			}
+		},
 	)
 }
 
@@ -109,10 +111,18 @@ func NewPicturesEventsController(
 	s *services.PictureService,
 	c *config.Config,
 	sender *sender.Sender,
-) *PicturesEventsController {
-	controller := eventscontroller.NewEventsController(sender, c.KafkaTopic, c.KafkaUri)
+	tracer *opentracing.Tracer,
+	logger *zap.Logger,
+) (*PicturesEventsController, error) {
+	controller, err := eventscontroller.NewEventsController(
+		sender,
+		tracer,
+		c.KafkaTopic,
+		c.KafkaUri,
+	)
 	return &PicturesEventsController{
 		service:              s,
 		BaseEventsController: *controller,
-	}
+		logger:               logger,
+	}, err
 }

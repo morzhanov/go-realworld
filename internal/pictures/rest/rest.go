@@ -14,14 +14,14 @@ import (
 )
 
 type PicturesRestController struct {
-	service        *services.PictureService
-	baseController *restcontroller.BaseRestController
+	*restcontroller.BaseRestController
+	service *services.PictureService
 }
 
 func (c *PicturesRestController) handleCreateUserPicture(ctx *gin.Context) {
 	input := prpc.CreateUserPictureRequest{}
-	if err := c.baseController.ParseRestBody(ctx, &input); err != nil {
-		c.baseController.HandleRestError(ctx, err)
+	if err := c.ParseRestBody(ctx, &input); err != nil {
+		c.HandleRestError(ctx, err)
 		return
 	}
 	userId := ctx.Param("userId")
@@ -29,7 +29,7 @@ func (c *PicturesRestController) handleCreateUserPicture(ctx *gin.Context) {
 
 	res, err := c.service.CreateUserPicture(&input)
 	if err != nil {
-		c.baseController.HandleRestError(ctx, err)
+		c.HandleRestError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusCreated, res)
@@ -39,7 +39,7 @@ func (c *PicturesRestController) handleGetUserPictures(ctx *gin.Context) {
 	userId := ctx.Param("userId")
 	res, err := c.service.GetUserPictures(userId)
 	if err != nil {
-		c.baseController.HandleRestError(ctx, err)
+		c.HandleRestError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusCreated, res)
@@ -51,7 +51,7 @@ func (c *PicturesRestController) handleGetUserPicture(ctx *gin.Context) {
 
 	res, err := c.service.GetUserPicture(userId, id)
 	if err != nil {
-		c.baseController.HandleRestError(ctx, err)
+		c.HandleRestError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, res)
@@ -63,7 +63,7 @@ func (c *PicturesRestController) handleDeleteUserPicture(ctx *gin.Context) {
 
 	err := c.service.DeleteUserPicture(userId, id)
 	if err != nil {
-		c.baseController.HandleRestError(ctx, err)
+		c.HandleRestError(ctx, err)
 		return
 	}
 	ctx.Status(http.StatusOK)
@@ -73,7 +73,7 @@ func (c *PicturesRestController) Listen(
 	ctx context.Context,
 	port string,
 ) error {
-	return c.baseController.Listen(ctx, port)
+	return c.Listen(ctx, port)
 }
 
 func NewPicturesRestController(
@@ -88,8 +88,8 @@ func NewPicturesRestController(
 		mc,
 	)
 	c := PicturesRestController{
-		service:        s,
-		baseController: bc,
+		service:            s,
+		BaseRestController: bc,
 	}
 
 	bc.Router.POST("/pictures", bc.Handler(c.handleCreateUserPicture))
