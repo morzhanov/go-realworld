@@ -58,7 +58,6 @@ func NewEventListener(topic string, partition int, c *config.Config, log *zap.Lo
 	el := EventListener{make(map[string]*Listener)}
 
 	go func() {
-		// TODO: maybe this initialization should be in a loop
 		b := make([]byte, 10e3) // 10KB max per message
 		for {
 			_, err := batch.Read(b)

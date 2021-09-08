@@ -2,6 +2,7 @@ package rest
 
 import (
 	"context"
+	"github.com/morzhanov/go-realworld/internal/common/rest/restcontroller"
 	"net/http"
 	"strconv"
 
@@ -10,227 +11,224 @@ import (
 	arpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	prpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
 	"github.com/morzhanov/go-realworld/internal/apigw/services"
-	"github.com/morzhanov/go-realworld/internal/common/helper"
 	"github.com/morzhanov/go-realworld/internal/common/metrics"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
-	"github.com/morzhanov/go-realworld/internal/common/tracing"
 	"github.com/opentracing/opentracing-go"
 	"go.uber.org/zap"
 )
 
 type APIGatewayRestController struct {
-	service *services.APIGatewayService
-	router  *gin.Engine
-	tracer  *opentracing.Tracer
+	service        *services.APIGatewayService
+	baseController *restcontroller.BaseRestController
 }
 
 func (c *APIGatewayRestController) handleLogin(ctx *gin.Context) {
-	span := tracing.StartSpanFromHttpRequest(*c.tracer, ctx.Request)
-	defer span.Finish()
-
 	transport, err := strconv.Atoi(ctx.Param("transport"))
 	if err != nil {
-		helper.HandleRestError(ctx, err)
+		c.baseController.HandleRestError(ctx, err)
 		return
 	}
 	input := arpc.LoginInput{}
-	if err := helper.ParseRestBody(ctx, &input); err != nil {
-		helper.HandleRestError(ctx, err)
+	if err := c.baseController.ParseRestBody(ctx, &input); err != nil {
+		c.baseController.HandleRestError(ctx, err)
 		return
 	}
 
-	res, err := c.service.Login(sender.Transport(transport), &input, &span)
+	span := c.baseController.GetSpan(ctx)
+	res, err := c.service.Login(sender.Transport(transport), &input, span)
 	if err != nil {
-		helper.HandleRestError(ctx, err)
+		c.baseController.HandleRestError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, res)
 }
 
 func (c *APIGatewayRestController) handleSignup(ctx *gin.Context) {
-	span := tracing.StartSpanFromHttpRequest(*c.tracer, ctx.Request)
-	defer span.Finish()
-
 	transport, err := strconv.Atoi(ctx.Param("transport"))
 	if err != nil {
-		helper.HandleRestError(ctx, err)
+		c.baseController.HandleRestError(ctx, err)
 		return
 	}
 	input := arpc.SignupInput{}
-	if err := helper.ParseRestBody(ctx, &input); err != nil {
-		helper.HandleRestError(ctx, err)
+	if err := c.baseController.ParseRestBody(ctx, &input); err != nil {
+		c.baseController.HandleRestError(ctx, err)
 		return
 	}
 
-	res, err := c.service.Signup(sender.Transport(transport), &input, &span)
+	span := c.baseController.GetSpan(ctx)
+	res, err := c.service.Signup(sender.Transport(transport), &input, span)
 	if err != nil {
-		helper.HandleRestError(ctx, err)
+		c.baseController.HandleRestError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, res)
 }
 
 func (c *APIGatewayRestController) handleCreatePicture(ctx *gin.Context) {
-	span := tracing.StartSpanFromHttpRequest(*c.tracer, ctx.Request)
-	defer span.Finish()
-
 	transport, err := strconv.Atoi(ctx.Param("transport"))
+	span := c.baseController.GetSpan(ctx)
 	if err != nil {
-		helper.HandleRestError(ctx, err)
+		c.baseController.HandleRestError(ctx, err)
 		return
 	}
-	validationRes, err := c.service.CheckAuth(ctx, sender.Transport(transport), "pictures", "createUserPicture", &span)
+	validationRes, err := c.service.CheckAuth(ctx, sender.Transport(transport), "pictures", "createUserPicture", span)
 	if err != nil {
-		helper.HandleRestError(ctx, err)
+		c.baseController.HandleRestError(ctx, err)
 		return
 	}
 
 	input := prpc.CreateUserPictureRequest{}
-	if err := helper.ParseRestBody(ctx, &input); err != nil {
-		helper.HandleRestError(ctx, err)
+	if err := c.baseController.ParseRestBody(ctx, &input); err != nil {
+		c.baseController.HandleRestError(ctx, err)
 		return
 	}
 	input.UserId = validationRes.UserId
 
-	res, err := c.service.CreatePicture(sender.Transport(transport), &input, &span)
+	res, err := c.service.CreatePicture(sender.Transport(transport), &input, span)
 	if err != nil {
-		helper.HandleRestError(ctx, err)
+		c.baseController.HandleRestError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusCreated, res)
 }
 
 func (c *APIGatewayRestController) handleGetPictures(ctx *gin.Context) {
-	span := tracing.StartSpanFromHttpRequest(*c.tracer, ctx.Request)
-	defer span.Finish()
-
 	transport, err := strconv.Atoi(ctx.Param("transport"))
+	span := c.baseController.GetSpan(ctx)
 	if err != nil {
-		helper.HandleRestError(ctx, err)
+		c.baseController.HandleRestError(ctx, err)
 		return
 	}
-	validationRes, err := c.service.CheckAuth(ctx, sender.Transport(transport), "pictures", "getUserPictures", &span)
+	validationRes, err := c.service.CheckAuth(ctx, sender.Transport(transport), "pictures", "getUserPictures", span)
 	if err != nil {
-		helper.HandleRestError(ctx, err)
+		c.baseController.HandleRestError(ctx, err)
 		return
 	}
 
 	input := prpc.GetUserPicturesRequest{}
-	if err := helper.ParseRestBody(ctx, &input); err != nil {
-		helper.HandleRestError(ctx, err)
+	if err := c.baseController.ParseRestBody(ctx, &input); err != nil {
+		c.baseController.HandleRestError(ctx, err)
 		return
 	}
 
-	res, err := c.service.GetPictures(sender.Transport(transport), validationRes.UserId, &span)
+	res, err := c.service.GetPictures(sender.Transport(transport), validationRes.UserId, span)
 	if err != nil {
-		helper.HandleRestError(ctx, err)
+		c.baseController.HandleRestError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, res)
 }
 
 func (c *APIGatewayRestController) handleGetPicture(ctx *gin.Context) {
-	span := tracing.StartSpanFromHttpRequest(*c.tracer, ctx.Request)
-	defer span.Finish()
-
 	transport, err := strconv.Atoi(ctx.Param("transport"))
+	span := c.baseController.GetSpan(ctx)
 	if err != nil {
-		helper.HandleRestError(ctx, err)
+		c.baseController.HandleRestError(ctx, err)
 		return
 	}
-	validationRes, err := c.service.CheckAuth(ctx, sender.Transport(transport), "pictures", "getUserPicture", &span)
+	validationRes, err := c.service.CheckAuth(ctx, sender.Transport(transport), "pictures", "getUserPicture", span)
 	if err != nil {
-		helper.HandleRestError(ctx, err)
+		c.baseController.HandleRestError(ctx, err)
 		return
 	}
 
 	input := prpc.GetUserPictureRequest{}
-	if err := helper.ParseRestBody(ctx, &input); err != nil {
-		helper.HandleRestError(ctx, err)
+	if err := c.baseController.ParseRestBody(ctx, &input); err != nil {
+		c.baseController.HandleRestError(ctx, err)
 		return
 	}
 
-	res, err := c.service.GetPicture(sender.Transport(transport), validationRes.UserId, input.PictureId, &span)
+	res, err := c.service.GetPicture(sender.Transport(transport), validationRes.UserId, input.PictureId, span)
 	if err != nil {
-		helper.HandleRestError(ctx, err)
+		c.baseController.HandleRestError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, res)
 }
 
 func (c *APIGatewayRestController) handleDeletePicture(ctx *gin.Context) {
-	span := tracing.StartSpanFromHttpRequest(*c.tracer, ctx.Request)
-	defer span.Finish()
-
 	transport, err := strconv.Atoi(ctx.Param("transport"))
+	span := c.baseController.GetSpan(ctx)
 	if err != nil {
-		helper.HandleRestError(ctx, err)
+		c.baseController.HandleRestError(ctx, err)
 		return
 	}
-	validationRes, err := c.service.CheckAuth(ctx, sender.Transport(transport), "pictures", "deletePicture", &span)
+	validationRes, err := c.service.CheckAuth(ctx, sender.Transport(transport), "pictures", "deletePicture", span)
 	if err != nil {
-		helper.HandleRestError(ctx, err)
+		c.baseController.HandleRestError(ctx, err)
 		return
 	}
 
 	input := prpc.DeleteUserPictureRequest{}
-	if err := helper.ParseRestBody(ctx, &input); err != nil {
-		helper.HandleRestError(ctx, err)
+	if err := c.baseController.ParseRestBody(ctx, &input); err != nil {
+		c.baseController.HandleRestError(ctx, err)
 		return
 	}
 
-	err = c.service.DeletePicture(sender.Transport(transport), validationRes.UserId, input.PictureId, &span)
+	err = c.service.DeletePicture(sender.Transport(transport), validationRes.UserId, input.PictureId, span)
 	if err != nil {
-		helper.HandleRestError(ctx, err)
+		c.baseController.HandleRestError(ctx, err)
 		return
 	}
 	ctx.Status(http.StatusOK)
 }
 
 func (c *APIGatewayRestController) handleGetAnalytics(ctx *gin.Context) {
-	span := tracing.StartSpanFromHttpRequest(*c.tracer, ctx.Request)
-	defer span.Finish()
-
 	transport, err := strconv.Atoi(ctx.Param("transport"))
+	span := c.baseController.GetSpan(ctx)
 	if err != nil {
-		helper.HandleRestError(ctx, err)
+		c.baseController.HandleRestError(ctx, err)
 		return
 	}
-	_, err = c.service.CheckAuth(ctx, sender.Transport(transport), "analytics", "getLogs", &span)
+	_, err = c.service.CheckAuth(ctx, sender.Transport(transport), "analytics", "getLogs", span)
 	if err != nil {
-		helper.HandleRestError(ctx, err)
+		c.baseController.HandleRestError(ctx, err)
 		return
 	}
 
 	input := anrpc.GetLogRequest{}
-	if err := helper.ParseRestBody(ctx, &input); err != nil {
-		helper.HandleRestError(ctx, err)
+	if err := c.baseController.ParseRestBody(ctx, &input); err != nil {
+		c.baseController.HandleRestError(ctx, err)
 		return
 	}
 
-	res, err := c.service.GetAnalytics(sender.Transport(transport), &input, &span)
+	res, err := c.service.GetAnalytics(sender.Transport(transport), &input, span)
 	if err != nil {
-		helper.HandleRestError(ctx, err)
+		c.baseController.HandleRestError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, res)
 }
 
-func (c *APIGatewayRestController) Listen(ctx context.Context, port string, logger *zap.Logger) {
-	helper.StartRestServer(ctx, port, c.router, logger)
+func (c *APIGatewayRestController) Listen(
+	ctx context.Context,
+	port string,
+) error {
+	return c.baseController.Listen(ctx, port)
 }
 
-func NewAPIGatewayRestController(s *services.APIGatewayService, tracer *opentracing.Tracer, mc *metrics.MetricsCollector) *APIGatewayRestController {
-	router := gin.Default()
-	c := APIGatewayRestController{s, router, tracer}
+func NewAPIGatewayRestController(
+	s *services.APIGatewayService,
+	tracer *opentracing.Tracer,
+	logger *zap.Logger,
+	mc *metrics.MetricsCollector,
+) *APIGatewayRestController {
+	bc := restcontroller.NewRestController(
+		tracer,
+		logger,
+		mc,
+	)
+	c := APIGatewayRestController{
+		service:        s,
+		baseController: bc,
+	}
 
-	router.POST("/:transport/login", c.handleLogin)
-	router.POST("/:transport/signup", c.handleSignup)
-	router.POST("/:transport/pictures", c.handleCreatePicture)
-	router.GET("/:transport/pictures", c.handleGetPictures)
-	router.GET("/:transport/pictures/:id", c.handleGetPicture)
-	router.DELETE("/:transport/pictures/:id", c.handleDeletePicture)
-	router.GET("/:transport/analytics", c.handleGetAnalytics)
-	mc.RegisterMetricsEndpoint(router)
+	bc.Router.POST("/:transport/login", bc.Handler(c.handleLogin))
+	bc.Router.POST("/:transport/signup", bc.Handler(c.handleSignup))
+	bc.Router.POST("/:transport/pictures", bc.Handler(c.handleCreatePicture))
+	bc.Router.GET("/:transport/pictures", bc.Handler(c.handleGetPictures))
+	bc.Router.GET("/:transport/pictures/:id", bc.Handler(c.handleGetPicture))
+	bc.Router.DELETE("/:transport/pictures/:id", bc.Handler(c.handleDeletePicture))
+	bc.Router.GET("/:transport/analytics", bc.Handler(c.handleGetAnalytics))
 	return &c
 }
