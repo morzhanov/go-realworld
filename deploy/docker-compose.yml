@@ -4,8 +4,8 @@ services:
     build: ./analytics
     container_name: analytics-service
     ports:
-      - 3001:3081
-      - 5001:5081
+      - "3001:3081"
+      - "5001:5081"
     depends_on:
       - jaeger
       - psql
@@ -13,6 +13,7 @@ services:
       - kibana
       - prometheus
       - grafana
+      - kafka
     networks:
       - go-realworld
 
@@ -20,8 +21,8 @@ services:
     build: ./auth
     container_name: auth-service
     ports:
-      - 3002:3082
-      - 5002:5082
+      - "3002:3082"
+      - "5002:5082"
     depends_on:
       - jaeger
       - psql
@@ -29,6 +30,7 @@ services:
       - kibana
       - prometheus
       - grafana
+      - kafka
     networks:
       - go-realworld
 
@@ -36,8 +38,8 @@ services:
     build: ./pictures
     container_name: pictures-service
     ports:
-      - 3003:3083
-      - 5003:5083
+      - "3003:3083"
+      - "5003:5083"
     depends_on:
       - jaeger
       - psql
@@ -45,6 +47,7 @@ services:
       - kibana
       - prometheus
       - grafana
+      - kafka
     networks:
       - go-realworld
 
@@ -52,8 +55,8 @@ services:
     build: ./users
     container_name: users-service
     ports:
-      - 3004:3084
-      - 5004:5084
+      - "3004:3084"
+      - "5004:5084"
     depends_on:
       - jaeger
       - psql
@@ -61,6 +64,7 @@ services:
       - kibana
       - prometheus
       - grafana
+      - kafka
     networks:
       - go-realworld
 
@@ -68,7 +72,7 @@ services:
     build: ./apigw
     container_name: apigw-service
     ports:
-      - 3005:3085
+      - "3005:3085"
     depends_on:
       - analytics
       - auth
@@ -81,11 +85,16 @@ services:
     build: ./web
     container_name: web-service
     ports:
-      - 8000:8000
+      - "8000:8000"
     depends_on:
       - apigw
     networks:
       - go-realworld
+
+  kafka:
+    extends:
+      file: "../kafka/docker-compose.yml"
+      service: kafka
 
   jaeger:
     image: jaegertracing/all-in-one:latest

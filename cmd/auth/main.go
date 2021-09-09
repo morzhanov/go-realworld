@@ -25,7 +25,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	c, err := config.NewConfig("../../configs/.env.auth")
+	c, err := config.NewConfig("./configs/", ".env.auth")
 	if err != nil {
 		cancel()
 		log.Fatal(err)
@@ -49,25 +49,29 @@ func main() {
 		cancel()
 		helper.HandleInitializationError(err, "api config", l)
 	}
-	sender, err := sender.NewSender(c, apiConfig)
+	s, err := sender.NewSender(c, apiConfig)
 	if err != nil {
 		cancel()
 		helper.HandleInitializationError(err, "sender", l)
 	}
-	db, err := db.NewDb(c)
+	dbs, err := db.NewDb(c)
 	if err != nil {
 		cancel()
 		helper.HandleInitializationError(err, "database", l)
 	}
 	el := eventslistener.NewEventListener(c.KafkaTopic, 0, c, l)
 
-	service := services.NewAuthService(db, sender, el, c)
-	rpcServer := rpc.NewAuthRpcServer(service, c, t)
-	restController := rest.NewAuthRestController(service, t, mc)
-	eventsController := events.NewAuthEventsController(service, c, sender, t)
+	service := services.NewAuthService(dbs, s, el, c)
+	rpcServer := rpc.NewAuthRpcServer(service, c, t, l)
+	restController := rest.NewAuthRestController(service, t, l, mc)
+	eventsController, err := events.NewAuthEventsController(service, c, s, t, l)
+	if err != nil {
+		cancel()
+		helper.HandleInitializationError(err, "events controller", l)
+	}
 
-	go rpcServer.Listen(ctx, l)
-	go restController.Listen(ctx, c.RestPort, l)
+	go rpcServer.Listen(ctx)
+	go restController.Listen(ctx, c.RestPort)
 	go eventsController.Listen(ctx)
 
 	quit := make(chan os.Signal, 1)

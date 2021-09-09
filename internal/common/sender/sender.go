@@ -298,6 +298,18 @@ func setupGrpcClient(c *config.Config) (*GrpcClient, error) {
 	return &GrpcClient{picturesClient, usersClient, analyticsClient, authClient}, nil
 }
 
+// TODO: as listen function we should receive context and cancel here and call cancel on error
+func (s *Sender) Connect(c *config.Config) error {
+	g, err := setupGrpcClient(c)
+	if err != nil {
+		return err
+	}
+	s.grpcClient = g
+	s.eventsClient = setupEventsClient(c)
+	s.restClient = setupRestClient()
+	return nil
+}
+
 func setupEventsClient(c *config.Config) *EventsClient {
 	kafkaUri := c.KafkaUri
 
@@ -310,13 +322,6 @@ func setupEventsClient(c *config.Config) *EventsClient {
 	}
 }
 
-func NewSender(c *config.Config, ac *config.ApiConfig) (*Sender, error) {
-	r := setupRestClient()
-	e := setupEventsClient(c)
-	g, err := setupGrpcClient(c)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Sender{ac, r, g, e}, err
+func NewSender(ac *config.ApiConfig) *Sender {
+	return &Sender{API: ac}
 }

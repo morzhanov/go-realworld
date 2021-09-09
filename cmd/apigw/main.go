@@ -22,7 +22,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	c, err := config.NewConfig("../../configs/.env.apigw")
+	c, err := config.NewConfig("./configs/", ".env.apigw")
 	if err != nil {
 		cancel()
 		log.Fatal(err)
@@ -46,17 +46,17 @@ func main() {
 		cancel()
 		helper.HandleInitializationError(err, "api config", l)
 	}
-	sender, err := sender.NewSender(c, apiConfig)
+	s, err := sender.NewSender(c, apiConfig)
 	if err != nil {
 		cancel()
 		helper.HandleInitializationError(err, "sender", l)
 	}
 	el := eventslistener.NewEventListener(c.KafkaTopic, 0, c, l)
 
-	service := services.NewAPIGatewayService(sender, el)
-	restController := rest.NewAPIGatewayRestController(service, t, mc)
+	service := services.NewAPIGatewayService(s, el)
+	restController := rest.NewAPIGatewayRestController(service, t, l, mc)
 
-	go restController.Listen(ctx, c.RestPort, l)
+	go restController.Listen(ctx, c.RestPort)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)

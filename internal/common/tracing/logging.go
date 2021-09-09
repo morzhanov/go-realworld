@@ -14,6 +14,10 @@ func (l *JaegerLogger) Error(msg string) {
 	l.internalLogger.Error(msg)
 }
 
+func (l *JaegerLogger) Debug(msg string) {
+	l.internalLogger.Debug(msg)
+}
+
 func (l *JaegerLogger) Infof(msg string, args ...interface{}) {
 	l.internalLogger.Info(fmt.Sprintf(msg, args))
 }

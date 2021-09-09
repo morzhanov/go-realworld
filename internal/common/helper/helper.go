@@ -13,7 +13,7 @@ func CheckStruct(val interface{}) bool {
 
 func HandleInitializationError(err error, step string, log *zap.Logger) {
 	log.Fatal(
-		fmt.Sprintf("an error occurred during %step initialization step: %s", step, err),
+		fmt.Sprintf("an error occurred during %s initialization step: %s", step, err),
 		zap.String("step", step),
 	)
 }

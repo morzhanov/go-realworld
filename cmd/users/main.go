@@ -24,7 +24,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	c, err := config.NewConfig("../../configs/.env.users")
+	c, err := config.NewConfig("./configs/", ".env.users")
 	if err != nil {
 		cancel()
 		log.Fatal(err)
@@ -48,24 +48,28 @@ func main() {
 		cancel()
 		helper.HandleInitializationError(err, "api config", l)
 	}
-	sender, err := sender.NewSender(c, apiConfig)
+	s, err := sender.NewSender(c, apiConfig)
 	if err != nil {
 		cancel()
 		helper.HandleInitializationError(err, "sender", l)
 	}
-	db, err := db.NewDb(c)
+	dbs, err := db.NewDb(c)
 	if err != nil {
 		cancel()
 		helper.HandleInitializationError(err, "database", l)
 	}
 
-	service := services.NewUsersService(db)
-	rpcServer := rpc.NewUsersRpcServer(service, c, t)
-	restController := rest.NewUsersRestController(service, t, mc)
-	eventsController := events.NewUsersEventsController(service, c, sender)
+	service := services.NewUsersService(dbs)
+	rpcServer := rpc.NewUsersRpcServer(service, c, t, l)
+	restController := rest.NewUsersRestController(service, t, l, mc)
+	eventsController, err := events.NewUsersEventsController(service, c, s, t, l)
+	if err != nil {
+		cancel()
+		helper.HandleInitializationError(err, "events controller", l)
+	}
 
-	go rpcServer.Listen(ctx, l)
-	go restController.Listen(ctx, c.RestPort, l)
+	go rpcServer.Listen(ctx)
+	go restController.Listen(ctx, c.RestPort)
 	go eventsController.Listen(ctx)
 
 	quit := make(chan os.Signal, 1)

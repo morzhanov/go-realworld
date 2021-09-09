@@ -24,52 +24,70 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	c, err := config.NewConfig("../../configs/.env.analytics")
+	log.Println("creating analytics service")
+	c, err := config.NewConfig("./configs/", ".env.analytics")
 	if err != nil {
 		cancel()
 		log.Fatal(err)
 	}
+	log.Println("config parsed...")
 	l, err := logger.NewLogger(c.ServiceName)
 	if err != nil {
 		cancel()
 		log.Fatal(err)
 	}
+	l.Info("logger created...")
 	t, err := tracing.NewTracer(ctx, c, l)
 	if err != nil {
 		cancel()
 		log.Fatal(err)
 	}
+	l.Info("tracer created...")
 
 	mc := metrics.NewMetricsCollector(c)
 	mc.RecordBaseMetrics(ctx)
+	l.Info("metrics collector created...")
 
 	apiConfig, err := config.NewApiConfig()
 	if err != nil {
 		cancel()
 		helper.HandleInitializationError(err, "api config", l)
 	}
-	sender, err := sender.NewSender(c, apiConfig)
-	if err != nil {
-		cancel()
-		helper.HandleInitializationError(err, "sender", l)
-	}
+	l.Info("apiConfig created...")
+
+	s := sender.NewSender(apiConfig)
+	l.Info("sender created...")
+
 	messageQ, err := mq.NewMq(c.KafkaTopic, 0)
 	if err != nil {
 		cancel()
 		helper.HandleInitializationError(err, "message queue", l)
 	}
+	l.Info("message queue created...")
 
 	service := services.NewAnalyticsService(messageQ)
-	rpcServer := rpc.NewAnalyticsRpcServer(service, c, t)
-	restController := rest.NewAnalyticsRestController(service, t, mc)
-	eventsController := events.NewAnalyticsEventsController(service, c, sender)
+	l.Info("service created...")
+	rpcServer := rpc.NewAnalyticsRpcServer(service, c, t, l)
+	l.Info("grpc server created...")
+	restController := rest.NewAnalyticsRestController(service, t, l, mc)
+	l.Info("rest controller created...")
+	eventsController, err := events.NewAnalyticsEventsController(service, c, s, t, l)
+	if err != nil {
+		cancel()
+		helper.HandleInitializationError(err, "events controller", l)
+	}
+	l.Info("events controller created...")
 
-	go rpcServer.Listen(ctx, l)
-	go restController.Listen(ctx, c.RestPort, l)
+	go rpcServer.Listen(ctx)
+	go restController.Listen(ctx, c.RestPort)
 	go eventsController.Listen(ctx)
+	l.Info("all controllers started...")
+
+	s.Connect(c)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
+	l.Info("analytics service successfully started!")
 loop:
 	for {
 		select {

@@ -24,7 +24,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	c, err := config.NewConfig("../../configs/.env.pictures")
+	c, err := config.NewConfig("./configs/", ".env.pictures")
 	if err != nil {
 		cancel()
 		log.Fatal(err)
@@ -48,24 +48,28 @@ func main() {
 		cancel()
 		helper.HandleInitializationError(err, "api config", l)
 	}
-	sender, err := sender.NewSender(c, apiConfig)
+	s, err := sender.NewSender(c, apiConfig)
 	if err != nil {
 		cancel()
 		helper.HandleInitializationError(err, "sender", l)
 	}
-	db, err := db.NewDb(c)
+	dbs, err := db.NewDb(c)
 	if err != nil {
 		cancel()
 		helper.HandleInitializationError(err, "database", l)
 	}
 
-	service := services.NewPicturesService(db)
-	rpcServer := rpc.NewPicturesRpcServer(service, c, t)
-	restController := rest.NewPicturesRestController(service, t, mc)
-	eventsController := events.NewPicturesEventsController(service, c, sender)
+	service := services.NewPicturesService(dbs)
+	rpcServer := rpc.NewPicturesRpcServer(service, c, t, l)
+	restController := rest.NewPicturesRestController(service, t, l, mc)
+	eventsController, err := events.NewPicturesEventsController(service, c, s, t, l)
+	if err != nil {
+		cancel()
+		helper.HandleInitializationError(err, "events controller", l)
+	}
 
-	go rpcServer.Listen(ctx, l)
-	go restController.Listen(ctx, c.RestPort, l)
+	go rpcServer.Listen(ctx)
+	go restController.Listen(ctx, c.RestPort)
 	go eventsController.Listen(ctx)
 
 	quit := make(chan os.Signal, 1)

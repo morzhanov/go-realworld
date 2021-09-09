@@ -29,7 +29,7 @@ type ApiConfig struct {
 }
 
 func NewApiConfig() (res *ApiConfig, err error) {
-	data, err := os.ReadFile("../../../configs/api.yml")
+	data, err := os.ReadFile("./configs/api.yml")
 	if err != nil {
 		return nil, err
 	}

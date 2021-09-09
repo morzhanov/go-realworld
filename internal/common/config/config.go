@@ -27,9 +27,9 @@ type Config struct {
 	RestPort string `mapstructure:"REST_PORT"`
 }
 
-func NewConfig(path string) (config *Config, err error) {
+func NewConfig(path string, name string) (config *Config, err error) {
 	viper.AddConfigPath(path)
-	viper.SetConfigName("app")
+	viper.SetConfigName(name)
 	viper.SetConfigType("env")
 
 	viper.AutomaticEnv()
