@@ -35,7 +35,7 @@ export default function Login(): JSX.Element {
       } = await api.post(uri, {username, password}).then((res: any) => res.data);
       setAccessToken(accessToken);
       history.replace(routeUrls.pictures);
-    } catch (err) {
+    } catch (err: any) {
       setError(err);
     }
   };

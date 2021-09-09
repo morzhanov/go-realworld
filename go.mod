@@ -61,6 +61,7 @@ require (
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/openzipkin/zipkin-go v0.1.6 // indirect
 	github.com/prometheus/client_golang v1.11.0 // indirect
+	github.com/prometheus/common v0.26.0 // indirect
 	github.com/rs/zerolog v1.15.0 // indirect
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/segmentio/kafka-go v0.4.17 // indirect
