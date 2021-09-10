@@ -45,8 +45,8 @@ func (s *PicturesRpcServer) DeleteUserPicture(ctx context.Context, in *prpc.Dele
 	return nil, err
 }
 
-func (s *PicturesRpcServer) Listen(ctx context.Context) error {
-	return s.BaseGrpcServer.Listen(ctx, s.server)
+func (s *PicturesRpcServer) Listen(ctx context.Context, cancel context.CancelFunc) {
+	s.BaseGrpcServer.Listen(ctx, cancel, s.server)
 }
 
 func NewPicturesRpcServer(

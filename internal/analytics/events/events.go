@@ -18,7 +18,6 @@ import (
 type AnalyticsEventsController struct {
 	eventscontroller.BaseEventsController
 	service *services.AnalyticsService
-	logger  *zap.Logger
 }
 
 func (c *AnalyticsEventsController) processRequest(in *kafka.Message) error {
@@ -62,13 +61,14 @@ func (c *AnalyticsEventsController) getLogs(in *kafka.Message) error {
 	return c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
 }
 
-func (c *AnalyticsEventsController) Listen(ctx context.Context) error {
-	return c.BaseEventsController.Listen(
+func (c *AnalyticsEventsController) Listen(ctx context.Context, cancel context.CancelFunc) {
+	c.BaseEventsController.Listen(
 		ctx,
+		cancel,
 		func(m *kafka.Message) {
 			err := c.processRequest(m)
 			if err != nil {
-				c.logger.Error(err.Error())
+				c.BaseEventsController.Logger.Error(err.Error())
 			}
 		},
 	)
@@ -86,10 +86,10 @@ func NewAnalyticsEventsController(
 		tracer,
 		c.KafkaTopic,
 		c.KafkaUri,
+		logger,
 	)
 	return &AnalyticsEventsController{
 		service:              s,
 		BaseEventsController: *controller,
-		logger:               logger,
 	}, err
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/morzhanov/go-realworld/internal/common/helper"
 	"io/ioutil"
 	"net/http"
 	"reflect"
@@ -26,8 +27,9 @@ type BaseRestController struct {
 
 func (c *BaseRestController) Listen(
 	ctx context.Context,
+	cancel context.CancelFunc,
 	port string,
-) error {
+) {
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%s", port),
 		Handler: c.Router,
@@ -35,19 +37,21 @@ func (c *BaseRestController) Listen(
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatal("REST Server Failed to start", zap.Error(err))
+			cancel()
+			helper.HandleInitializationError(err, "rest controller", c.Logger)
 		}
 	}()
 
 	<-ctx.Done()
 	log.Info("Shutdown REST Server ...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	ctx, cancel2 := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel2()
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatal("REST Server shutdown failed", zap.Error(err))
+		cancel()
+		cancel2()
+		helper.HandleInitializationError(err, "rest controller", c.Logger)
 	}
-	return nil
 }
 
 func (c *BaseRestController) ParseRestBody(ctx *gin.Context, input interface{}) error {

@@ -24,6 +24,5 @@ func RunMigrations(db *sqlx.DB) error {
 	if err != nil {
 		return err
 	}
-	m.Steps(2)
-	return nil
+	return m.Steps(2)
 }

@@ -3,7 +3,9 @@ package eventscontroller
 import (
 	"context"
 	"encoding/json"
+	"github.com/morzhanov/go-realworld/internal/common/helper"
 	"github.com/morzhanov/go-realworld/internal/common/tracing"
+	"go.uber.org/zap"
 	"time"
 
 	"github.com/morzhanov/go-realworld/internal/common/sender"
@@ -15,10 +17,14 @@ type BaseEventsController struct {
 	tracer *opentracing.Tracer
 	sender *sender.Sender
 	conn   *kafka.Conn
+	Logger *zap.Logger
 }
 
 func createKafkaConnection(topic string, partition int, kafkaUri string) (*kafka.Conn, error) {
-	conn, _ := kafka.DialLeader(context.Background(), "tcp", kafkaUri, topic, partition)
+	conn, err := kafka.DialLeader(context.Background(), "tcp", kafkaUri, topic, partition)
+	if err != nil {
+		return nil, err
+	}
 	if err := conn.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
 		return nil, err
 	}
@@ -34,10 +40,12 @@ func (c *BaseEventsController) CreateSpan(in *kafka.Message) opentracing.Span {
 
 func (c *BaseEventsController) Listen(
 	ctx context.Context,
+	cancel context.CancelFunc,
 	processRequest func(*kafka.Message),
-) error {
+) {
 	if err := c.conn.SetReadDeadline(time.Now().Add(10 * time.Second)); err != nil {
-		return err
+		cancel()
+		helper.HandleInitializationError(err, "events controller", c.Logger)
 	}
 	batch := c.conn.ReadBatch(10e3, 1e6) // fetch 10KB min, 1MB max
 	b := make([]byte, 10e3)              // 10KB max per message
@@ -51,7 +59,8 @@ loop:
 		input := kafka.Message{}
 		err = json.Unmarshal(b, &input)
 		if err != nil {
-			return err
+			cancel()
+			c.Logger.Fatal(err.Error())
 		}
 		go processRequest(&input)
 
@@ -64,12 +73,13 @@ loop:
 	}
 
 	if err := batch.Close(); err != nil {
-		return err
+		cancel()
+		c.Logger.Fatal(err.Error())
 	}
 	if err := c.conn.Close(); err != nil {
-		return err
+		cancel()
+		c.Logger.Fatal(err.Error())
 	}
-	return nil
 }
 
 func (c *BaseEventsController) SendResponse(eventId string, data interface{}, span *opentracing.Span) error {
@@ -81,7 +91,8 @@ func NewEventsController(
 	tracer *opentracing.Tracer,
 	topic string,
 	kafkaUri string,
+	logger *zap.Logger,
 ) (*BaseEventsController, error) {
 	conn, err := createKafkaConnection(topic, 0, kafkaUri)
-	return &BaseEventsController{sender: s, conn: conn, tracer: tracer}, err
+	return &BaseEventsController{sender: s, conn: conn, tracer: tracer, Logger: logger}, err
 }

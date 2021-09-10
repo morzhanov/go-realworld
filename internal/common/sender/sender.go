@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
 	"io/ioutil"
 	"net/http"
 	"reflect"
@@ -48,12 +49,12 @@ func (s *Sender) PerformRequest(
 	case RpcTransport:
 		res, err = s.rpcRequest(AuthRpcClient, method, input, span)
 	case EventsTransport:
-		uuid := uuid.NewV4().String()
-		json, err := json.Marshal(input)
+		uuidVal := uuid.NewV4().String()
+		jsonVal, err := json.Marshal(input)
 		if err != nil {
 			return nil, err
 		}
-		err = s.eventsRequest(service, method, string(json), uuid, &res, true, el, span)
+		err = s.eventsRequest(service, method, string(jsonVal), uuidVal, &res, true, el, span)
 		if err != nil {
 			return nil, err
 		}
@@ -72,7 +73,7 @@ func (s *Sender) SendEventsResponse(eventUuid string, value interface{}, span *o
 	if err != nil {
 		return err
 	}
-	s.eventsRequest(
+	return s.eventsRequest(
 		"response",
 		"response",
 		string(payload),
@@ -82,7 +83,6 @@ func (s *Sender) SendEventsResponse(eventUuid string, value interface{}, span *o
 		nil,
 		span,
 	)
-	return nil
 }
 
 func (s *Sender) restRequest(
@@ -298,16 +298,15 @@ func setupGrpcClient(c *config.Config) (*GrpcClient, error) {
 	return &GrpcClient{picturesClient, usersClient, analyticsClient, authClient}, nil
 }
 
-// TODO: as listen function we should receive context and cancel here and call cancel on error
-func (s *Sender) Connect(c *config.Config) error {
+func (s *Sender) Connect(c *config.Config, cancel context.CancelFunc) {
 	g, err := setupGrpcClient(c)
 	if err != nil {
-		return err
+		cancel()
+		helper.HandleInitializationError(err, "sender", s.logger)
 	}
 	s.grpcClient = g
 	s.eventsClient = setupEventsClient(c)
 	s.restClient = setupRestClient()
-	return nil
 }
 
 func setupEventsClient(c *config.Config) *EventsClient {
@@ -322,6 +321,6 @@ func setupEventsClient(c *config.Config) *EventsClient {
 	}
 }
 
-func NewSender(ac *config.ApiConfig) *Sender {
-	return &Sender{API: ac}
+func NewSender(ac *config.ApiConfig, l *zap.Logger) *Sender {
+	return &Sender{API: ac, logger: l}
 }

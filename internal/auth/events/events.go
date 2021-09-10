@@ -18,7 +18,6 @@ import (
 type AuthEventsController struct {
 	eventscontroller.BaseEventsController
 	service *services.AuthService
-	logger  *zap.Logger
 }
 
 func (c *AuthEventsController) processRequest(in *kafka.Message) error {
@@ -85,13 +84,14 @@ func (c *AuthEventsController) signup(in *kafka.Message) error {
 	return c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
 }
 
-func (c *AuthEventsController) Listen(ctx context.Context) error {
-	return c.BaseEventsController.Listen(
+func (c *AuthEventsController) Listen(ctx context.Context, cancel context.CancelFunc) {
+	c.BaseEventsController.Listen(
 		ctx,
+		cancel,
 		func(m *kafka.Message) {
 			err := c.processRequest(m)
 			if err != nil {
-				c.logger.Error(err.Error())
+				c.BaseEventsController.Logger.Error(err.Error())
 			}
 		},
 	)
@@ -109,10 +109,10 @@ func NewAuthEventsController(
 		tracer,
 		c.KafkaTopic,
 		c.KafkaUri,
+		logger,
 	)
 	return &AuthEventsController{
 		service:              s,
 		BaseEventsController: *controller,
-		logger:               logger,
 	}, err
 }

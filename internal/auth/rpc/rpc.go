@@ -37,8 +37,8 @@ func (s *AuthRpcServer) Signup(ctx context.Context, in *arpc.SignupInput) (res *
 	return s.authService.Signup(ctx, in, &span)
 }
 
-func (s *AuthRpcServer) Listen(ctx context.Context) error {
-	return s.BaseGrpcServer.Listen(ctx, s.server)
+func (s *AuthRpcServer) Listen(ctx context.Context, cancel context.CancelFunc) {
+	s.BaseGrpcServer.Listen(ctx, cancel, s.server)
 }
 
 func NewAuthRpcServer(

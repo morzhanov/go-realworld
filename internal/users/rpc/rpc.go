@@ -52,8 +52,8 @@ func (s *UsersRpcServer) DeleteUser(ctx context.Context, in *urpc.DeleteUserRequ
 	return res, err
 }
 
-func (s *UsersRpcServer) Listen(ctx context.Context) error {
-	return s.BaseGrpcServer.Listen(ctx, s.server)
+func (s *UsersRpcServer) Listen(ctx context.Context, cancel context.CancelFunc) {
+	s.BaseGrpcServer.Listen(ctx, cancel, s.server)
 }
 
 func NewUsersRpcServer(

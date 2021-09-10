@@ -33,8 +33,8 @@ func (s *AnalyticsRpcServer) GetLog(ctx context.Context, in *anrpc.GetLogRequest
 	return s.analyticsService.GetLog(in)
 }
 
-func (s *AnalyticsRpcServer) Listen(ctx context.Context) error {
-	return s.BaseGrpcServer.Listen(ctx, s.server)
+func (s *AnalyticsRpcServer) Listen(ctx context.Context, cancel context.CancelFunc) {
+	s.BaseGrpcServer.Listen(ctx, cancel, s.server)
 }
 
 func NewAnalyticsRpcServer(

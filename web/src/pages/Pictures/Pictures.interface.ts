@@ -1,4 +1,4 @@
-export interface Picture {
+export interface PictureData {
   id: string;
   title: string;
   base64: string;

@@ -1,7 +1,7 @@
-export function getAccessToken(): string | undefined {
-  return localStorage.get("access_token");
+export function getAccessToken(): string | null {
+  return localStorage.getItem("access_token");
 }
 
 export function setAccessToken(token: string): void {
-  return localStorage.set("access_token", token);
+  return localStorage.setItem("access_token", token);
 }

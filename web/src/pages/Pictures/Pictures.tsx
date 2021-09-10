@@ -6,7 +6,7 @@ import {api} from "../../api/api";
 
 import {routeUrls} from "../../configs/routeUrls";
 import {getAccessToken} from "../../shared/helpers";
-import {Picture} from "./Pictures.interface";
+import {PictureData} from "./Pictures.interface";
 
 const useStyles = makeStyles(() => ({
   root: {
@@ -25,14 +25,14 @@ export default function Pictures(): JSX.Element {
   const classes = useStyles();
   const token = getAccessToken();
 
-  const {data: pictures, error} = useQuery<Picture[], AxiosError, Picture[], any>("pictures", () =>
+  const {data: pictures, error} = useQuery<PictureData[], AxiosError, PictureData[], any>("pictures", () =>
     api.get("/pictures").then((res) => res.data)
   );
 
   return token ? (
     <Container>
       <GridList cellHeight={160} className={classes.gridList} cols={3}>
-        {pictures?.map((pic: Picture) => (
+        {pictures?.map((pic: PictureData) => (
           <GridListTile key={pic.title} cols={1}>
             <img src={pic.base64} alt={pic.title} />
           </GridListTile>

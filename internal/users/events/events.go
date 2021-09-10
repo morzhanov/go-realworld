@@ -18,7 +18,6 @@ import (
 type UsersEventsController struct {
 	eventscontroller.BaseEventsController
 	service *services.UsersService
-	logger  *zap.Logger
 }
 
 func (c *UsersEventsController) processRequest(in *kafka.Message) error {
@@ -118,13 +117,14 @@ func (c *UsersEventsController) deleteUser(in *kafka.Message) error {
 	return c.BaseEventsController.SendResponse(payload.EventId, nil, &span)
 }
 
-func (c *UsersEventsController) Listen(ctx context.Context) error {
-	return c.BaseEventsController.Listen(
+func (c *UsersEventsController) Listen(ctx context.Context, cancel context.CancelFunc) {
+	c.BaseEventsController.Listen(
 		ctx,
+		cancel,
 		func(m *kafka.Message) {
 			err := c.processRequest(m)
 			if err != nil {
-				c.logger.Error(err.Error())
+				c.BaseEventsController.Logger.Error(err.Error())
 			}
 		},
 	)
@@ -142,10 +142,10 @@ func NewUsersEventsController(
 		tracer,
 		c.KafkaTopic,
 		c.KafkaUri,
+		logger,
 	)
 	return &UsersEventsController{
 		service:              s,
 		BaseEventsController: *controller,
-		logger:               logger,
 	}, err
 }

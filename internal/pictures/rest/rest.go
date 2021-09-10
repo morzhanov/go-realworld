@@ -71,9 +71,10 @@ func (c *PicturesRestController) handleDeleteUserPicture(ctx *gin.Context) {
 
 func (c *PicturesRestController) Listen(
 	ctx context.Context,
+	cancel context.CancelFunc,
 	port string,
-) error {
-	return c.Listen(ctx, port)
+) {
+	c.BaseRestController.Listen(ctx, cancel, port)
 }
 
 func NewPicturesRestController(

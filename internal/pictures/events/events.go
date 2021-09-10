@@ -18,7 +18,6 @@ import (
 type PicturesEventsController struct {
 	eventscontroller.BaseEventsController
 	service *services.PictureService
-	logger  *zap.Logger
 }
 
 func (c *PicturesEventsController) processRequest(in *kafka.Message) error {
@@ -95,13 +94,14 @@ func (c *PicturesEventsController) deletePicture(in *kafka.Message) error {
 	return c.service.DeleteUserPicture(res.UserId, res.PictureId)
 }
 
-func (c *PicturesEventsController) Listen(ctx context.Context) error {
-	return c.BaseEventsController.Listen(
+func (c *PicturesEventsController) Listen(ctx context.Context, cancel context.CancelFunc) {
+	c.BaseEventsController.Listen(
 		ctx,
+		cancel,
 		func(m *kafka.Message) {
 			err := c.processRequest(m)
 			if err != nil {
-				c.logger.Error(err.Error())
+				c.BaseEventsController.Logger.Error(err.Error())
 			}
 		},
 	)
@@ -119,10 +119,10 @@ func NewPicturesEventsController(
 		tracer,
 		c.KafkaTopic,
 		c.KafkaUri,
+		logger,
 	)
 	return &PicturesEventsController{
 		service:              s,
 		BaseEventsController: *controller,
-		logger:               logger,
 	}, err
 }

@@ -55,7 +55,7 @@ func main() {
 	}
 	l.Info("apiConfig created...")
 
-	s := sender.NewSender(apiConfig)
+	s := sender.NewSender(apiConfig, l)
 	l.Info("sender created...")
 
 	messageQ, err := mq.NewMq(c.KafkaTopic, 0)
@@ -78,12 +78,12 @@ func main() {
 	}
 	l.Info("events controller created...")
 
-	go rpcServer.Listen(ctx)
-	go restController.Listen(ctx, c.RestPort)
-	go eventsController.Listen(ctx)
+	go rpcServer.Listen(ctx, cancel)
+	go restController.Listen(ctx, cancel, c.RestPort)
+	go eventsController.Listen(ctx, cancel)
 	l.Info("all controllers started...")
 
-	s.Connect(c)
+	go s.Connect(c, cancel)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
@@ -92,6 +92,7 @@ loop:
 	for {
 		select {
 		case <-quit:
+			l.Info("received os.Interrupt, exiting...")
 			break loop
 		default:
 			time.Sleep(time.Second * 5)

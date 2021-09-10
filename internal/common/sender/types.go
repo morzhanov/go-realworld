@@ -1,6 +1,7 @@
 package sender
 
 import (
+	"go.uber.org/zap"
 	"net/http"
 
 	analyticsrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
@@ -66,4 +67,5 @@ type Sender struct {
 	restClient   *http.Client
 	grpcClient   *GrpcClient
 	eventsClient *EventsClient
+	logger       *zap.Logger
 }

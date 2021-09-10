@@ -202,9 +202,10 @@ func (c *APIGatewayRestController) handleGetAnalytics(ctx *gin.Context) {
 
 func (c *APIGatewayRestController) Listen(
 	ctx context.Context,
+	cancel context.CancelFunc,
 	port string,
-) error {
-	return c.Listen(ctx, port)
+) {
+	c.BaseRestController.Listen(ctx, cancel, port)
 }
 
 func NewAPIGatewayRestController(
