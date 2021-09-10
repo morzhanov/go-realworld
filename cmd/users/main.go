@@ -83,6 +83,12 @@ func main() {
 	go eventsController.Listen(ctx, cancel)
 	l.Info("all controllers started...")
 
+	if err := db.RunMigrations(dbs, "users"); err != nil {
+		cancel()
+		helper.HandleInitializationError(err, "migrations", l)
+	}
+	l.Info("all database migrations applied...")
+
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 	l.Info("users service successfully started!")

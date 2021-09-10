@@ -1,0 +1,1 @@
+DELETE EXTENSION "uuid-ossp";
