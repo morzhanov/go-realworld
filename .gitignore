@@ -6,6 +6,7 @@
 *.dylib
 /log
 /deploy/data
+/.idea
 
 # Test binary, built with `go test -c`
 *.test
