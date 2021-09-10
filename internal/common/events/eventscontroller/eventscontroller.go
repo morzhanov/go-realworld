@@ -3,7 +3,6 @@ package eventscontroller
 import (
 	"context"
 	"encoding/json"
-	"github.com/morzhanov/go-realworld/internal/common/helper"
 	"github.com/morzhanov/go-realworld/internal/common/tracing"
 	"go.uber.org/zap"
 	"time"
@@ -43,15 +42,11 @@ func (c *BaseEventsController) Listen(
 	cancel context.CancelFunc,
 	processRequest func(*kafka.Message),
 ) {
-	if err := c.conn.SetReadDeadline(time.Now().Add(10 * time.Second)); err != nil {
-		cancel()
-		helper.HandleInitializationError(err, "events controller", c.Logger)
-	}
-	batch := c.conn.ReadBatch(10e3, 1e6) // fetch 10KB min, 1MB max
-	b := make([]byte, 10e3)              // 10KB max per message
-
 loop:
 	for {
+		batch := c.conn.ReadBatch(10e3, 1e6) // fetch 10KB min, 1MB max
+		b := make([]byte, 10e3)              // 10KB max per message
+
 		_, err := batch.Read(b)
 		if err != nil {
 			break
@@ -64,21 +59,21 @@ loop:
 		}
 		go processRequest(&input)
 
+		if err := batch.Close(); err != nil {
+			cancel()
+			c.Logger.Fatal(err.Error())
+		}
+		if err := c.conn.Close(); err != nil {
+			cancel()
+			c.Logger.Fatal(err.Error())
+		}
+
 		select {
 		case <-ctx.Done():
 			break loop
 		default:
 			continue
 		}
-	}
-
-	if err := batch.Close(); err != nil {
-		cancel()
-		c.Logger.Fatal(err.Error())
-	}
-	if err := c.conn.Close(); err != nil {
-		cancel()
-		c.Logger.Fatal(err.Error())
 	}
 }
 

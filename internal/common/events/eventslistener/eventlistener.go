@@ -4,9 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
-
 	"github.com/morzhanov/go-realworld/internal/common/config"
+	"github.com/morzhanov/go-realworld/internal/common/helper"
 	"github.com/segmentio/kafka-go"
 	"go.uber.org/zap"
 )
@@ -44,34 +43,45 @@ func (e *EventListener) processEvent(b *[]byte) error {
 
 	for _, l := range e.listeners {
 		if string(data.Key) == l.Uuid {
-			l.Response <- []byte(data.Value)
+			l.Response <- data.Value
 		}
 	}
 	return nil
 }
 
-func NewEventListener(topic string, partition int, c *config.Config, log *zap.Logger) *EventListener {
-	conn, _ := kafka.DialLeader(context.Background(), "tcp", c.KafkaUri, topic, partition)
-	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
-	batch := conn.ReadBatch(10e3, 1e6) // fetch 10KB min, 1MB max
-
+func NewEventListener(
+	topic string,
+	partition int,
+	c *config.Config,
+	log *zap.Logger,
+	cancel context.CancelFunc,
+) *EventListener {
+	conn, err := kafka.DialLeader(context.Background(), "tcp", c.KafkaUri, topic, partition)
+	if err != nil {
+		cancel()
+		helper.HandleInitializationError(err, "event listener", log)
+		return nil
+	}
 	el := EventListener{make(map[string]*Listener)}
 
 	go func() {
 		b := make([]byte, 10e3) // 10KB max per message
 		for {
+			batch := conn.ReadBatch(10e3, 1e6) // fetch 10KB min, 1MB max
 			_, err := batch.Read(b)
 			if err != nil {
 				break
 			}
-			el.processEvent(&b)
-		}
-
-		if err := batch.Close(); err != nil {
-			log.Error("failed to close batch in event listener")
-		}
-		if err := conn.Close(); err != nil {
-			log.Error("failed to close connection in event listener")
+			if err := el.processEvent(&b); err != nil {
+				log.Error("failed to process event", zap.Error(err))
+				break
+			}
+			if err := batch.Close(); err != nil {
+				log.Error("failed to close batch in event listener", zap.Error(err))
+			}
+			if err := conn.Close(); err != nil {
+				log.Error("failed to close connection in event listener", zap.Error(err))
+			}
 		}
 	}()
 	return &el

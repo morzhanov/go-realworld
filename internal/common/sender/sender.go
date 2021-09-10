@@ -42,7 +42,8 @@ func (s *Sender) PerformRequest(
 			return nil, err
 		}
 		params := apiConfig.Rest[method]
-		err = s.restRequest(params.Method, params.Url, input, nil, &res, span)
+		url := fmt.Sprintf("http://%s%s", s.restClient.urls[service], params.Url)
+		err = s.restRequest(params.Method, url, input, nil, &res, span)
 		if err != nil {
 			return nil, err
 		}
@@ -105,8 +106,11 @@ func (s *Sender) restRequest(
 	if err != nil {
 		return err
 	}
-	for k, v := range *headers {
-		req.Header.Set(k, v[0])
+
+	if headers != nil {
+		for k, v := range *headers {
+			req.Header.Set(k, v[0])
+		}
 	}
 
 	err = tracing.InjectHttpSpan(*span, req)
@@ -114,7 +118,7 @@ func (s *Sender) restRequest(
 		return err
 	}
 
-	response, err := s.restClient.Do(req)
+	response, err := s.restClient.http.Do(req)
 	if err != nil {
 		return err
 	}
@@ -266,59 +270,73 @@ func (s *Sender) eventsRequest(
 	return
 }
 
-func setupRestClient() *http.Client {
-	return &http.Client{}
+func (s *Sender) setupRestClient(c *config.Config) {
+	restBaseUrls := RestApiBaseUrls{
+		"analytics": fmt.Sprintf("%v:%v", c.RestAddr, c.AnalyticsRestPort),
+		"auth":      fmt.Sprintf("%v:%v", c.RestAddr, c.AuthRestPort),
+		"pictures":  fmt.Sprintf("%v:%v", c.RestAddr, c.PicturesRestPort),
+		"users":     fmt.Sprintf("%v:%v", c.RestAddr, c.UsersRestPort),
+		"apigw":     fmt.Sprintf("%v:%v", c.RestAddr, c.ApiGWRestPort),
+	}
+	s.restClient = &RestClient{
+		http: &http.Client{},
+		urls: restBaseUrls,
+	}
 }
 
-func setupGrpcClient(c *config.Config) (*GrpcClient, error) {
+func (s *Sender) setupGrpcClient(c *config.Config, cancel context.CancelFunc) {
 	conn, err := grpc.Dial(c.PicturesGrpcAddr, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
-		return nil, err
+		cancel()
+		s.logger.Fatal("error during dialing to pictures grpc server, exiting...")
 	}
 	picturesClient := picturesrpc.NewPicturesClient(conn)
 
 	conn, err = grpc.Dial(c.UsersGrpcAddr, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
-		return nil, err
+		cancel()
+		s.logger.Fatal("error during dialing to users grpc server, exiting...")
 	}
 	usersClient := usersrpc.NewUsersClient(conn)
 
 	conn, err = grpc.Dial(c.AnalyticsGrpcAddr, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
-		return nil, err
+		cancel()
+		s.logger.Fatal("error during dialing to analytics grpc server, exiting...")
 	}
 	analyticsClient := analyticsrpc.NewAnalyticsClient(conn)
 
 	conn, err = grpc.Dial(c.AuthGrpcAddr, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
-		return nil, err
+		cancel()
+		s.logger.Fatal("error during dialing to auth grpc server, exiting...")
 	}
 	authClient := authrpc.NewAuthClient(conn)
 
-	return &GrpcClient{picturesClient, usersClient, analyticsClient, authClient}, nil
-}
-
-func (s *Sender) Connect(c *config.Config, cancel context.CancelFunc) {
-	g, err := setupGrpcClient(c)
-	if err != nil {
-		cancel()
-		helper.HandleInitializationError(err, "sender", s.logger)
+	s.grpcClient = &GrpcClient{
+		picturesClient,
+		usersClient,
+		analyticsClient,
+		authClient,
 	}
-	s.grpcClient = g
-	s.eventsClient = setupEventsClient(c)
-	s.restClient = setupRestClient()
 }
 
-func setupEventsClient(c *config.Config) *EventsClient {
+func (s *Sender) setupEventsClient(c *config.Config) {
 	kafkaUri := c.KafkaUri
 
-	return &EventsClient{
+	s.eventsClient = &EventsClient{
 		Auth:      &EventsClientItem{[]string{kafkaUri}, c.AuthKafkaTopic},
 		Analytics: &EventsClientItem{[]string{kafkaUri}, c.AnalyticsKafkaTopic},
 		Pictures:  &EventsClientItem{[]string{kafkaUri}, c.PicturesKafkaTopic},
 		Users:     &EventsClientItem{[]string{kafkaUri}, c.UsersKafkaTopic},
 		Results:   &EventsClientItem{[]string{kafkaUri}, c.ResultsKafkaTopic},
 	}
+}
+
+func (s *Sender) Connect(c *config.Config, cancel context.CancelFunc) {
+	s.setupEventsClient(c)
+	s.setupRestClient(c)
+	go s.setupGrpcClient(c, cancel)
 }
 
 func NewSender(ac *config.ApiConfig, l *zap.Logger) *Sender {

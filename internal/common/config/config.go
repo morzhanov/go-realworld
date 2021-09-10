@@ -24,7 +24,13 @@ type Config struct {
 	AnalyticsGrpcAddr string `mapstructure:"ANALYTICS_GRPC_PORT"`
 	AuthGrpcAddr      string `mapstructure:"AUTH_GRPC_PORT"`
 
-	RestPort string `mapstructure:"REST_PORT"`
+	RestAddr          string `mapstructure:"REST_ADDR"`
+	RestPort          string `mapstructure:"REST_PORT"`
+	AnalyticsRestPort string `mapstructure:"ANALYTICS_REST_PORT"`
+	AuthRestPort      string `mapstructure:"AUTH_REST_PORT"`
+	PicturesRestPort  string `mapstructure:"PICTURES_REST_PORT"`
+	UsersRestPort     string `mapstructure:"USERS_REST_PORT"`
+	ApiGWRestPort     string `mapstructure:"APIGW_REST_PORT"`
 }
 
 func NewConfig(path string, name string) (config *Config, err error) {

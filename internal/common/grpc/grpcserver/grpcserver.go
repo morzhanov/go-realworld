@@ -16,7 +16,7 @@ import (
 type BaseGrpcServer struct {
 	Tracer *opentracing.Tracer
 	Logger *zap.Logger
-	Port   string
+	Uri    string
 }
 
 func (s *BaseGrpcServer) PrepareContext(ctx context.Context) opentracing.Span {
@@ -26,28 +26,31 @@ func (s *BaseGrpcServer) PrepareContext(ctx context.Context) opentracing.Span {
 }
 
 func (s *BaseGrpcServer) Listen(ctx context.Context, cancel context.CancelFunc, server *grpc.Server) {
-	lis, err := net.Listen("tcp", s.Port)
+	lis, err := net.Listen("tcp", s.Uri)
 	if err != nil {
 		cancel()
 		helper.HandleInitializationError(err, "grpc server", s.Logger)
+		return
 	}
 
 	if err := server.Serve(lis); err != nil {
 		cancel()
 		helper.HandleInitializationError(err, "grpc server", s.Logger)
+		return
 	}
-	log.Info("Grpc server started", zap.String("port", s.Port))
+	log.Info("Grpc server started", zap.String("port", s.Uri))
 	<-ctx.Done()
 	if err := lis.Close(); err != nil {
 		cancel()
 		helper.HandleInitializationError(err, "grpc server", s.Logger)
+		return
 	}
 }
 
 func NewGrpcServer(
 	tracer *opentracing.Tracer,
 	logger *zap.Logger,
-	port string,
+	uri string,
 ) *BaseGrpcServer {
-	return &BaseGrpcServer{tracer, logger, port}
+	return &BaseGrpcServer{tracer, logger, uri}
 }

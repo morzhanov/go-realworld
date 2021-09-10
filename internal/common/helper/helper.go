@@ -8,7 +8,8 @@ import (
 )
 
 func CheckStruct(val interface{}) bool {
-	return reflect.ValueOf(val).Kind() == reflect.Struct
+	kind := reflect.ValueOf(val).Kind()
+	return kind == reflect.Struct || kind == reflect.Ptr
 }
 
 func HandleInitializationError(err error, step string, log *zap.Logger) {

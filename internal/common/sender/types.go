@@ -1,14 +1,13 @@
 package sender
 
 import (
-	"go.uber.org/zap"
-	"net/http"
-
 	analyticsrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
 	authrpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	picturesrpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
 	usersrpc "github.com/morzhanov/go-realworld/api/rpc/users"
 	"github.com/morzhanov/go-realworld/internal/common/config"
+	"go.uber.org/zap"
+	"net/http"
 )
 
 type Transport int
@@ -18,6 +17,8 @@ const (
 	RpcTransport
 	EventsTransport
 )
+
+type RestApiBaseUrls map[string]string
 
 type Headers map[string]string
 
@@ -56,6 +57,11 @@ type EventsClient struct {
 	Results   *EventsClientItem
 }
 
+type RestClient struct {
+	http *http.Client
+	urls RestApiBaseUrls
+}
+
 type EventsRequestInput struct {
 	Service string
 	Event   string
@@ -64,7 +70,7 @@ type EventsRequestInput struct {
 
 type Sender struct {
 	API          *config.ApiConfig
-	restClient   *http.Client
+	restClient   *RestClient
 	grpcClient   *GrpcClient
 	eventsClient *EventsClient
 	logger       *zap.Logger

@@ -56,7 +56,7 @@ func main() {
 	s := sender.NewSender(apiConfig, l)
 	l.Info("sender created...")
 
-	el := eventslistener.NewEventListener(c.KafkaTopic, 0, c, l)
+	el := eventslistener.NewEventListener(c.KafkaTopic, 0, c, l, cancel)
 	l.Info("events listener created...")
 
 	service := services.NewAPIGatewayService(s, el)

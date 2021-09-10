@@ -66,7 +66,7 @@ func main() {
 	}
 	l.Info("database connection created...")
 
-	el := eventslistener.NewEventListener(c.KafkaTopic, 0, c, l)
+	el := eventslistener.NewEventListener(c.KafkaTopic, 0, c, l, cancel)
 	l.Info("events listener created...")
 
 	service := services.NewAuthService(dbs, s, el, c)
@@ -81,6 +81,8 @@ func main() {
 		helper.HandleInitializationError(err, "events controller", l)
 	}
 	l.Info("events controller created...")
+
+	go s.Connect(c, cancel)
 
 	go rpcServer.Listen(ctx, cancel)
 	go restController.Listen(ctx, cancel, c.RestPort)

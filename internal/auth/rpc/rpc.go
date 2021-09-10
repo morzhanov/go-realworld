@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"fmt"
 	"github.com/morzhanov/go-realworld/internal/common/grpc/grpcserver"
 	"go.uber.org/zap"
 
@@ -47,11 +48,13 @@ func NewAuthRpcServer(
 	tracer *opentracing.Tracer,
 	logger *zap.Logger,
 ) (s *AuthRpcServer) {
-	bs := grpcserver.NewGrpcServer(tracer, logger, c.GrpcPort)
+	uri := fmt.Sprintf("%s:%s", c.GrpcAddr, c.GrpcPort)
+	bs := grpcserver.NewGrpcServer(tracer, logger, uri)
 	s = &AuthRpcServer{
 		authService:    authService,
 		BaseGrpcServer: bs,
+		server:         grpc.NewServer(),
 	}
-	arpc.RegisterAuthServer(grpc.NewServer(), s)
+	arpc.RegisterAuthServer(s.server, s)
 	return
 }

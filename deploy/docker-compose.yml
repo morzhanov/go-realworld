@@ -1,8 +1,8 @@
-version: "3"
+version: "2"
 services:
   analytics:
     build: ./analytics
-    container_name: analytics-service
+    container_name: gorealworld_analytics_service
     ports:
       - "3001:3081"
       - "5001:5081"
@@ -19,7 +19,7 @@ services:
 
   auth:
     build: ./auth
-    container_name: auth-service
+    container_name: gorealworld_auth_service
     ports:
       - "3002:3082"
       - "5002:5082"
@@ -36,7 +36,7 @@ services:
 
   pictures:
     build: ./pictures
-    container_name: pictures-service
+    container_name: gorealworld_pictures_service
     ports:
       - "3003:3083"
       - "5003:5083"
@@ -53,7 +53,7 @@ services:
 
   users:
     build: ./users
-    container_name: users-service
+    container_name: gorealworld_users_service
     ports:
       - "3004:3084"
       - "5004:5084"
@@ -70,7 +70,7 @@ services:
 
   apigw:
     build: ./apigw
-    container_name: apigw-service
+    container_name: gorealworld_apigw_service
     ports:
       - "3005:3085"
     depends_on:
@@ -83,7 +83,7 @@ services:
 
   web:
     build: ./web
-    container_name: web-service
+    container_name: gorealworld_web_service
     ports:
       - "8000:8000"
     depends_on:
@@ -91,90 +91,42 @@ services:
     networks:
       - go-realworld
 
+  postgres:
+    extends:
+      file: "./docker-compose.deps.yml"
+      service: postgres
+  jaeger:
+    extends:
+      file: "./docker-compose.deps.yml"
+      service: jaeger
+  elasticsearch:
+    extends:
+      file: "./docker-compose.deps.yml"
+      service: elasticsearch
+  kibana:
+    extends:
+      file: "./docker-compose.deps.yml"
+      service: kibana
+  filebeat:
+    extends:
+      file: "./docker-compose.deps.yml"
+      service: filebeat
+  prometheus:
+    extends:
+      file: "./docker-compose.deps.yml"
+      service: prometheus
+  grafana:
+    extends:
+      file: "./docker-compose.deps.yml"
+      service: grafana
+  zookeeper:
+    extends:
+      file: "./docker-compose.deps.yml"
+      service: zookeeper
   kafka:
     extends:
-      file: "../kafka/docker-compose.yml"
+      file: "./docker-compose.deps.yml"
       service: kafka
-
-  jaeger:
-    image: jaegertracing/all-in-one:latest
-    ports:
-      - "6831:6831/udp"
-      - "16686:16686"
-      - "14268:14268"
-    networks:
-      - go-realworld
-
-  elasticsearch:
-    image: "docker.elastic.co/elasticsearch/elasticsearch:7.2.0"
-    environment:
-      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
-      - "discovery.type=single-node"
-    ports:
-      - "9200:9200"
-    volumes:
-      - elasticsearch_data:/usr/share/elasticsearch/data
-
-  kibana:
-    image: "docker.elastic.co/kibana/kibana:7.2.0"
-    ports:
-      - "5601:5601"
-
-  filebeat:
-    image: "docker.elastic.co/beats/filebeat:7.2.0"
-    user: root
-    volumes:
-      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
-      - /var/lib/docker:/var/lib/docker:ro
-      - /var/run/docker.sock:/var/run/docker.sock
-
-  prometheus:
-    image: prom/prometheus:v2.17.1
-    container_name: prometheus
-    volumes:
-      - ./prometheus:/etc/prometheus
-      - prometheus_data:/prometheus
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-      - "--storage.tsdb.path=/prometheus"
-      - "--web.console.libraries=/etc/prometheus/console_libraries"
-      - "--web.console.templates=/etc/prometheus/consoles"
-      - "--storage.tsdb.retention.time=200h"
-      - "--web.enable-lifecycle"
-    restart: unless-stopped
-    ports:
-      - "9090:9090"
-    expose:
-      - 9090
-    networks:
-      - go-realworld
-    labels:
-      org.label-schema.group: "monitoring"
-
-  grafana:
-    image: grafana/grafana:6.7.2
-    container_name: grafana
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_USERS_ALLOW_SIGN_UP=false
-    restart: unless-stopped
-    ports:
-      - "3000:3000"
-    expose:
-      - 3000
-    networks:
-      - go-realworld
-    labels:
-      org.label-schema.group: "monitoring"
 
 networks:
   go-realworld:
-
-volumes:
-  elasticsearch_data:
-  prometheus_data: {}
-  grafana_data: {}

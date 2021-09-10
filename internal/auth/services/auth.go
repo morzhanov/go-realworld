@@ -35,13 +35,13 @@ func (s *AuthService) Login(
 	transport := getTransport(ctx)
 
 	d := usersrpc.ValidateUserPasswordRequest{Username: data.Username, Password: data.Password}
-	_, err = s.sender.PerformRequest(transport, "users", "validateUserPasswordRequest", &d, s.el, span)
+	_, err = s.sender.PerformRequest(transport, "users", "validatePassword", &d, s.el, span)
 	if err != nil {
 		return nil, err
 	}
 
 	d2 := usersrpc.GetUserDataByUsernameRequest{Username: data.Username}
-	r, err := s.sender.PerformRequest(transport, "users", "getUserDataByUsername", &d2, s.el, span)
+	r, err := s.sender.PerformRequest(transport, "users", "getUserByUsername", &d2, s.el, span)
 	if err != nil {
 		return nil, err
 	}

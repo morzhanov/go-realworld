@@ -39,6 +39,7 @@ func (c *BaseRestController) Listen(
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			cancel()
 			helper.HandleInitializationError(err, "rest controller", c.Logger)
+			return
 		}
 	}()
 
@@ -60,7 +61,7 @@ func (c *BaseRestController) ParseRestBody(ctx *gin.Context, input interface{}) 
 		return err
 	}
 
-	in := reflect.ValueOf(input)
+	in := reflect.ValueOf(input).Interface()
 	return json.Unmarshal(jsonData, &in)
 }
 

@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"fmt"
 	"github.com/morzhanov/go-realworld/internal/common/grpc/grpcserver"
 
 	prpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
@@ -55,11 +56,13 @@ func NewPicturesRpcServer(
 	tracer *opentracing.Tracer,
 	logger *zap.Logger,
 ) (s *PicturesRpcServer) {
-	bs := grpcserver.NewGrpcServer(tracer, logger, c.GrpcPort)
+	uri := fmt.Sprintf("%s:%s", c.GrpcAddr, c.GrpcPort)
+	bs := grpcserver.NewGrpcServer(tracer, logger, uri)
 	s = &PicturesRpcServer{
 		picturesService: picturesService,
 		BaseGrpcServer:  bs,
+		server:          grpc.NewServer(),
 	}
-	prpc.RegisterPicturesServer(grpc.NewServer(), s)
+	prpc.RegisterPicturesServer(s.server, s)
 	return
 }

@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"fmt"
 	"github.com/morzhanov/go-realworld/internal/common/grpc/grpcserver"
 
 	urpc "github.com/morzhanov/go-realworld/api/rpc/users"
@@ -62,11 +63,13 @@ func NewUsersRpcServer(
 	tracer *opentracing.Tracer,
 	logger *zap.Logger,
 ) (s *UsersRpcServer) {
-	bs := grpcserver.NewGrpcServer(tracer, logger, c.GrpcPort)
+	uri := fmt.Sprintf("%s:%s", c.GrpcAddr, c.GrpcPort)
+	bs := grpcserver.NewGrpcServer(tracer, logger, uri)
 	s = &UsersRpcServer{
 		usersService:   usersService,
 		BaseGrpcServer: bs,
+		server:         grpc.NewServer(),
 	}
-	urpc.RegisterUsersServer(grpc.NewServer(), s)
+	urpc.RegisterUsersServer(s.server, s)
 	return
 }

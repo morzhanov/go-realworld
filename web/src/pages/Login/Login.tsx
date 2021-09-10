@@ -56,9 +56,15 @@ export default function Login(): JSX.Element {
       </div>
       {error ? <p>{error}</p> : null}
       <p>
-        {mode === LoginMode.LOGIN
-          ? `Don't have account? ${(<span onClick={handleModeClick}>SignUp</span>)}`
-          : `Alreeady member? ${(<span onClick={handleModeClick}>Login</span>)}`}
+        {mode === LoginMode.LOGIN ? (
+          <div>
+            Don't have account? <span onClick={handleModeClick}>SignUp</span>
+          </div>
+        ) : (
+          <div>
+            Alreeady member? <span onClick={handleModeClick}>Login</span>
+          </div>
+        )}
       </p>
     </Container>
   );

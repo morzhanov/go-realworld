@@ -1,0 +1,124 @@
+version: "2"
+services:
+  postgres:
+    image: postgres
+    container_name: gorealworld_postgres
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - go-realworld
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: gorealworld_jaeger
+    ports:
+      - "6831:6831/udp"
+      - "16686:16686"
+      - "14268:14268"
+    networks:
+      - go-realworld
+
+  elasticsearch:
+    image: "docker.elastic.co/elasticsearch/elasticsearch:7.2.0"
+    container_name: gorealworld_elasticsearch
+    environment:
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - "discovery.type=single-node"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - go-realworld
+
+  kibana:
+    image: "docker.elastic.co/kibana/kibana:7.2.0"
+    container_name: gorealworld_kibana
+    ports:
+      - "5601:5601"
+    networks:
+      - go-realworld
+
+  filebeat:
+    image: "docker.elastic.co/beats/filebeat:7.2.0"
+    container_name: gorealworld_filebeat
+    user: root
+    volumes:
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - go-realworld
+
+  prometheus:
+    image: prom/prometheus:v2.17.1
+    container_name: gorealworld_prometheus
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+      - "--storage.tsdb.retention.time=200h"
+      - "--web.enable-lifecycle"
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    expose:
+      - 9090
+    networks:
+      - go-realworld
+    labels:
+      org.label-schema.group: "monitoring"
+
+  grafana:
+    image: grafana/grafana:6.7.2
+    container_name: gorealworld_grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    expose:
+      - 3000
+    networks:
+      - go-realworld
+    labels:
+      org.label-schema.group: "monitoring"
+
+  zookeeper:
+    container_name: gorealworld_zookeeper
+    extends:
+      file: "./kafka/docker-compose.yml"
+      service: zookeeper
+    networks:
+      - go-realworld
+
+  kafka:
+    container_name: gorealworld_kafka
+    extends:
+      file: "./kafka/docker-compose.yml"
+      service: kafka
+    networks:
+      - go-realworld
+
+networks:
+  go-realworld:
+
+volumes:
+  elasticsearch_data:
+  prometheus_data: {}
+  grafana_data: {}
