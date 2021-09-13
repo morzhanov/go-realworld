@@ -92,7 +92,7 @@ func NewAuthRestController(
 		BaseRestController: bc,
 	}
 
-	bc.Router.GET("/auth", bc.Handler(c.handleAuthValidation))
+	bc.Router.POST("/auth", bc.Handler(c.handleAuthValidation))
 	bc.Router.POST("/login", bc.Handler(c.handleLogin))
 	bc.Router.POST("/signup", bc.Handler(c.handleSignup))
 	return &c

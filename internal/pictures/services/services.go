@@ -3,6 +3,7 @@ package services
 import (
 	"github.com/jmoiron/sqlx"
 	prpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
+	"github.com/morzhanov/go-realworld/internal/common/helper"
 	. "github.com/morzhanov/go-realworld/internal/pictures/models"
 )
 
@@ -47,6 +48,9 @@ func (s *PictureService) GetUserPicture(userId string, pictureId string) (*prpc.
 	res := &Picture{}
 	err := row.Scan(&res.ID, &res.Title, &res.Base64, &res.UserId)
 	if err != nil {
+		if helper.CheckNotFound(err) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return &prpc.PictureMessage{
@@ -61,13 +65,10 @@ func (s *PictureService) CreateUserPicture(data *prpc.CreateUserPictureRequest) 
 	q := `INSERT INTO pictures (title, base64, user_id)
 		VALUES ($1, $2, $3)
 		RETURNING *`
-	row, err := s.db.Query(q, data.Title, data.Base64, data.UserId)
-	if err != nil {
-		return nil, err
-	}
+	row := s.db.QueryRow(q, data.Title, data.Base64, data.UserId)
 
 	res := &Picture{}
-	if err = row.Scan(&res.ID, &res.Title, &res.Base64, &res.UserId); err != nil {
+	if err := row.Scan(&res.ID, &res.Title, &res.Base64, &res.UserId); err != nil {
 		return nil, err
 	}
 	return &prpc.PictureMessage{

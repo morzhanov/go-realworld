@@ -46,7 +46,7 @@ func (s *AuthService) Login(
 		return nil, err
 	}
 
-	token, err := createJwt(user.Id)
+	token, err := s.createJwt(user.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -66,21 +66,19 @@ func (s *AuthService) Signup(
 		return nil, err
 	}
 
-	token, err := createJwt(user.Id)
+	token, err := s.createJwt(user.Id)
 	if err != nil {
 		return nil, err
 	}
 	return &authrpc.AuthResponse{AccessToken: token}, nil
 }
 
-func createJwt(userId string) (res string, err error) {
-	const secret = "jdnfksdmfksd"
-
+func (s *AuthService) createJwt(userId string) (res string, err error) {
 	atClaims := jwt.MapClaims{}
 	atClaims["authorized"] = true
 	atClaims["user_id"] = userId
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
-	token, err := at.SignedString([]byte(secret))
+	token, err := at.SignedString([]byte(s.accessTokenSecret))
 	if err != nil {
 		return "", err
 	}
@@ -88,7 +86,8 @@ func createJwt(userId string) (res string, err error) {
 }
 
 func (s *AuthService) verifyJwt(tokenString string) (res *authrpc.ValidationResponse, err error) {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+	claims := jwt.MapClaims{}
+	_, err = jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
@@ -97,7 +96,7 @@ func (s *AuthService) verifyJwt(tokenString string) (res *authrpc.ValidationResp
 	if err != nil {
 		return nil, err
 	}
-	return &authrpc.ValidationResponse{UserId: token.Raw}, nil
+	return &authrpc.ValidationResponse{UserId: claims["user_id"].(string)}, nil
 }
 
 func (s *AuthService) ValidateRestRequest(data *authrpc.ValidateRestRequestInput) (res *authrpc.ValidationResponse, err error) {

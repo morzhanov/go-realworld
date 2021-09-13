@@ -14,15 +14,15 @@ analytics:
 
 auth:
   rest:
-    validateEventsRequest:
-      method: GET
-      url: auth
+    validateRestRequest:
+      method: POST
+      url: /auth
     login:
       method: POST
-      url: login
+      url: /login
     signup:
       method: POST
-      url: signup
+      url: /signup
   events:
     validateEventsRequest:
       event: validateEventsRequest

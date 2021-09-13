@@ -2,11 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
-	"os"
-	"os/signal"
-	"time"
-
 	"github.com/morzhanov/go-realworld/internal/auth/events"
 	"github.com/morzhanov/go-realworld/internal/auth/rest"
 	"github.com/morzhanov/go-realworld/internal/auth/rpc"
@@ -18,6 +13,9 @@ import (
 	"github.com/morzhanov/go-realworld/internal/common/metrics"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
 	"github.com/morzhanov/go-realworld/internal/common/tracing"
+	"log"
+	"os"
+	"os/signal"
 )
 
 func main() {
@@ -84,14 +82,6 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 	l.Info("auth service successfully started!")
-loop:
-	for {
-		select {
-		case <-quit:
-			l.Info("received os.Interrupt, exiting...")
-			break loop
-		default:
-			time.Sleep(time.Second * 5)
-		}
-	}
+	<-quit
+	l.Info("received os.Interrupt, exiting...")
 }

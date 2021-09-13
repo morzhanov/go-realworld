@@ -24,8 +24,6 @@ func (c *PicturesRestController) handleCreateUserPicture(ctx *gin.Context) {
 		c.HandleRestError(ctx, err)
 		return
 	}
-	userId := ctx.Param("userId")
-	input.UserId = userId
 
 	res, err := c.service.CreateUserPicture(&input)
 	if err != nil {
@@ -42,7 +40,7 @@ func (c *PicturesRestController) handleGetUserPictures(ctx *gin.Context) {
 		c.HandleRestError(ctx, err)
 		return
 	}
-	ctx.JSON(http.StatusCreated, res)
+	ctx.JSON(http.StatusCreated, res.Pictures)
 }
 
 func (c *PicturesRestController) handleGetUserPicture(ctx *gin.Context) {
@@ -52,6 +50,10 @@ func (c *PicturesRestController) handleGetUserPicture(ctx *gin.Context) {
 	res, err := c.service.GetUserPicture(userId, id)
 	if err != nil {
 		c.HandleRestError(ctx, err)
+		return
+	}
+	if res == nil {
+		ctx.Status(http.StatusNotFound)
 		return
 	}
 	ctx.JSON(http.StatusOK, res)

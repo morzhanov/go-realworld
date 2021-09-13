@@ -18,3 +18,7 @@ func HandleInitializationError(err error, step string, log *zap.Logger) {
 		zap.String("step", step),
 	)
 }
+
+func CheckNotFound(err error) bool {
+	return err.Error() == "sql: no rows in result set"
+}

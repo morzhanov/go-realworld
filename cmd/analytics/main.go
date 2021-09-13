@@ -2,11 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
-	"os"
-	"os/signal"
-	"time"
-
 	"github.com/morzhanov/go-realworld/internal/analytics/events"
 	"github.com/morzhanov/go-realworld/internal/analytics/rest"
 	"github.com/morzhanov/go-realworld/internal/analytics/rpc"
@@ -18,6 +13,9 @@ import (
 	"github.com/morzhanov/go-realworld/internal/common/mq"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
 	"github.com/morzhanov/go-realworld/internal/common/tracing"
+	"log"
+	"os"
+	"os/signal"
 )
 
 func main() {
@@ -88,14 +86,6 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 	l.Info("analytics service successfully started!")
-loop:
-	for {
-		select {
-		case <-quit:
-			l.Info("received os.Interrupt, exiting...")
-			break loop
-		default:
-			time.Sleep(time.Second * 5)
-		}
-	}
+	<-quit
+	l.Info("received os.Interrupt, exiting...")
 }

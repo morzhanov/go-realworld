@@ -25,6 +25,10 @@ func (c *UsersRestController) handleGetUserData(ctx *gin.Context) {
 		c.HandleRestError(ctx, err)
 		return
 	}
+	if res == nil {
+		ctx.Status(http.StatusNotFound)
+		return
+	}
 	ctx.JSON(http.StatusOK, res)
 }
 
@@ -40,6 +44,10 @@ func (c *UsersRestController) handleGetUserDataByUsername(ctx *gin.Context) {
 		c.HandleRestError(ctx, err)
 		return
 	}
+	if res == nil {
+		ctx.Status(http.StatusNotFound)
+		return
+	}
 	ctx.JSON(http.StatusOK, res)
 }
 
@@ -51,6 +59,10 @@ func (c *UsersRestController) handleValidateUserPassword(ctx *gin.Context) {
 	}
 
 	if err := c.service.ValidateUserPassword(&input); err != nil {
+		if err.Error() == "wrong password" {
+			ctx.String(http.StatusBadRequest, "wrong password")
+			return
+		}
 		c.HandleRestError(ctx, err)
 		return
 	}

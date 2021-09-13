@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"github.com/morzhanov/go-realworld/internal/common/helper"
 
 	"github.com/jmoiron/sqlx"
 	urpc "github.com/morzhanov/go-realworld/api/rpc/users"
@@ -21,9 +22,11 @@ func (s *UsersService) GetUserData(userId string) (user *urpc.UserMessage, err e
 	user = &urpc.UserMessage{}
 	err = row.Scan(&user.Id, &user.Username)
 	if err != nil {
+		if helper.CheckNotFound(err) {
+			return nil, nil
+		}
 		return nil, err
 	}
-
 	return user, nil
 }
 
@@ -35,9 +38,11 @@ func (s *UsersService) GetUserDataByUsername(username string) (user *urpc.UserMe
 	user = &urpc.UserMessage{}
 	err = row.Scan(&user.Id, &user.Username)
 	if err != nil {
+		if helper.CheckNotFound(err) {
+			return nil, nil
+		}
 		return nil, err
 	}
-
 	return user, nil
 }
 
