@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/jmoiron/sqlx"
 	authrpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	usersrpc "github.com/morzhanov/go-realworld/api/rpc/users"
 	aconfig "github.com/morzhanov/go-realworld/internal/auth/config"
@@ -16,7 +15,6 @@ import (
 )
 
 type AuthService struct {
-	db                *sqlx.DB
 	sender            *sender.Sender
 	el                *eventslistener.EventListener
 	accessTokenSecret string
@@ -35,17 +33,18 @@ func (s *AuthService) Login(
 	transport := getTransport(ctx)
 
 	d := usersrpc.ValidateUserPasswordRequest{Username: data.Username, Password: data.Password}
-	_, err = s.sender.PerformRequest(transport, "users", "validatePassword", &d, s.el, span)
+	err = s.sender.PerformRequest(transport, "users", "validatePassword", &d, s.el, span, nil, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	d2 := usersrpc.GetUserDataByUsernameRequest{Username: data.Username}
-	r, err := s.sender.PerformRequest(transport, "users", "getUserByUsername", &d2, s.el, span)
-	if err != nil {
+	user := &usersrpc.UserMessage{}
+	queryparams := fmt.Sprintf("username=%s", data.Username)
+	meta := map[string]string{"queryparams": queryparams}
+	if err = s.sender.PerformRequest(transport, "users", "getUserByUsername", &d2, s.el, span, meta, user); err != nil {
 		return nil, err
 	}
-	user := r.(*usersrpc.UserMessage)
 
 	token, err := createJwt(user.Id)
 	if err != nil {
@@ -62,11 +61,10 @@ func (s *AuthService) Signup(
 	transport := getTransport(ctx)
 
 	d := usersrpc.CreateUserRequest{Username: data.Username, Password: data.Password}
-	r, err := s.sender.PerformRequest(transport, "users", "createUser", &d, s.el, span)
-	if err != nil {
+	user := &usersrpc.UserMessage{}
+	if err = s.sender.PerformRequest(transport, "users", "createUser", &d, s.el, span, nil, &user); err != nil {
 		return nil, err
 	}
-	user := r.(*usersrpc.UserMessage)
 
 	token, err := createJwt(user.Id)
 	if err != nil {
@@ -130,10 +128,9 @@ func (s *AuthService) ValidateEventsRequest(data *authrpc.ValidateEventsRequestI
 }
 
 func NewAuthService(
-	db *sqlx.DB,
 	s *sender.Sender,
 	el *eventslistener.EventListener,
 	c *config.Config,
 ) *AuthService {
-	return &AuthService{db, s, el, c.AccessTokenSecret}
+	return &AuthService{s, el, c.AccessTokenSecret}
 }

@@ -34,35 +34,39 @@ func (s *Sender) PerformRequest(
 	input interface{},
 	el *eventslistener.EventListener,
 	span *opentracing.Span,
-) (res interface{}, err error) {
+	meta map[string]string,
+	res interface{},
+) error {
 	switch transport {
 	case RestTransport:
 		apiConfig, err := s.API.GetApiItem(service)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		params := apiConfig.Rest[method]
 		url := fmt.Sprintf("http://%s%s", s.restClient.urls[service], params.Url)
-		err = s.restRequest(params.Method, url, input, nil, &res, span)
+		err = s.restRequest(params.Method, url, input, nil, &res, span, meta)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	case RpcTransport:
-		res, err = s.rpcRequest(AuthRpcClient, method, input, span)
+		if err := s.rpcRequest(AuthRpcClient, method, input, span, res); err != nil {
+			return err
+		}
 	case EventsTransport:
 		uuidVal := uuid.NewV4().String()
 		jsonVal, err := json.Marshal(input)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		err = s.eventsRequest(service, method, string(jsonVal), uuidVal, &res, true, el, span)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	default:
-		return nil, fmt.Errorf("wrong transport type")
+		return fmt.Errorf("wrong transport type")
 	}
-	return
+	return nil
 }
 
 func (s *Sender) SendEventsResponse(eventUuid string, value interface{}, span *opentracing.Span) error {
@@ -93,6 +97,7 @@ func (s *Sender) restRequest(
 	headers *http.Header,
 	res interface{},
 	span *opentracing.Span,
+	meta map[string]string,
 ) (err error) {
 	if !helper.CheckStruct(data) {
 		return errors.New("value is not struct")
@@ -101,6 +106,9 @@ func (s *Sender) restRequest(
 	b, err := json.Marshal(data)
 	if err != nil {
 		return err
+	}
+	if meta != nil && meta["queryparams"] != "" {
+		url = fmt.Sprintf("%s?%s", url, meta["queryparams"])
 	}
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(b))
 	if err != nil {
@@ -129,6 +137,12 @@ func (s *Sender) restRequest(
 		return err
 	}
 
+	if response.StatusCode >= 300 {
+		return errors.New(string(body))
+	}
+	if reflect.ValueOf(res).IsNil() || len(body) == 0 {
+		return nil
+	}
 	return json.Unmarshal(body, &res)
 }
 
@@ -152,20 +166,21 @@ func (s *Sender) rpcRequest(
 	method string,
 	input interface{},
 	span *opentracing.Span,
-) (res interface{}, err error) {
+	res interface{},
+) error {
 	if !helper.CheckStruct(input) {
-		return nil, err
+		return errors.New("value is not a structure")
 	}
 
 	c, err := s.getRpcClient(client)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*5))
 	defer cancel()
 	ctx, err = tracing.InjectGrpcSpan(*span, ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	fn := reflect.ValueOf(c).Elem().MethodByName(method)
@@ -175,14 +190,14 @@ func (s *Sender) rpcRequest(
 
 	if len(returnArgs) == 1 {
 		err = returnArgs[0].Interface().(error)
-		return nil, err
+		return err
 	}
 
-	err = returnArgs[1].Interface().(error)
-	if err != nil {
-		return nil, err
+	if err = returnArgs[1].Interface().(error); err != nil {
+		return err
 	}
-	return returnArgs[0].Interface(), nil
+	res = returnArgs[0].Interface()
+	return nil
 }
 
 func (s *Sender) eventsRequest(

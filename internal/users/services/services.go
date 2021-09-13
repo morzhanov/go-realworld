@@ -19,7 +19,7 @@ func (s *UsersService) GetUserData(userId string) (user *urpc.UserMessage, err e
 	row := s.db.QueryRow(q, userId)
 
 	user = &urpc.UserMessage{}
-	err = row.Scan(user.Id, user.Username)
+	err = row.Scan(&user.Id, &user.Username)
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +33,7 @@ func (s *UsersService) GetUserDataByUsername(username string) (user *urpc.UserMe
 	row := s.db.QueryRow(q, username)
 
 	user = &urpc.UserMessage{}
-	err = row.Scan(user.Id, user.Username)
+	err = row.Scan(&user.Id, &user.Username)
 	if err != nil {
 		return nil, err
 	}
@@ -42,19 +42,22 @@ func (s *UsersService) GetUserDataByUsername(username string) (user *urpc.UserMe
 }
 
 func (s *UsersService) ValidateUserPassword(data *urpc.ValidateUserPasswordRequest) error {
-	q := `SELECT id, username FROM users
+	q := `SELECT id, username, password FROM users
 		WHERE username = $1`
 	row := s.db.QueryRow(q, data.Username)
 
 	user := &User{}
-	if err := row.Scan(user.ID, user.Username, user.Password); err != nil {
+	if err := row.Scan(&user.ID, &user.Username, &user.Password); err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			return errors.New("user not found")
+		}
 		return err
 	}
 
 	if checkPasswordHash(data.Password, user.Password) {
 		return nil
 	}
-	return errors.New("Wrong password")
+	return errors.New("wrong password")
 }
 
 func (s *UsersService) CreateUser(data *urpc.CreateUserRequest) (res *urpc.UserMessage, err error) {
@@ -65,11 +68,11 @@ func (s *UsersService) CreateUser(data *urpc.CreateUserRequest) (res *urpc.UserM
 
 	q := `INSERT INTO users (username, password)
 		VALUES ($1, $2)
-		RETURNING id, useraname`
+		RETURNING id, username`
 	row := s.db.QueryRow(q, data.Username, hashedPassword)
 
 	res = &urpc.UserMessage{}
-	err = row.Scan(res.Id, res.Username)
+	err = row.Scan(&res.Id, &res.Username)
 	if err != nil {
 		return nil, err
 	}

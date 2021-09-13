@@ -31,5 +31,8 @@ func RunMigrations(db *sqlx.DB, service string) error {
 	if err != nil {
 		return err
 	}
-	return m.Steps(2)
+	if err := m.Up(); err != nil && err.Error() != "no change" && err.Error() != "first : file does not exist" {
+		return err
+	}
+	return nil
 }

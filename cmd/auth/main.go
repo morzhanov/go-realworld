@@ -12,7 +12,6 @@ import (
 	"github.com/morzhanov/go-realworld/internal/auth/rpc"
 	"github.com/morzhanov/go-realworld/internal/auth/services"
 	"github.com/morzhanov/go-realworld/internal/common/config"
-	"github.com/morzhanov/go-realworld/internal/common/db"
 	"github.com/morzhanov/go-realworld/internal/common/events/eventslistener"
 	"github.com/morzhanov/go-realworld/internal/common/helper"
 	"github.com/morzhanov/go-realworld/internal/common/logger"
@@ -59,17 +58,10 @@ func main() {
 	s := sender.NewSender(apiConfig, l)
 	l.Info("sender created...")
 
-	dbs, err := db.NewDb(c)
-	if err != nil {
-		cancel()
-		helper.HandleInitializationError(err, "database", l)
-	}
-	l.Info("database connection created...")
-
 	el := eventslistener.NewEventListener(c.KafkaTopic, 0, c, l, cancel)
 	l.Info("events listener created...")
 
-	service := services.NewAuthService(dbs, s, el, c)
+	service := services.NewAuthService(s, el, c)
 	l.Info("service created...")
 	rpcServer := rpc.NewAuthRpcServer(service, c, t, l)
 	l.Info("grpc server created...")

@@ -20,24 +20,23 @@ func (s *PictureService) GetUserPictures(userId string) (*prpc.PicturesMessage, 
 
 	pictures := make([]*Picture, 0)
 	for rows.Next() {
-		picture := Picture{}
-		err = rows.Scan(picture.ID, picture.Title, picture.Base64, picture.UserId)
+		pic := Picture{}
+		err = rows.Scan(&pic.ID, &pic.Title, &pic.Base64, &pic.UserId)
 		if err != nil {
 			return nil, err
 		}
-		pictures = append(pictures, &picture)
+		pictures = append(pictures, &pic)
 	}
-
-	result := prpc.PicturesMessage{}
+	res := prpc.PicturesMessage{}
 	for _, picture := range pictures {
-		result.Pictures = append(result.Pictures, &prpc.PictureMessage{
+		res.Pictures = append(res.Pictures, &prpc.PictureMessage{
 			Id:     picture.ID,
 			Title:  picture.Title,
 			Base64: picture.Base64,
 			UserId: picture.UserId,
 		})
 	}
-	return &result, nil
+	return &res, nil
 }
 
 func (s *PictureService) GetUserPicture(userId string, pictureId string) (*prpc.PictureMessage, error) {
@@ -46,11 +45,10 @@ func (s *PictureService) GetUserPicture(userId string, pictureId string) (*prpc.
 	row := s.db.QueryRow(q, pictureId, userId)
 
 	res := &Picture{}
-	err := row.Scan(res.ID, res.Title, res.Base64, res.UserId)
+	err := row.Scan(&res.ID, &res.Title, &res.Base64, &res.UserId)
 	if err != nil {
 		return nil, err
 	}
-
 	return &prpc.PictureMessage{
 		Id:     res.ID,
 		Title:  res.Title,
@@ -69,10 +67,9 @@ func (s *PictureService) CreateUserPicture(data *prpc.CreateUserPictureRequest) 
 	}
 
 	res := &Picture{}
-	if err = row.Scan(res.ID, res.Title, res.Base64, res.UserId); err != nil {
+	if err = row.Scan(&res.ID, &res.Title, &res.Base64, &res.UserId); err != nil {
 		return nil, err
 	}
-
 	return &prpc.PictureMessage{
 		Id:     res.ID,
 		Title:  res.Title,

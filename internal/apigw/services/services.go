@@ -64,8 +64,11 @@ func (s *APIGatewayService) CheckAuth(
 	default:
 		return nil, fmt.Errorf("not valid transport %v", transport)
 	}
-	result, err := s.sender.PerformRequest(transport, "auth", method, input, s.eventListener, span)
-	return result.(*authrpc.ValidationResponse), err
+	res = &authrpc.ValidationResponse{}
+	if err = s.sender.PerformRequest(transport, "auth", method, input, s.eventListener, span, nil, res); err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 func (s *APIGatewayService) Login(
@@ -73,8 +76,11 @@ func (s *APIGatewayService) Login(
 	input *authrpc.LoginInput,
 	span *opentracing.Span,
 ) (res *authrpc.AuthResponse, err error) {
-	result, err := s.sender.PerformRequest(transport, "auth", "login", input, s.eventListener, span)
-	return result.(*authrpc.AuthResponse), err
+	res = &authrpc.AuthResponse{}
+	if err := s.sender.PerformRequest(transport, "auth", "login", input, s.eventListener, span, nil, res); err != nil {
+		return nil, err
+	}
+	return
 }
 
 func (s *APIGatewayService) Signup(
@@ -82,8 +88,11 @@ func (s *APIGatewayService) Signup(
 	input *authrpc.SignupInput,
 	span *opentracing.Span,
 ) (res *authrpc.AuthResponse, err error) {
-	result, err := s.sender.PerformRequest(transport, "auth", "signup", input, s.eventListener, span)
-	return result.(*authrpc.AuthResponse), err
+	res = &authrpc.AuthResponse{}
+	if err = s.sender.PerformRequest(transport, "auth", "signup", input, s.eventListener, span, nil, res); err != nil {
+		return nil, err
+	}
+	return
 }
 
 func (s *APIGatewayService) GetPictures(
@@ -92,8 +101,11 @@ func (s *APIGatewayService) GetPictures(
 	span *opentracing.Span,
 ) (res []*pmodel.Picture, err error) {
 	input := prpc.GetUserPicturesRequest{UserId: userId}
-	result, err := s.sender.PerformRequest(transport, "pictures", "getPictures", &input, s.eventListener, span)
-	return result.([]*pmodel.Picture), err
+	res = []*pmodel.Picture{}
+	if err := s.sender.PerformRequest(transport, "pictures", "getPictures", &input, s.eventListener, span, nil, res); err != nil {
+		return nil, err
+	}
+	return
 }
 
 func (s *APIGatewayService) GetPicture(
@@ -106,8 +118,11 @@ func (s *APIGatewayService) GetPicture(
 		UserId:    userId,
 		PictureId: pictureId,
 	}
-	result, err := s.sender.PerformRequest(transport, "pictures", "getPicture", &input, s.eventListener, span)
-	return result.(*pmodel.Picture), err
+	res = &pmodel.Picture{}
+	if err := s.sender.PerformRequest(transport, "pictures", "getPicture", &input, s.eventListener, span, nil, res); err != nil {
+		return nil, err
+	}
+	return
 }
 
 func (s *APIGatewayService) CreatePicture(
@@ -115,8 +130,11 @@ func (s *APIGatewayService) CreatePicture(
 	input *prpc.CreateUserPictureRequest,
 	span *opentracing.Span,
 ) (res *pmodel.Picture, err error) {
-	result, err := s.sender.PerformRequest(transport, "pictures", "createPicture", &input, s.eventListener, span)
-	return result.(*pmodel.Picture), err
+	res = &pmodel.Picture{}
+	if err := s.sender.PerformRequest(transport, "pictures", "createPicture", &input, s.eventListener, span, nil, res); err != nil {
+		return nil, err
+	}
+	return
 }
 
 func (s *APIGatewayService) DeletePicture(
@@ -129,8 +147,7 @@ func (s *APIGatewayService) DeletePicture(
 		UserId:    userId,
 		PictureId: pictureId,
 	}
-	_, err := s.sender.PerformRequest(transport, "pictures", "deletePicture", &input, s.eventListener, span)
-	return err
+	return s.sender.PerformRequest(transport, "pictures", "deletePicture", &input, s.eventListener, span, nil, nil)
 }
 
 func (s *APIGatewayService) GetAnalytics(
@@ -138,8 +155,11 @@ func (s *APIGatewayService) GetAnalytics(
 	input *anrpc.GetLogRequest,
 	span *opentracing.Span,
 ) (res *anrpc.AnalyticsEntryMessage, err error) {
-	result, err := s.sender.PerformRequest(transport, "pictures", "deletePicture", &input, s.eventListener, span)
-	return result.(*anrpc.AnalyticsEntryMessage), err
+	res = &anrpc.AnalyticsEntryMessage{}
+	if err := s.sender.PerformRequest(transport, "pictures", "deletePicture", &input, s.eventListener, span, nil, res); err != nil {
+		return nil, err
+	}
+	return
 }
 
 func NewAPIGatewayService(s *sender.Sender, el *eventslistener.EventListener) *APIGatewayService {
