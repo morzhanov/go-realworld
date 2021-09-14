@@ -2,7 +2,7 @@ syntax = "proto3";
 
 import "google/protobuf/empty.proto";
 
-package main;
+package users;
 
 option go_package = "github.com/morzhanov/go-realworld/api/rpc/users";
 

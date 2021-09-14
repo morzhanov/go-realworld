@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/morzhanov/go-realworld/internal/common/grpc/grpcserver"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/reflection"
 
 	arpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	"github.com/morzhanov/go-realworld/internal/auth/services"
@@ -21,19 +22,19 @@ type AuthRpcServer struct {
 }
 
 func (s *AuthRpcServer) ValidateRpcRequest(ctx context.Context, in *arpc.ValidateRpcRequestInput) (*arpc.ValidationResponse, error) {
-	span := s.PrepareContext(ctx)
+	ctx, span := s.PrepareContext(ctx)
 	defer span.Finish()
 	return s.authService.ValidateRpcRequest(in)
 }
 
 func (s *AuthRpcServer) Login(ctx context.Context, in *arpc.LoginInput) (*arpc.AuthResponse, error) {
-	span := s.PrepareContext(ctx)
+	ctx, span := s.PrepareContext(ctx)
 	defer span.Finish()
 	return s.authService.Login(ctx, in, &span)
 }
 
 func (s *AuthRpcServer) Signup(ctx context.Context, in *arpc.SignupInput) (res *arpc.AuthResponse, err error) {
-	span := s.PrepareContext(ctx)
+	ctx, span := s.PrepareContext(ctx)
 	defer span.Finish()
 	return s.authService.Signup(ctx, in, &span)
 }
@@ -56,5 +57,6 @@ func NewAuthRpcServer(
 		server:         grpc.NewServer(),
 	}
 	arpc.RegisterAuthServer(s.server, s)
+	reflection.Register(s.server)
 	return
 }

@@ -41,7 +41,7 @@ func NewUsersClient(cc grpc.ClientConnInterface) UsersClient {
 
 func (c *usersClient) GetUserData(ctx context.Context, in *GetUserDataRequest, opts ...grpc.CallOption) (*UserMessage, error) {
 	out := new(UserMessage)
-	err := c.cc.Invoke(ctx, "/main.Users/GetUserData", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/users.Users/GetUserData", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func (c *usersClient) GetUserData(ctx context.Context, in *GetUserDataRequest, o
 
 func (c *usersClient) GetUserDataByUsername(ctx context.Context, in *GetUserDataByUsernameRequest, opts ...grpc.CallOption) (*UserMessage, error) {
 	out := new(UserMessage)
-	err := c.cc.Invoke(ctx, "/main.Users/GetUserDataByUsername", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/users.Users/GetUserDataByUsername", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (c *usersClient) GetUserDataByUsername(ctx context.Context, in *GetUserData
 
 func (c *usersClient) ValidateUserPassword(ctx context.Context, in *ValidateUserPasswordRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, "/main.Users/ValidateUserPassword", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/users.Users/ValidateUserPassword", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func (c *usersClient) ValidateUserPassword(ctx context.Context, in *ValidateUser
 
 func (c *usersClient) CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*UserMessage, error) {
 	out := new(UserMessage)
-	err := c.cc.Invoke(ctx, "/main.Users/CreateUser", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/users.Users/CreateUser", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (c *usersClient) CreateUser(ctx context.Context, in *CreateUserRequest, opt
 
 func (c *usersClient) DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, "/main.Users/DeleteUser", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/users.Users/DeleteUser", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +143,7 @@ func _Users_GetUserData_Handler(srv interface{}, ctx context.Context, dec func(i
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/main.Users/GetUserData",
+		FullMethod: "/users.Users/GetUserData",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UsersServer).GetUserData(ctx, req.(*GetUserDataRequest))
@@ -161,7 +161,7 @@ func _Users_GetUserDataByUsername_Handler(srv interface{}, ctx context.Context, 
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/main.Users/GetUserDataByUsername",
+		FullMethod: "/users.Users/GetUserDataByUsername",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UsersServer).GetUserDataByUsername(ctx, req.(*GetUserDataByUsernameRequest))
@@ -179,7 +179,7 @@ func _Users_ValidateUserPassword_Handler(srv interface{}, ctx context.Context, d
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/main.Users/ValidateUserPassword",
+		FullMethod: "/users.Users/ValidateUserPassword",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UsersServer).ValidateUserPassword(ctx, req.(*ValidateUserPasswordRequest))
@@ -197,7 +197,7 @@ func _Users_CreateUser_Handler(srv interface{}, ctx context.Context, dec func(in
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/main.Users/CreateUser",
+		FullMethod: "/users.Users/CreateUser",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UsersServer).CreateUser(ctx, req.(*CreateUserRequest))
@@ -215,7 +215,7 @@ func _Users_DeleteUser_Handler(srv interface{}, ctx context.Context, dec func(in
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/main.Users/DeleteUser",
+		FullMethod: "/users.Users/DeleteUser",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UsersServer).DeleteUser(ctx, req.(*DeleteUserRequest))
@@ -227,7 +227,7 @@ func _Users_DeleteUser_Handler(srv interface{}, ctx context.Context, dec func(in
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Users_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "main.Users",
+	ServiceName: "users.Users",
 	HandlerType: (*UsersServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

@@ -33,7 +33,7 @@ func NewAuthClient(cc grpc.ClientConnInterface) AuthClient {
 
 func (c *authClient) ValidateRpcRequest(ctx context.Context, in *ValidateRpcRequestInput, opts ...grpc.CallOption) (*ValidationResponse, error) {
 	out := new(ValidationResponse)
-	err := c.cc.Invoke(ctx, "/main.Auth/ValidateRpcRequest", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/auth.Auth/ValidateRpcRequest", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (c *authClient) ValidateRpcRequest(ctx context.Context, in *ValidateRpcRequ
 
 func (c *authClient) Login(ctx context.Context, in *LoginInput, opts ...grpc.CallOption) (*AuthResponse, error) {
 	out := new(AuthResponse)
-	err := c.cc.Invoke(ctx, "/main.Auth/Login", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/auth.Auth/Login", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (c *authClient) Login(ctx context.Context, in *LoginInput, opts ...grpc.Cal
 
 func (c *authClient) Signup(ctx context.Context, in *SignupInput, opts ...grpc.CallOption) (*AuthResponse, error) {
 	out := new(AuthResponse)
-	err := c.cc.Invoke(ctx, "/main.Auth/Signup", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/auth.Auth/Signup", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func _Auth_ValidateRpcRequest_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/main.Auth/ValidateRpcRequest",
+		FullMethod: "/auth.Auth/ValidateRpcRequest",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AuthServer).ValidateRpcRequest(ctx, req.(*ValidateRpcRequestInput))
@@ -122,7 +122,7 @@ func _Auth_Login_Handler(srv interface{}, ctx context.Context, dec func(interfac
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/main.Auth/Login",
+		FullMethod: "/auth.Auth/Login",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AuthServer).Login(ctx, req.(*LoginInput))
@@ -140,7 +140,7 @@ func _Auth_Signup_Handler(srv interface{}, ctx context.Context, dec func(interfa
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/main.Auth/Signup",
+		FullMethod: "/auth.Auth/Signup",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AuthServer).Signup(ctx, req.(*SignupInput))
@@ -152,7 +152,7 @@ func _Auth_Signup_Handler(srv interface{}, ctx context.Context, dec func(interfa
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Auth_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "main.Auth",
+	ServiceName: "auth.Auth",
 	HandlerType: (*AuthServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

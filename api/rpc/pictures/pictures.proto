@@ -2,9 +2,9 @@ syntax = "proto3";
 
 import "google/protobuf/empty.proto";
 
-package main;
+package pictures;
 
-option go_package = "github.com/morzhanov/go-realworld/api/rpc/analytics";
+option go_package = "github.com/morzhanov/go-realworld/api/rpc/pictures";
 
 service Pictures {
   // Get user pictures

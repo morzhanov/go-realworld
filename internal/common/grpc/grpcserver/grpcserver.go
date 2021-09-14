@@ -19,10 +19,10 @@ type BaseGrpcServer struct {
 	Uri    string
 }
 
-func (s *BaseGrpcServer) PrepareContext(ctx context.Context) opentracing.Span {
+func (s *BaseGrpcServer) PrepareContext(ctx context.Context) (context.Context, opentracing.Span) {
 	span := tracing.StartSpanFromGrpcRequest(*s.Tracer, ctx)
 	ctx = context.WithValue(ctx, "transport", sender.RpcTransport)
-	return span
+	return ctx, span
 }
 
 func (s *BaseGrpcServer) Listen(ctx context.Context, cancel context.CancelFunc, server *grpc.Server) {

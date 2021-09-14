@@ -12,12 +12,17 @@ type RestServiceAPIItem struct {
 	Url    string `yaml:"url"`
 }
 
+type GrpcServiceAPIItem struct {
+	Method string `yaml:"method"`
+}
+
 type EventsServiceAPIItem struct {
 	Event string `yaml:"event"`
 }
 
 type ServiceAPI struct {
 	Rest   map[string]RestServiceAPIItem   `yaml:"rest"`
+	Grpc   map[string]GrpcServiceAPIItem   `yaml:"grpc"`
 	Events map[string]EventsServiceAPIItem `yaml:"events"`
 }
 

@@ -20,17 +20,12 @@ type AuthService struct {
 	accessTokenSecret string
 }
 
-func getTransport(ctx context.Context) sender.Transport {
-	val := ctx.Value("transport")
-	return val.(sender.Transport)
-}
-
 func (s *AuthService) Login(
 	ctx context.Context,
 	data *authrpc.LoginInput,
 	span *opentracing.Span,
 ) (res *authrpc.AuthResponse, err error) {
-	transport := getTransport(ctx)
+	transport := s.sender.GetTransportFromContext(ctx)
 
 	d := usersrpc.ValidateUserPasswordRequest{Username: data.Username, Password: data.Password}
 	err = s.sender.PerformRequest(transport, "users", "validatePassword", &d, s.el, span, nil, nil)
@@ -58,7 +53,7 @@ func (s *AuthService) Signup(
 	data *authrpc.SignupInput,
 	span *opentracing.Span,
 ) (res *authrpc.AuthResponse, err error) {
-	transport := getTransport(ctx)
+	transport := s.sender.GetTransportFromContext(ctx)
 
 	d := usersrpc.CreateUserRequest{Username: data.Username, Password: data.Password}
 	user := &usersrpc.UserMessage{}

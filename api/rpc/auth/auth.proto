@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package main;
+package auth;
 
 option go_package = "github.com/morzhanov/go-realworld/api/rpc/auth";
 

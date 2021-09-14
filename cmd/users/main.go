@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	_ "github.com/jnewmano/grpc-json-proxy/codec"
 	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/common/db"
 	"github.com/morzhanov/go-realworld/internal/common/helper"

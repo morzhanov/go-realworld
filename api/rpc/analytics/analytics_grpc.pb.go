@@ -35,7 +35,7 @@ func NewAnalyticsClient(cc grpc.ClientConnInterface) AnalyticsClient {
 
 func (c *analyticsClient) LogData(ctx context.Context, in *LogDataRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, "/main.Analytics/LogData", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/analytics.Analytics/LogData", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (c *analyticsClient) LogData(ctx context.Context, in *LogDataRequest, opts 
 
 func (c *analyticsClient) GetLog(ctx context.Context, in *GetLogRequest, opts ...grpc.CallOption) (*AnalyticsEntryMessage, error) {
 	out := new(AnalyticsEntryMessage)
-	err := c.cc.Invoke(ctx, "/main.Analytics/GetLog", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/analytics.Analytics/GetLog", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func _Analytics_LogData_Handler(srv interface{}, ctx context.Context, dec func(i
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/main.Analytics/LogData",
+		FullMethod: "/analytics.Analytics/LogData",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AnalyticsServer).LogData(ctx, req.(*LogDataRequest))
@@ -113,7 +113,7 @@ func _Analytics_GetLog_Handler(srv interface{}, ctx context.Context, dec func(in
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/main.Analytics/GetLog",
+		FullMethod: "/analytics.Analytics/GetLog",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AnalyticsServer).GetLog(ctx, req.(*GetLogRequest))
@@ -125,7 +125,7 @@ func _Analytics_GetLog_Handler(srv interface{}, ctx context.Context, dec func(in
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Analytics_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "main.Analytics",
+	ServiceName: "analytics.Analytics",
 	HandlerType: (*AnalyticsServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

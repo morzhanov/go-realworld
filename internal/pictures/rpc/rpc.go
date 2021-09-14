@@ -2,8 +2,10 @@ package rpc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/morzhanov/go-realworld/internal/common/grpc/grpcserver"
+	"reflect"
 
 	prpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
 	"github.com/morzhanov/go-realworld/internal/common/config"
@@ -11,6 +13,7 @@ import (
 	"github.com/opentracing/opentracing-go"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -22,28 +25,32 @@ type PicturesRpcServer struct {
 }
 
 func (s *PicturesRpcServer) GetUserPictures(ctx context.Context, in *prpc.GetUserPicturesRequest) (*prpc.PicturesMessage, error) {
-	span := s.PrepareContext(ctx)
+	ctx, span := s.PrepareContext(ctx)
 	defer span.Finish()
 	return s.picturesService.GetUserPictures(in.UserId)
 }
 
 func (s *PicturesRpcServer) GetUserPicture(ctx context.Context, in *prpc.GetUserPictureRequest) (*prpc.PictureMessage, error) {
-	span := s.PrepareContext(ctx)
+	ctx, span := s.PrepareContext(ctx)
 	defer span.Finish()
-	return s.picturesService.GetUserPicture(in.UserId, in.PictureId)
+	res, err := s.picturesService.GetUserPicture(in.UserId, in.PictureId)
+	if err == nil && reflect.ValueOf(res).IsNil() {
+		return nil, errors.New("picture not found")
+	}
+	return res, err
 }
 
 func (s *PicturesRpcServer) CreateUserPicture(ctx context.Context, in *prpc.CreateUserPictureRequest) (*prpc.PictureMessage, error) {
-	span := s.PrepareContext(ctx)
+	ctx, span := s.PrepareContext(ctx)
 	defer span.Finish()
 	return s.picturesService.CreateUserPicture(in)
 }
 
 func (s *PicturesRpcServer) DeleteUserPicture(ctx context.Context, in *prpc.DeleteUserPictureRequest) (*emptypb.Empty, error) {
-	span := s.PrepareContext(ctx)
+	ctx, span := s.PrepareContext(ctx)
 	defer span.Finish()
 	err := s.picturesService.DeleteUserPicture(in.UserId, in.PictureId)
-	return nil, err
+	return &emptypb.Empty{}, err
 }
 
 func (s *PicturesRpcServer) Listen(ctx context.Context, cancel context.CancelFunc) {
@@ -64,5 +71,6 @@ func NewPicturesRpcServer(
 		server:          grpc.NewServer(),
 	}
 	prpc.RegisterPicturesServer(s.server, s)
+	reflection.Register(s.server)
 	return
 }

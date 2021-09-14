@@ -42,7 +42,7 @@ func (s *PictureService) GetUserPictures(userId string) (*prpc.PicturesMessage, 
 
 func (s *PictureService) GetUserPicture(userId string, pictureId string) (*prpc.PictureMessage, error) {
 	q := `SELECT * FROM pictures
-		WHERE id = $1 AND pictures.user_id = $2`
+		WHERE pictures.id = $1 AND pictures.user_id = $2`
 	row := s.db.QueryRow(q, pictureId, userId)
 
 	res := &Picture{}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/morzhanov/go-realworld/internal/common/grpc/grpcserver"
+	"google.golang.org/grpc/reflection"
 
 	urpc "github.com/morzhanov/go-realworld/api/rpc/users"
 	"github.com/morzhanov/go-realworld/internal/common/config"
@@ -22,35 +23,35 @@ type UsersRpcServer struct {
 }
 
 func (s *UsersRpcServer) GetUserData(ctx context.Context, in *urpc.GetUserDataRequest) (res *urpc.UserMessage, err error) {
-	span := s.PrepareContext(ctx)
+	ctx, span := s.PrepareContext(ctx)
 	defer span.Finish()
 	return s.usersService.GetUserData(in.UserId)
 }
 
 func (s *UsersRpcServer) GetUserDataByUsername(ctx context.Context, in *urpc.GetUserDataByUsernameRequest) (res *urpc.UserMessage, err error) {
-	span := s.PrepareContext(ctx)
+	ctx, span := s.PrepareContext(ctx)
 	defer span.Finish()
 	return s.usersService.GetUserDataByUsername(in.Username)
 }
 
 func (s *UsersRpcServer) ValidateUserPassword(ctx context.Context, in *urpc.ValidateUserPasswordRequest) (res *emptypb.Empty, err error) {
-	span := s.PrepareContext(ctx)
+	ctx, span := s.PrepareContext(ctx)
 	defer span.Finish()
 	err = s.usersService.ValidateUserPassword(in)
-	return res, err
+	return &emptypb.Empty{}, err
 }
 
 func (s *UsersRpcServer) CreateUser(ctx context.Context, in *urpc.CreateUserRequest) (res *urpc.UserMessage, err error) {
-	span := s.PrepareContext(ctx)
+	ctx, span := s.PrepareContext(ctx)
 	defer span.Finish()
 	return s.usersService.CreateUser(in)
 }
 
 func (s *UsersRpcServer) DeleteUser(ctx context.Context, in *urpc.DeleteUserRequest) (res *emptypb.Empty, err error) {
-	span := s.PrepareContext(ctx)
+	ctx, span := s.PrepareContext(ctx)
 	defer span.Finish()
 	err = s.usersService.DeleteUser(in.UserId)
-	return res, err
+	return &emptypb.Empty{}, err
 }
 
 func (s *UsersRpcServer) Listen(ctx context.Context, cancel context.CancelFunc) {
@@ -71,5 +72,6 @@ func NewUsersRpcServer(
 		server:         grpc.NewServer(),
 	}
 	urpc.RegisterUsersServer(s.server, s)
+	reflection.Register(s.server)
 	return
 }

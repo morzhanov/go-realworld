@@ -6,6 +6,11 @@ analytics:
     getLogs:
       method: GET
       url: /analytics/:offset
+  grpc:
+    logData:
+      method: LogData
+    getLogs:
+      method: GetLog
   events:
     logData:
       event: logData
@@ -23,6 +28,13 @@ auth:
     signup:
       method: POST
       url: /signup
+  grpc:
+    validateRpcRequest:
+      method: ValidateRpcRequest
+    login:
+      method: Login
+    signup:
+      method: Signup
   events:
     validateEventsRequest:
       event: validateEventsRequest
@@ -45,6 +57,15 @@ pictures:
     deletePicture:
       method: DELETE
       url: /pictures/:userId/:id
+  grpc:
+    getPictures:
+      method: GetUserPictures
+    getPicture:
+      method: GetUserPicture
+    createPicture:
+      method: CreateUserPicture
+    deletePicture:
+      method: DeleteUserPicture
   events:
     getPictures:
       event: getPictures
@@ -72,6 +93,17 @@ users:
     deleteUser:
       method: DELETE
       url: /users/:id
+  grpc:
+    getUser:
+      method: GetUserData
+    getUserByUsername:
+      method: GetUserDataByUsername
+    validatePassword:
+      method: ValidateUserPassword
+    createUser:
+      method: CreateUser
+    deleteUser:
+      method: DeleteUser
   events:
     getUser:
       event: getUser

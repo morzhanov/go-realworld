@@ -11,9 +11,6 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-var GrpcMeta opentracing.BuiltinFormat = 4
-var EventsHeaders opentracing.BuiltinFormat = 5
-
 func InjectHttpSpan(span opentracing.Span, request *http.Request) error {
 	return span.Tracer().Inject(
 		span.Context(),
@@ -25,7 +22,7 @@ func InjectGrpcSpan(span opentracing.Span, ctx context.Context) (context.Context
 	meta := make(map[string]string, 0)
 	err := span.Tracer().Inject(
 		span.Context(),
-		GrpcMeta,
+		opentracing.TextMap,
 		opentracing.TextMapCarrier(meta))
 	if err != nil {
 		return nil, err
@@ -45,7 +42,7 @@ func InjectEventsSpan(span opentracing.Span, m *kafka.Message) error {
 	data := make(map[string]string, 0)
 	err := span.Tracer().Inject(
 		span.Context(),
-		EventsHeaders,
+		opentracing.TextMap,
 		opentracing.TextMapCarrier(data),
 	)
 	if err != nil {
@@ -77,7 +74,7 @@ func ExtractGrpcSpan(tracer opentracing.Tracer, ctx context.Context) (opentracin
 	}
 
 	return tracer.Extract(
-		GrpcMeta,
+		opentracing.TextMap,
 		opentracing.TextMapCarrier(data),
 	)
 }
@@ -89,7 +86,7 @@ func ExtractEventsSpan(tracer opentracing.Tracer, m *kafka.Message) (opentracing
 	}
 
 	return tracer.Extract(
-		EventsHeaders,
+		opentracing.TextMap,
 		opentracing.TextMapCarrier(data),
 	)
 }

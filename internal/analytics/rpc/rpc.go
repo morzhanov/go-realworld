@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/morzhanov/go-realworld/internal/common/grpc/grpcserver"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/reflection"
 
 	anrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
 	"github.com/morzhanov/go-realworld/internal/analytics/services"
@@ -22,14 +23,14 @@ type AnalyticsRpcServer struct {
 }
 
 func (s *AnalyticsRpcServer) LogData(ctx context.Context, in *anrpc.LogDataRequest) (res *emptypb.Empty, err error) {
-	span := s.PrepareContext(ctx)
+	ctx, span := s.PrepareContext(ctx)
 	defer span.Finish()
 	err = s.analyticsService.LogData(in)
-	return res, err
+	return &emptypb.Empty{}, err
 }
 
 func (s *AnalyticsRpcServer) GetLog(ctx context.Context, in *anrpc.GetLogRequest) (res *anrpc.AnalyticsEntryMessage, err error) {
-	span := s.PrepareContext(ctx)
+	ctx, span := s.PrepareContext(ctx)
 	defer span.Finish()
 	return s.analyticsService.GetLog(in)
 }
@@ -52,5 +53,6 @@ func NewAnalyticsRpcServer(
 		server:           grpc.NewServer(),
 	}
 	anrpc.RegisterAnalyticsServer(s.server, s)
+	reflection.Register(s.server)
 	return
 }

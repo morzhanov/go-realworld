@@ -19,10 +19,10 @@ type Config struct {
 
 	GrpcAddr          string `mapstructure:"GRPC_ADDR"`
 	GrpcPort          string `mapstructure:"GRPC_PORT"`
-	PicturesGrpcAddr  string `mapstructure:"PICTURES_GRPC_PORT"`
-	UsersGrpcAddr     string `mapstructure:"USERS_GRPC_PORT"`
-	AnalyticsGrpcAddr string `mapstructure:"ANALYTICS_GRPC_PORT"`
-	AuthGrpcAddr      string `mapstructure:"AUTH_GRPC_PORT"`
+	PicturesGrpcPort  string `mapstructure:"PICTURES_GRPC_PORT"`
+	UsersGrpcPort     string `mapstructure:"USERS_GRPC_PORT"`
+	AnalyticsGrpcPort string `mapstructure:"ANALYTICS_GRPC_PORT"`
+	AuthGrpcPort      string `mapstructure:"AUTH_GRPC_PORT"`
 
 	RestAddr          string `mapstructure:"REST_ADDR"`
 	RestPort          string `mapstructure:"REST_PORT"`
