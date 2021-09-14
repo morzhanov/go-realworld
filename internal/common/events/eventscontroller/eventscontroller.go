@@ -2,35 +2,43 @@ package eventscontroller
 
 import (
 	"context"
-	"encoding/json"
-	"github.com/morzhanov/go-realworld/internal/common/tracing"
-	"go.uber.org/zap"
-	"time"
-
 	"github.com/morzhanov/go-realworld/internal/common/sender"
+	"github.com/morzhanov/go-realworld/internal/common/tracing"
 	"github.com/opentracing/opentracing-go"
 	"github.com/segmentio/kafka-go"
+	"go.uber.org/zap"
 )
 
 type BaseEventsController struct {
-	tracer *opentracing.Tracer
-	sender *sender.Sender
-	conn   *kafka.Conn
-	Logger *zap.Logger
+	tracer   *opentracing.Tracer
+	sender   *sender.Sender
+	conn     *kafka.Conn
+	topic    string
+	kafkaUri string
+	Logger   *zap.Logger
 }
 
-func createKafkaConnection(topic string, partition int, kafkaUri string) (*kafka.Conn, error) {
-	conn, err := kafka.DialLeader(context.Background(), "tcp", kafkaUri, topic, partition)
+func (c *BaseEventsController) createTopic() error {
+	topicConfigs := []kafka.TopicConfig{
+		{
+			Topic:             c.topic,
+			NumPartitions:     1,
+			ReplicationFactor: 1,
+		},
+	}
+	return c.conn.CreateTopics(topicConfigs...)
+}
+
+func (c *BaseEventsController) createKafkaConnection(partition int) error {
+	conn, err := kafka.DialLeader(context.Background(), "tcp", c.kafkaUri, c.topic, partition)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	if err := conn.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
-		return nil, err
+	c.conn = conn
+	if err := c.createTopic(); err != nil {
+		return err
 	}
-	if err := conn.SetReadDeadline(time.Now().Add(10 * time.Second)); err != nil {
-		return nil, err
-	}
-	return conn, nil
+	return nil
 }
 
 func (c *BaseEventsController) CreateSpan(in *kafka.Message) opentracing.Span {
@@ -39,38 +47,25 @@ func (c *BaseEventsController) CreateSpan(in *kafka.Message) opentracing.Span {
 
 func (c *BaseEventsController) Listen(
 	ctx context.Context,
-	cancel context.CancelFunc,
 	processRequest func(*kafka.Message),
 ) {
-loop:
+	r := kafka.NewReader(kafka.ReaderConfig{
+		Brokers:  []string{c.kafkaUri},
+		Topic:    c.topic,
+		MinBytes: 10e3,
+		MaxBytes: 10e6,
+	})
+
 	for {
-		batch := c.conn.ReadBatch(10e3, 1e6) // fetch 10KB min, 1MB max
-		b := make([]byte, 10e3)              // 10KB max per message
-
-		_, err := batch.Read(b)
+		m, err := r.ReadMessage(context.Background())
 		if err != nil {
-			break
+			c.Logger.Error(err.Error())
+			continue
 		}
-		input := kafka.Message{}
-		err = json.Unmarshal(b, &input)
-		if err != nil {
-			cancel()
-			c.Logger.Fatal(err.Error())
-		}
-		go processRequest(&input)
-
-		if err := batch.Close(); err != nil {
-			cancel()
-			c.Logger.Fatal(err.Error())
-		}
-		if err := c.conn.Close(); err != nil {
-			cancel()
-			c.Logger.Fatal(err.Error())
-		}
-
+		go processRequest(&m)
 		select {
 		case <-ctx.Done():
-			break loop
+			break
 		default:
 			continue
 		}
@@ -88,6 +83,7 @@ func NewEventsController(
 	kafkaUri string,
 	logger *zap.Logger,
 ) (*BaseEventsController, error) {
-	conn, err := createKafkaConnection(topic, 0, kafkaUri)
-	return &BaseEventsController{sender: s, conn: conn, tracer: tracer, Logger: logger}, err
+	c := &BaseEventsController{sender: s, tracer: tracer, Logger: logger, topic: topic, kafkaUri: kafkaUri}
+	err := c.createKafkaConnection(0)
+	return c, err
 }

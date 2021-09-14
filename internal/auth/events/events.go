@@ -84,10 +84,9 @@ func (c *AuthEventsController) signup(in *kafka.Message) error {
 	return c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
 }
 
-func (c *AuthEventsController) Listen(ctx context.Context, cancel context.CancelFunc) {
+func (c *AuthEventsController) Listen(ctx context.Context) {
 	c.BaseEventsController.Listen(
 		ctx,
-		cancel,
 		func(m *kafka.Message) {
 			err := c.processRequest(m)
 			if err != nil {
