@@ -1,10 +1,10 @@
 package sender
 
 import (
-	analyticsrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
-	authrpc "github.com/morzhanov/go-realworld/api/rpc/auth"
-	picturesrpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
-	usersrpc "github.com/morzhanov/go-realworld/api/rpc/users"
+	analyticsrpc "github.com/morzhanov/go-realworld/api/grpc/analytics"
+	authrpc "github.com/morzhanov/go-realworld/api/grpc/auth"
+	picturesrpc "github.com/morzhanov/go-realworld/api/grpc/pictures"
+	usersrpc "github.com/morzhanov/go-realworld/api/grpc/users"
 	"github.com/morzhanov/go-realworld/internal/common/config"
 	"go.uber.org/zap"
 	"net/http"

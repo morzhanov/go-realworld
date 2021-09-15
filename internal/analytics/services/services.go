@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	anrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
+	anrpc "github.com/morzhanov/go-realworld/api/grpc/analytics"
 	. "github.com/morzhanov/go-realworld/internal/analytics/models"
 	"github.com/morzhanov/go-realworld/internal/common/mq"
 	"github.com/segmentio/kafka-go"
@@ -35,15 +35,18 @@ func (s *AnalyticsService) GetLog(data *anrpc.GetLogRequest) (res *anrpc.Analyti
 		Partition: s.mq.Partition,
 		MaxWait:   1 * time.Second,
 	})
-	defer r.Close()
-
-	r.SetOffset(int64(data.Offset))
+	if err := r.SetOffset(int64(data.Offset)); err != nil {
+		return nil, err
+	}
 
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
 	m, err := r.ReadMessage(ctx)
+	if err := r.Close(); err != nil {
+		return nil, err
+	}
 	if err != nil && err.Error() != "context deadline exceeded" {
 		return nil, err
 	}

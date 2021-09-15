@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	prpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
+	prpc "github.com/morzhanov/go-realworld/api/grpc/pictures"
 	"github.com/morzhanov/go-realworld/internal/common/metrics"
 	"github.com/morzhanov/go-realworld/internal/pictures/services"
 	"github.com/opentracing/opentracing-go"

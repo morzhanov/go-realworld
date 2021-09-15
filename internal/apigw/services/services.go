@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/gin-gonic/gin"
-	anrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
-	authrpc "github.com/morzhanov/go-realworld/api/rpc/auth"
-	prpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
+	anrpc "github.com/morzhanov/go-realworld/api/grpc/analytics"
+	authrpc "github.com/morzhanov/go-realworld/api/grpc/auth"
+	prpc "github.com/morzhanov/go-realworld/api/grpc/pictures"
 	"github.com/morzhanov/go-realworld/internal/common/events/eventslistener"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
 	"github.com/opentracing/opentracing-go"

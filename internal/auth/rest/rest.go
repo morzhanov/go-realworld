@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	arpc "github.com/morzhanov/go-realworld/api/rpc/auth"
+	arpc "github.com/morzhanov/go-realworld/api/grpc/auth"
 	"github.com/morzhanov/go-realworld/internal/auth/services"
 	"github.com/morzhanov/go-realworld/internal/common/metrics"
 	"github.com/morzhanov/go-realworld/internal/common/sender"

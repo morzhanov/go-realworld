@@ -1,4 +1,4 @@
-package rpc
+package grpc
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/reflection"
 
-	arpc "github.com/morzhanov/go-realworld/api/rpc/auth"
+	arpc "github.com/morzhanov/go-realworld/api/grpc/auth"
 	"github.com/morzhanov/go-realworld/internal/auth/services"
 	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/opentracing/opentracing-go"

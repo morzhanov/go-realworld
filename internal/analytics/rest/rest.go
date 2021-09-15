@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	anrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
+	anrpc "github.com/morzhanov/go-realworld/api/grpc/analytics"
 	"github.com/morzhanov/go-realworld/internal/analytics/services"
 	"github.com/morzhanov/go-realworld/internal/common/metrics"
 	"github.com/morzhanov/go-realworld/internal/common/rest/restcontroller"

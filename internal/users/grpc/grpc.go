@@ -1,4 +1,4 @@
-package rpc
+package grpc
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"github.com/morzhanov/go-realworld/internal/common/grpc/grpcserver"
 	"google.golang.org/grpc/reflection"
 
-	urpc "github.com/morzhanov/go-realworld/api/rpc/users"
+	urpc "github.com/morzhanov/go-realworld/api/grpc/users"
 	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/users/services"
 	"github.com/opentracing/opentracing-go"

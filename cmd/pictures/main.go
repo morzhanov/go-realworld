@@ -11,8 +11,8 @@ import (
 	"github.com/morzhanov/go-realworld/internal/common/sender"
 	"github.com/morzhanov/go-realworld/internal/common/tracing"
 	"github.com/morzhanov/go-realworld/internal/pictures/events"
+	"github.com/morzhanov/go-realworld/internal/pictures/grpc"
 	"github.com/morzhanov/go-realworld/internal/pictures/rest"
-	"github.com/morzhanov/go-realworld/internal/pictures/rpc"
 	"github.com/morzhanov/go-realworld/internal/pictures/services"
 	"log"
 	"os"
@@ -65,7 +65,7 @@ func main() {
 
 	service := services.NewPicturesService(dbs)
 	l.Info("service created...")
-	rpcServer := rpc.NewPicturesRpcServer(service, c, t, l)
+	rpcServer := grpc.NewPicturesRpcServer(service, c, t, l)
 	l.Info("grpc server created...")
 	restController := rest.NewPicturesRestController(service, t, l, mc)
 	l.Info("rest controller created...")
@@ -86,6 +86,8 @@ func main() {
 		helper.HandleInitializationError(err, "migrations", l)
 	}
 	l.Info("all database migrations applied...")
+
+	go s.Connect(c, cancel)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)

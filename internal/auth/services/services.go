@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/dgrijalva/jwt-go"
-	authrpc "github.com/morzhanov/go-realworld/api/rpc/auth"
-	usersrpc "github.com/morzhanov/go-realworld/api/rpc/users"
+	authrpc "github.com/morzhanov/go-realworld/api/grpc/auth"
+	usersrpc "github.com/morzhanov/go-realworld/api/grpc/users"
 	aconfig "github.com/morzhanov/go-realworld/internal/auth/config"
 	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/common/events/eventslistener"

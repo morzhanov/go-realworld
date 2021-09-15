@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 
-	prpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
+	prpc "github.com/morzhanov/go-realworld/api/grpc/pictures"
 	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/common/events"
 	"github.com/morzhanov/go-realworld/internal/common/events/eventscontroller"
@@ -120,6 +120,7 @@ func NewPicturesEventsController(
 		c.KafkaTopic,
 		c.KafkaUri,
 		logger,
+		c,
 	)
 	return &PicturesEventsController{
 		service:              s,

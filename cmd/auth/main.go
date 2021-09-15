@@ -4,8 +4,8 @@ import (
 	"context"
 	_ "github.com/jnewmano/grpc-json-proxy/codec"
 	"github.com/morzhanov/go-realworld/internal/auth/events"
+	"github.com/morzhanov/go-realworld/internal/auth/grpc"
 	"github.com/morzhanov/go-realworld/internal/auth/rest"
-	"github.com/morzhanov/go-realworld/internal/auth/rpc"
 	"github.com/morzhanov/go-realworld/internal/auth/services"
 	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/common/events/eventslistener"
@@ -62,7 +62,7 @@ func main() {
 
 	service := services.NewAuthService(s, el, c)
 	l.Info("service created...")
-	rpcServer := rpc.NewAuthRpcServer(service, c, t, l)
+	rpcServer := grpc.NewAuthRpcServer(service, c, t, l)
 	l.Info("grpc server created...")
 	restController := rest.NewAuthRestController(service, t, l, mc)
 	l.Info("rest controller created...")

@@ -16,6 +16,7 @@ type Listener struct {
 
 type EventListener struct {
 	listeners map[string]*Listener
+	logger    *zap.Logger
 }
 
 func (e *EventListener) AddListener(l *Listener) error {
@@ -36,7 +37,10 @@ func (e *EventListener) RemoveListener(l *Listener) error {
 
 func (e *EventListener) processEvent(m *kafka.Message) {
 	mp := map[string]string{}
-	json.Unmarshal(m.Value, &mp)
+	if err := json.Unmarshal(m.Value, &mp); err != nil {
+		e.logger.Error(err.Error())
+		return
+	}
 	eventId := mp["EventId"]
 	for _, l := range e.listeners {
 		if eventId == l.Uuid {
@@ -48,21 +52,22 @@ func (e *EventListener) processEvent(m *kafka.Message) {
 func NewEventListener(
 	ctx context.Context,
 	c *config.Config,
-	log *zap.Logger,
+	logger *zap.Logger,
 ) *EventListener {
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:  []string{c.KafkaUri},
 		Topic:    c.ResultsKafkaTopic,
+		GroupID:  c.KafkaResultsConsumerGroupId,
 		MinBytes: 10e3,
 		MaxBytes: 10e6,
 	})
-	el := EventListener{make(map[string]*Listener)}
+	el := EventListener{make(map[string]*Listener), logger}
 
 	go func() {
 		for {
 			m, err := r.ReadMessage(context.Background())
 			if err != nil {
-				log.Error(err.Error())
+				el.logger.Error(err.Error())
 				continue
 			}
 			go el.processEvent(&m)

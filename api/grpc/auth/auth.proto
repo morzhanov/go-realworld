@@ -10,7 +10,7 @@ service Auth {
   rpc Signup (SignupInput) returns (AuthResponse) {}
 }
 
-// Validate rpc request
+// Validate grpc request
 message ValidateRpcRequestInput {
   string access_token = 1;
   string method = 2;

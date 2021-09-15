@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 
-	urpc "github.com/morzhanov/go-realworld/api/rpc/users"
+	urpc "github.com/morzhanov/go-realworld/api/grpc/users"
 	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/common/events"
 	"github.com/morzhanov/go-realworld/internal/common/events/eventscontroller"
@@ -143,6 +143,7 @@ func NewUsersEventsController(
 		c.KafkaTopic,
 		c.KafkaUri,
 		logger,
+		c,
 	)
 	return &UsersEventsController{
 		service:              s,

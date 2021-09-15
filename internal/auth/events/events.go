@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 
-	arpc "github.com/morzhanov/go-realworld/api/rpc/auth"
+	arpc "github.com/morzhanov/go-realworld/api/grpc/auth"
 	"github.com/morzhanov/go-realworld/internal/auth/services"
 	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/common/events"
@@ -110,6 +110,7 @@ func NewAuthEventsController(
 		c.KafkaTopic,
 		c.KafkaUri,
 		logger,
+		c,
 	)
 	return &AuthEventsController{
 		service:              s,

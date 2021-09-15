@@ -4,8 +4,8 @@ import (
 	"context"
 	_ "github.com/jnewmano/grpc-json-proxy/codec"
 	"github.com/morzhanov/go-realworld/internal/analytics/events"
+	"github.com/morzhanov/go-realworld/internal/analytics/grpc"
 	"github.com/morzhanov/go-realworld/internal/analytics/rest"
-	"github.com/morzhanov/go-realworld/internal/analytics/rpc"
 	"github.com/morzhanov/go-realworld/internal/analytics/services"
 	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/common/helper"
@@ -66,7 +66,7 @@ func main() {
 
 	service := services.NewAnalyticsService(messageQ)
 	l.Info("service created...")
-	rpcServer := rpc.NewAnalyticsRpcServer(service, c, t, l)
+	rpcServer := grpc.NewAnalyticsRpcServer(service, c, t, l)
 	l.Info("grpc server created...")
 	restController := rest.NewAnalyticsRestController(service, t, l, mc)
 	l.Info("rest controller created...")

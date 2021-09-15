@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	analyticsrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
-	authrpc "github.com/morzhanov/go-realworld/api/rpc/auth"
+	analyticsrpc "github.com/morzhanov/go-realworld/api/grpc/analytics"
+	authrpc "github.com/morzhanov/go-realworld/api/grpc/auth"
 	"go.uber.org/zap"
 	"io/ioutil"
 	"net/http"
@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
-	picturesrpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
-	usersrpc "github.com/morzhanov/go-realworld/api/rpc/users"
+	picturesrpc "github.com/morzhanov/go-realworld/api/grpc/pictures"
+	usersrpc "github.com/morzhanov/go-realworld/api/grpc/users"
 	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/common/events"
 	"github.com/morzhanov/go-realworld/internal/common/events/eventslistener"
@@ -328,12 +328,20 @@ func (s *Sender) eventsRequest(
 	}
 
 	if wait {
-		b := <-response
-		if err := el.RemoveListener(&l); err != nil {
-			return err
-		}
-		if err := json.Unmarshal(b, &res); err != nil {
-			return err
+		select {
+		case <-time.After(20 * time.Second):
+			return fmt.Errorf("event response waiting timeout exceeded: %s", eventId)
+		case b := <-response:
+			if err := el.RemoveListener(&l); err != nil {
+				return err
+			}
+			msg := events.EventData{}
+			if err := json.Unmarshal(b, &msg); err != nil {
+				return err
+			}
+			if err := json.Unmarshal([]byte(msg.Data), &res); err != nil {
+				return err
+			}
 		}
 	}
 	return
@@ -394,14 +402,12 @@ func (s *Sender) setupGrpcClient(c *config.Config, cancel context.CancelFunc) {
 }
 
 func (s *Sender) setupEventsClient(c *config.Config) {
-	kafkaUri := c.KafkaUri
-
 	s.eventsClient = &EventsClient{
-		Auth:      &EventsClientItem{[]string{kafkaUri}, c.AuthKafkaTopic},
-		Analytics: &EventsClientItem{[]string{kafkaUri}, c.AnalyticsKafkaTopic},
-		Pictures:  &EventsClientItem{[]string{kafkaUri}, c.PicturesKafkaTopic},
-		Users:     &EventsClientItem{[]string{kafkaUri}, c.UsersKafkaTopic},
-		Results:   &EventsClientItem{[]string{kafkaUri}, c.ResultsKafkaTopic},
+		Auth:      &EventsClientItem{[]string{c.KafkaUri}, c.AuthKafkaTopic},
+		Analytics: &EventsClientItem{[]string{c.KafkaUri}, c.AnalyticsKafkaTopic},
+		Pictures:  &EventsClientItem{[]string{c.KafkaUri}, c.PicturesKafkaTopic},
+		Users:     &EventsClientItem{[]string{c.KafkaUri}, c.UsersKafkaTopic},
+		Results:   &EventsClientItem{[]string{c.KafkaUri}, c.ResultsKafkaTopic},
 	}
 }
 
