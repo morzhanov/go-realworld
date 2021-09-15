@@ -23,7 +23,6 @@ message ValidateRestRequestInput {
 
 message ValidateEventsRequestInput {
   string access_token = 1;
-  string event = 2;
 }
 
 message ValidationResponse {

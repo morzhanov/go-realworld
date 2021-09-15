@@ -2,7 +2,6 @@ package events
 
 import (
 	"encoding/json"
-	"reflect"
 )
 
 type EventData struct {
@@ -12,11 +11,10 @@ type EventData struct {
 
 func ParseEventsResponse(inputValue []byte, res interface{}) (payload *EventData, err error) {
 	payload = &EventData{}
-	if err := json.Unmarshal([]byte(inputValue), payload); err != nil {
+	if err := json.Unmarshal(inputValue, payload); err != nil {
 		return nil, err
 	}
 
-	result := reflect.ValueOf(res)
-	err = json.Unmarshal([]byte(payload.Data), &result)
+	err = json.Unmarshal([]byte(payload.Data), &res)
 	return
 }

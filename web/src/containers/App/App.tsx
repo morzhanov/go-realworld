@@ -10,7 +10,7 @@ import CreatePictureModal from "../../components/CreatePictureModal/CreatePictur
 const queryClient = new QueryClient();
 
 export default function App() {
-  const [transport, changeTransport] = useState("grpc");
+  const [transport, changeTransport] = useState("events");
   const [createPictureModal, setOpenCreatePictureModal] = React.useState(false);
   const handleTransportChange = (e: any): void => {
     changeTransport(e.target.value);

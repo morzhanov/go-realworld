@@ -80,8 +80,7 @@ func (s *Sender) PerformRequest(
 		if err != nil {
 			return err
 		}
-		params := apiConfig.Events[method]
-		err = s.eventsRequest(service, params.Event, string(jsonVal), uuidVal, &res, true, el, span)
+		err = s.eventsRequest(service, method, string(jsonVal), uuidVal, &res, true, el, span)
 		if err != nil {
 			return err
 		}
@@ -95,13 +94,12 @@ func (s *Sender) SendEventsResponse(eventUuid string, value interface{}, span *o
 	if !helper.CheckStruct(value) {
 		return errors.New("value is not struct")
 	}
-
 	payload, err := json.Marshal(&value)
 	if err != nil {
 		return err
 	}
 	return s.eventsRequest(
-		"response",
+		"results",
 		"response",
 		string(payload),
 		eventUuid,
@@ -159,7 +157,6 @@ func (s *Sender) restRequest(
 	if err != nil {
 		return err
 	}
-	defer response.Body.Close()
 
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
@@ -171,6 +168,9 @@ func (s *Sender) restRequest(
 	}
 	if reflect.ValueOf(res).IsNil() || len(body) == 0 {
 		return nil
+	}
+	if err := response.Body.Close(); err != nil {
+		return err
 	}
 	return json.Unmarshal(body, &res)
 }
@@ -265,11 +265,14 @@ func (s *Sender) eventsRequest(
 	el *eventslistener.EventListener,
 	span *opentracing.Span,
 ) (err error) {
-	apiConfig, err := s.API.GetApiItem(api)
-	if err != nil {
-		return err
+	eventKey := "results"
+	if api != "results" {
+		apiConfig, err := s.API.GetApiItem(api)
+		if err != nil {
+			return err
+		}
+		eventKey = apiConfig.Events[event].Event
 	}
-	params := apiConfig.Events[event]
 
 	eventData := events.EventData{
 		EventId: eventId,
@@ -278,62 +281,58 @@ func (s *Sender) eventsRequest(
 	jsonData, err := json.Marshal(&eventData)
 	input := EventsRequestInput{
 		Service: api,
-		Event:   params.Event,
+		Event:   eventKey,
 		Data:    string(jsonData),
 	}
 
-	var w *kafka.Writer
-	switch input.Service {
-	case "auth":
-		w = kafka.NewWriter(kafka.WriterConfig{
-			Brokers:  s.eventsClient.Auth.brokers,
-			Topic:    s.eventsClient.Auth.topic,
-			Balancer: &kafka.LeastBytes{},
-		})
-	case "analytics":
-		w = kafka.NewWriter(kafka.WriterConfig{
-			Brokers:  s.eventsClient.Analytics.brokers,
-			Topic:    s.eventsClient.Analytics.topic,
-			Balancer: &kafka.LeastBytes{},
-		})
-	case "pictures":
-		w = kafka.NewWriter(kafka.WriterConfig{
-			Brokers:  s.eventsClient.Pictures.brokers,
-			Topic:    s.eventsClient.Pictures.topic,
-			Balancer: &kafka.LeastBytes{},
-		})
-	case "users":
-		w = kafka.NewWriter(kafka.WriterConfig{
-			Brokers:  s.eventsClient.Users.brokers,
-			Topic:    s.eventsClient.Users.topic,
-			Balancer: &kafka.LeastBytes{},
-		})
-	case "results":
-		w = kafka.NewWriter(kafka.WriterConfig{
-			Brokers:  s.eventsClient.Users.brokers,
-			Topic:    s.eventsClient.Results.topic,
-			Balancer: &kafka.LeastBytes{},
-		})
+	w := kafka.Writer{
+		Balancer: &kafka.LeastBytes{},
 	}
-	defer w.Close()
+	switch input.Service {
+	case "analytics":
+		w.Addr = kafka.TCP(s.eventsClient.Analytics.brokers[0])
+		w.Topic = s.eventsClient.Analytics.topic
+	case "auth":
+		w.Addr = kafka.TCP(s.eventsClient.Auth.brokers[0])
+		w.Topic = s.eventsClient.Auth.topic
+	case "pictures":
+		w.Addr = kafka.TCP(s.eventsClient.Pictures.brokers[0])
+		w.Topic = s.eventsClient.Pictures.topic
+	case "users":
+		w.Addr = kafka.TCP(s.eventsClient.Users.brokers[0])
+		w.Topic = s.eventsClient.Users.topic
+	case "results":
+		w.Addr = kafka.TCP(s.eventsClient.Results.brokers[0])
+		w.Topic = s.eventsClient.Results.topic
+	}
 
 	m := kafka.Message{
 		Key:   []byte(input.Event),
 		Value: []byte(input.Data),
 	}
-	tracing.InjectEventsSpan(*span, &m)
-	w.WriteMessages(context.Background(), m)
-
+	response := make(chan []byte)
+	l := eventslistener.Listener{Uuid: eventId, Response: response}
 	if wait {
-		response := make(chan []byte)
-		l := eventslistener.Listener{Uuid: eventId, Response: response}
-		err = el.AddListener(&l)
-		if err != nil {
+		if err := el.AddListener(&l); err != nil {
 			return err
 		}
+	}
+	if err := tracing.InjectEventsSpan(*span, &m); err != nil {
+		return err
+	}
+	if err := w.WriteMessages(context.Background(), m); err != nil {
+		return err
+	}
+	if err := w.Close(); err != nil {
+		return err
+	}
+
+	if wait {
 		b := <-response
-		err = json.Unmarshal(b, &res)
-		if err != nil {
+		if err := el.RemoveListener(&l); err != nil {
+			return err
+		}
+		if err := json.Unmarshal(b, &res); err != nil {
 			return err
 		}
 	}

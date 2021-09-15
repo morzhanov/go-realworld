@@ -2,7 +2,7 @@ package events
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"go.uber.org/zap"
 
 	urpc "github.com/morzhanov/go-realworld/api/rpc/users"
@@ -18,22 +18,23 @@ import (
 type UsersEventsController struct {
 	eventscontroller.BaseEventsController
 	service *services.UsersService
+	sender  *sender.Sender
 }
 
 func (c *UsersEventsController) processRequest(in *kafka.Message) error {
 	switch string(in.Key) {
-	case "getUser":
+	case c.sender.API.Users.Events["getUser"].Event:
 		return c.getUser(in)
-	case "getUserByUsername":
+	case c.sender.API.Users.Events["getUserByUsername"].Event:
 		return c.getUserByUsername(in)
-	case "validatePassword":
+	case c.sender.API.Users.Events["validatePassword"].Event:
 		return c.validatePassword(in)
-	case "createUser":
+	case c.sender.API.Users.Events["createUser"].Event:
 		return c.createUser(in)
-	case "deleteUser":
+	case c.sender.API.Users.Events["deleteUser"].Event:
 		return c.deleteUser(in)
 	default:
-		return errors.New("wrong event name")
+		return fmt.Errorf("wrong event name: %s", in.Key)
 	}
 }
 
@@ -146,5 +147,6 @@ func NewUsersEventsController(
 	return &UsersEventsController{
 		service:              s,
 		BaseEventsController: *controller,
+		sender:               sender,
 	}, err
 }

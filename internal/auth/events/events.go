@@ -2,7 +2,7 @@ package events
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"go.uber.org/zap"
 
 	arpc "github.com/morzhanov/go-realworld/api/rpc/auth"
@@ -18,18 +18,19 @@ import (
 type AuthEventsController struct {
 	eventscontroller.BaseEventsController
 	service *services.AuthService
+	sender  *sender.Sender
 }
 
 func (c *AuthEventsController) processRequest(in *kafka.Message) error {
 	switch string(in.Key) {
-	case "validateEventsRequest":
+	case c.sender.API.Auth.Events["validateEventsRequest"].Event:
 		return c.validateEventsRequest(in)
-	case "login":
+	case c.sender.API.Auth.Events["login"].Event:
 		return c.login(in)
-	case "signup":
+	case c.sender.API.Auth.Events["signup"].Event:
 		return c.signup(in)
 	default:
-		return errors.New("wrong event name")
+		return fmt.Errorf("wrong event name: %s", in.Key)
 	}
 }
 
@@ -113,5 +114,6 @@ func NewAuthEventsController(
 	return &AuthEventsController{
 		service:              s,
 		BaseEventsController: *controller,
+		sender:               sender,
 	}, err
 }

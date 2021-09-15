@@ -13,9 +13,9 @@ analytics:
       method: GetLog
   events:
     logData:
-      event: logData
+      event: logdata
     getLogs:
-      event: getLogs
+      event: getlogs
 
 auth:
   rest:
@@ -37,7 +37,7 @@ auth:
       method: Signup
   events:
     validateEventsRequest:
-      event: validateEventsRequest
+      event: validateeventsrequest
     login:
       event: login
     signup:
@@ -68,13 +68,13 @@ pictures:
       method: DeleteUserPicture
   events:
     getPictures:
-      event: getPictures
+      event: getpictures
     getPicture:
-      event: getPicture
+      event: getpicture
     createPicture:
-      event: createPicture
+      event: createpicture
     deletePicture:
-      event: deletePicture
+      event: deletepicture
 
 users:
   rest:
@@ -108,10 +108,10 @@ users:
     getUser:
       event: getUser
     getUserByUsername:
-      event: getUserByUsername
+      event: getuserbyusername
     validatePassword:
-      event: validatePassword
+      event: validatepassword
     createUser:
-      event: createUser
+      event: createuser
     deleteUser:
-      event: deleteUser
+      event: deleteuser

@@ -2,7 +2,7 @@ package events
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"go.uber.org/zap"
 
 	anrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
@@ -18,16 +18,17 @@ import (
 type AnalyticsEventsController struct {
 	eventscontroller.BaseEventsController
 	service *services.AnalyticsService
+	sender  *sender.Sender
 }
 
 func (c *AnalyticsEventsController) processRequest(in *kafka.Message) error {
 	switch string(in.Key) {
-	case "logData":
+	case c.sender.API.Analytics.Events["logData"].Event:
 		return c.logData(in)
-	case "getLogs":
+	case c.sender.API.Analytics.Events["getLogs"].Event:
 		return c.getLogs(in)
 	default:
-		return errors.New("wrong event name")
+		return fmt.Errorf("wrong event name: %s", in.Key)
 	}
 }
 
@@ -61,10 +62,9 @@ func (c *AnalyticsEventsController) getLogs(in *kafka.Message) error {
 	return c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
 }
 
-func (c *AnalyticsEventsController) Listen(ctx context.Context, cancel context.CancelFunc) {
+func (c *AnalyticsEventsController) Listen(ctx context.Context) {
 	c.BaseEventsController.Listen(
 		ctx,
-		cancel,
 		func(m *kafka.Message) {
 			err := c.processRequest(m)
 			if err != nil {
@@ -91,5 +91,6 @@ func NewAnalyticsEventsController(
 	return &AnalyticsEventsController{
 		service:              s,
 		BaseEventsController: *controller,
+		sender:               sender,
 	}, err
 }

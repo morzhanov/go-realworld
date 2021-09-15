@@ -2,7 +2,7 @@ package events
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"go.uber.org/zap"
 
 	prpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
@@ -18,20 +18,21 @@ import (
 type PicturesEventsController struct {
 	eventscontroller.BaseEventsController
 	service *services.PictureService
+	sender  *sender.Sender
 }
 
 func (c *PicturesEventsController) processRequest(in *kafka.Message) error {
 	switch string(in.Key) {
-	case "getPictures":
+	case c.sender.API.Pictures.Events["getPictures"].Event:
 		return c.getPictures(in)
-	case "getPicture":
+	case c.sender.API.Pictures.Events["getPicture"].Event:
 		return c.getPicture(in)
-	case "createPicture":
+	case c.sender.API.Pictures.Events["createPicture"].Event:
 		return c.createPicture(in)
-	case "deletePicture":
+	case c.sender.API.Pictures.Events["deletePicture"].Event:
 		return c.deletePicture(in)
 	default:
-		return errors.New("wrong event name")
+		return fmt.Errorf("wrong event name: %s", in.Key)
 	}
 }
 
@@ -123,5 +124,6 @@ func NewPicturesEventsController(
 	return &PicturesEventsController{
 		service:              s,
 		BaseEventsController: *controller,
+		sender:               sender,
 	}, err
 }
