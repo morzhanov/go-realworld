@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/gin-contrib/cors"
 	"github.com/morzhanov/go-realworld/internal/common/helper"
 	"io/ioutil"
 	"net/http"
@@ -66,6 +67,10 @@ func (c *BaseRestController) ParseRestBody(ctx *gin.Context, input interface{}) 
 }
 
 func (c *BaseRestController) HandleRestError(ctx *gin.Context, err error) {
+	if err.Error() == "not authorized" {
+		ctx.String(http.StatusUnauthorized, err.Error())
+		return
+	}
 	ctx.String(http.StatusInternalServerError, err.Error())
 }
 
@@ -90,6 +95,10 @@ func NewRestController(
 	mc *metrics.MetricsCollector,
 ) *BaseRestController {
 	router := gin.Default()
+	config := cors.DefaultConfig()
+	config.AllowAllOrigins = true
+	config.AddAllowHeaders([]string{"authorization"}...)
+	router.Use(cors.New(config))
 	c := BaseRestController{router, tracer, logger, mc}
 	c.MC.RegisterMetricsEndpoint(router)
 	return &c

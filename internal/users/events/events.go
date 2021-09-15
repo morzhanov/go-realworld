@@ -117,10 +117,9 @@ func (c *UsersEventsController) deleteUser(in *kafka.Message) error {
 	return c.BaseEventsController.SendResponse(payload.EventId, nil, &span)
 }
 
-func (c *UsersEventsController) Listen(ctx context.Context, cancel context.CancelFunc) {
+func (c *UsersEventsController) Listen(ctx context.Context) {
 	c.BaseEventsController.Listen(
 		ctx,
-		cancel,
 		func(m *kafka.Message) {
 			err := c.processRequest(m)
 			if err != nil {

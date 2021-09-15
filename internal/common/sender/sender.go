@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"reflect"
+	"strings"
 	"time"
 
 	picturesrpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
@@ -49,7 +50,7 @@ func (s *Sender) PerformRequest(
 	input interface{},
 	el *eventslistener.EventListener,
 	span *opentracing.Span,
-	meta map[string]string,
+	meta RequestMeta,
 	res interface{},
 ) error {
 	apiConfig, err := s.API.GetApiItem(service)
@@ -118,7 +119,7 @@ func (s *Sender) restRequest(
 	headers *http.Header,
 	res interface{},
 	span *opentracing.Span,
-	meta map[string]string,
+	meta RequestMeta,
 ) (err error) {
 	if !helper.CheckStruct(data) {
 		return errors.New("value is not struct")
@@ -128,8 +129,15 @@ func (s *Sender) restRequest(
 	if err != nil {
 		return err
 	}
-	if meta != nil && meta["queryparams"] != "" {
+	if meta != nil && meta["queryparams"] != nil {
 		url = fmt.Sprintf("%s?%s", url, meta["queryparams"])
+	}
+	if meta != nil && meta["urlparams"] != nil {
+		urlparams := meta["urlparams"].(UrlParams)
+		for k, v := range urlparams {
+			param := fmt.Sprintf(":%s", k)
+			url = strings.Replace(url, param, v, 1)
+		}
 	}
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(b))
 	if err != nil {
@@ -170,6 +178,19 @@ func (s *Sender) restRequest(
 func (s *Sender) GetTransportFromContext(ctx context.Context) Transport {
 	val := ctx.Value("transport")
 	return val.(Transport)
+}
+
+func (s *Sender) StringToTransport(transport string) (Transport, error) {
+	switch transport {
+	case "rest":
+		return RestTransport, nil
+	case "grpc":
+		return RpcTransport, nil
+	case "events":
+		return EventsTransport, nil
+	default:
+		return -1, fmt.Errorf("wrong transport %s", transport)
+	}
 }
 
 func (s *Sender) getRpcClient(client RpcClient) (interface{}, error) {
@@ -230,7 +251,7 @@ func (s *Sender) rpcRequest(
 	if err, ok := returnArgs[1].Interface().(error); ok && err != nil {
 		return err
 	}
-	res = returnArgs[0].Interface()
+	reflect.ValueOf(res).Elem().Set(returnArgs[0])
 	return nil
 }
 

@@ -79,7 +79,7 @@ func main() {
 
 	go rpcServer.Listen(ctx, cancel)
 	go restController.Listen(ctx, cancel, c.RestPort)
-	go eventsController.Listen(ctx, cancel)
+	go eventsController.Listen(ctx)
 	l.Info("all controllers started...")
 
 	if err := db.RunMigrations(dbs, "users"); err != nil {

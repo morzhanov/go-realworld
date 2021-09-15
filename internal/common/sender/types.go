@@ -18,6 +18,10 @@ const (
 	EventsTransport
 )
 
+type RequestMeta map[string]interface{}
+
+type UrlParams map[string]string
+
 type RestApiBaseUrls map[string]string
 
 type Headers map[string]string

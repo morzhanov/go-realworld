@@ -1,5 +1,5 @@
 import {Button, Container, Input, Typography} from "@material-ui/core";
-import {ChangeEvent, useState} from "react";
+import React, {ChangeEvent, useState} from "react";
 import {Redirect, useHistory} from "react-router-dom";
 
 import {api} from "../../api/api";
@@ -7,7 +7,7 @@ import {routeUrls} from "../../configs/routeUrls";
 import {getAccessToken, setAccessToken} from "../../shared/helpers";
 import {LoginMode} from "./Login.interface";
 
-export default function Login(): JSX.Element {
+export default function Login({transport}: {transport: string}): JSX.Element {
   const token = getAccessToken();
   const history = useHistory();
   const [mode, setMode] = useState<LoginMode>(LoginMode.LOGIN);
@@ -29,43 +29,65 @@ export default function Login(): JSX.Element {
   };
   const handleSubmitClick = async (): Promise<void> => {
     try {
-      const uri = mode === LoginMode.LOGIN ? "/login" : "/signup";
-      const {
-        data: {accessToken},
-      } = await api.post(uri, {username, password}).then((res: any) => res.data);
-      setAccessToken(accessToken);
+      const uri = mode === LoginMode.LOGIN ? "login" : "signup";
+      const {data} = await api.post(`/${transport}/${uri}`, {username, password});
+      setAccessToken(data["access_token"]);
       history.replace(routeUrls.pictures);
     } catch (err: any) {
-      setError(err);
+      setError(err.message || err.toString());
     }
   };
 
   return token ? (
     <Redirect to={routeUrls.pictures} />
   ) : (
-    <Container>
-      <Typography variant="h1" component="h1">
-        {mode === LoginMode.LOGIN ? "Login" : "Sign Up"}
+    <Container style={{marginTop: "30%"}}>
+      <Typography variant="h3" component="h3" style={{marginBottom: 50}}>
+        Go Realworld
       </Typography>
-      <div style={{marginTop: 24}}>
-        <Input value={username} onChange={handleUsernameChange} />
-        <Input value={password} onChange={handlePasswordChange} />
-        <Button color="primary" onClick={handleSubmitClick}>
+      <div
+        style={{
+          marginTop: 24,
+          display: "flex",
+          margin: "auto",
+          flexDirection: "column",
+          width: "300px",
+        }}
+      >
+        <Input value={username} onChange={handleUsernameChange} style={{marginBottom: 12}} />
+        <Input
+          type="password"
+          value={password}
+          onChange={handlePasswordChange}
+          style={{marginBottom: 12}}
+        />
+        <Button
+          color="primary"
+          variant="contained"
+          onClick={handleSubmitClick}
+          style={{marginBottom: 12, fontWeight: 700}}
+        >
           {mode === LoginMode.LOGIN ? "Login" : "Sign Up"}
         </Button>
       </div>
       {error ? <p>{error}</p> : null}
-      <p>
+      <div>
         {mode === LoginMode.LOGIN ? (
           <div>
-            Don't have account? <span onClick={handleModeClick}>SignUp</span>
+            Don't have account?{" "}
+            <span onClick={handleModeClick} style={{cursor: "pointer", color: "#00f"}}>
+              SignUp
+            </span>
           </div>
         ) : (
           <div>
-            Alreeady member? <span onClick={handleModeClick}>Login</span>
+            Alreeady member?{" "}
+            <span onClick={handleModeClick} style={{cursor: "pointer", color: "#00f"}}>
+              Login
+            </span>
           </div>
         )}
-      </p>
+      </div>
     </Container>
   );
 }

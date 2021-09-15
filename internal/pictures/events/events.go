@@ -94,10 +94,9 @@ func (c *PicturesEventsController) deletePicture(in *kafka.Message) error {
 	return c.service.DeleteUserPicture(res.UserId, res.PictureId)
 }
 
-func (c *PicturesEventsController) Listen(ctx context.Context, cancel context.CancelFunc) {
+func (c *PicturesEventsController) Listen(ctx context.Context) {
 	c.BaseEventsController.Listen(
 		ctx,
-		cancel,
 		func(m *kafka.Message) {
 			err := c.processRequest(m)
 			if err != nil {

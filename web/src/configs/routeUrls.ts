@@ -1,6 +1,9 @@
 export const routeUrls = {
   login: "/login",
   pictures: "/",
-  picture: "/:id",
-  analysis: "/analysis",
+  picture: {
+    route: "/:id",
+    link: (id: string) => `/${id}`,
+  },
+  analytics: "/analytics",
 };

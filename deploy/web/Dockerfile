@@ -6,7 +6,7 @@ WORKDIR /app
 
 # add `/app/node_modules/.bin` to $PATH
 ENV PATH /app/node_modules/.bin:$PATH
-ENV API_URI=http://127.0.0.1/3005
+ENV REACT_APP_API_URI=http://127.0.0.1:3005
 
 # install app dependencies
 COPY ../web/package.json ./

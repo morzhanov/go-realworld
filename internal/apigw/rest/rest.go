@@ -2,28 +2,27 @@ package rest
 
 import (
 	"context"
-	"github.com/morzhanov/go-realworld/internal/common/rest/restcontroller"
-	"net/http"
-	"strconv"
-
 	"github.com/gin-gonic/gin"
 	anrpc "github.com/morzhanov/go-realworld/api/rpc/analytics"
 	arpc "github.com/morzhanov/go-realworld/api/rpc/auth"
 	prpc "github.com/morzhanov/go-realworld/api/rpc/pictures"
 	"github.com/morzhanov/go-realworld/internal/apigw/services"
 	"github.com/morzhanov/go-realworld/internal/common/metrics"
+	"github.com/morzhanov/go-realworld/internal/common/rest/restcontroller"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
 	"github.com/opentracing/opentracing-go"
 	"go.uber.org/zap"
+	"net/http"
 )
 
 type APIGatewayRestController struct {
 	*restcontroller.BaseRestController
 	service *services.APIGatewayService
+	sender  *sender.Sender
 }
 
 func (c *APIGatewayRestController) handleLogin(ctx *gin.Context) {
-	transport, err := strconv.Atoi(ctx.Param("transport"))
+	transport, err := c.sender.StringToTransport(ctx.Param("transport"))
 	if err != nil {
 		c.HandleRestError(ctx, err)
 		return
@@ -35,7 +34,7 @@ func (c *APIGatewayRestController) handleLogin(ctx *gin.Context) {
 	}
 
 	span := c.GetSpan(ctx)
-	res, err := c.service.Login(sender.Transport(transport), &input, span)
+	res, err := c.service.Login(transport, &input, span)
 	if err != nil {
 		c.HandleRestError(ctx, err)
 		return
@@ -44,7 +43,7 @@ func (c *APIGatewayRestController) handleLogin(ctx *gin.Context) {
 }
 
 func (c *APIGatewayRestController) handleSignup(ctx *gin.Context) {
-	transport, err := strconv.Atoi(ctx.Param("transport"))
+	transport, err := c.sender.StringToTransport(ctx.Param("transport"))
 	if err != nil {
 		c.HandleRestError(ctx, err)
 		return
@@ -56,7 +55,7 @@ func (c *APIGatewayRestController) handleSignup(ctx *gin.Context) {
 	}
 
 	span := c.GetSpan(ctx)
-	res, err := c.service.Signup(sender.Transport(transport), &input, span)
+	res, err := c.service.Signup(transport, &input, span)
 	if err != nil {
 		c.HandleRestError(ctx, err)
 		return
@@ -65,13 +64,13 @@ func (c *APIGatewayRestController) handleSignup(ctx *gin.Context) {
 }
 
 func (c *APIGatewayRestController) handleCreatePicture(ctx *gin.Context) {
-	transport, err := strconv.Atoi(ctx.Param("transport"))
+	transport, err := c.sender.StringToTransport(ctx.Param("transport"))
 	span := c.GetSpan(ctx)
 	if err != nil {
 		c.HandleRestError(ctx, err)
 		return
 	}
-	validationRes, err := c.service.CheckAuth(ctx, sender.Transport(transport), "pictures", "createUserPicture", span)
+	validationRes, err := c.service.CheckAuth(ctx, transport, "pictures", "createUserPicture", span)
 	if err != nil {
 		c.HandleRestError(ctx, err)
 		return
@@ -84,7 +83,7 @@ func (c *APIGatewayRestController) handleCreatePicture(ctx *gin.Context) {
 	}
 	input.UserId = validationRes.UserId
 
-	res, err := c.service.CreatePicture(sender.Transport(transport), &input, span)
+	res, err := c.service.CreatePicture(transport, &input, span)
 	if err != nil {
 		c.HandleRestError(ctx, err)
 		return
@@ -93,52 +92,41 @@ func (c *APIGatewayRestController) handleCreatePicture(ctx *gin.Context) {
 }
 
 func (c *APIGatewayRestController) handleGetPictures(ctx *gin.Context) {
-	transport, err := strconv.Atoi(ctx.Param("transport"))
+	transport, err := c.sender.StringToTransport(ctx.Param("transport"))
 	span := c.GetSpan(ctx)
 	if err != nil {
 		c.HandleRestError(ctx, err)
 		return
 	}
-	validationRes, err := c.service.CheckAuth(ctx, sender.Transport(transport), "pictures", "getUserPictures", span)
+	validationRes, err := c.service.CheckAuth(ctx, transport, "pictures", "getUserPictures", span)
 	if err != nil {
 		c.HandleRestError(ctx, err)
 		return
 	}
 
-	input := prpc.GetUserPicturesRequest{}
-	if err := c.ParseRestBody(ctx, &input); err != nil {
-		c.HandleRestError(ctx, err)
-		return
-	}
-
-	res, err := c.service.GetPictures(sender.Transport(transport), validationRes.UserId, span)
+	res, err := c.service.GetPictures(transport, validationRes.UserId, span)
 	if err != nil {
 		c.HandleRestError(ctx, err)
 		return
 	}
-	ctx.JSON(http.StatusOK, res)
+	ctx.JSON(http.StatusOK, res.Pictures)
 }
 
 func (c *APIGatewayRestController) handleGetPicture(ctx *gin.Context) {
-	transport, err := strconv.Atoi(ctx.Param("transport"))
+	transport, err := c.sender.StringToTransport(ctx.Param("transport"))
+	picId := ctx.Param("id")
 	span := c.GetSpan(ctx)
 	if err != nil {
 		c.HandleRestError(ctx, err)
 		return
 	}
-	validationRes, err := c.service.CheckAuth(ctx, sender.Transport(transport), "pictures", "getUserPicture", span)
+	validationRes, err := c.service.CheckAuth(ctx, transport, "pictures", "getUserPicture", span)
 	if err != nil {
 		c.HandleRestError(ctx, err)
 		return
 	}
 
-	input := prpc.GetUserPictureRequest{}
-	if err := c.ParseRestBody(ctx, &input); err != nil {
-		c.HandleRestError(ctx, err)
-		return
-	}
-
-	res, err := c.service.GetPicture(sender.Transport(transport), validationRes.UserId, input.PictureId, span)
+	res, err := c.service.GetPicture(transport, validationRes.UserId, picId, span)
 	if err != nil {
 		c.HandleRestError(ctx, err)
 		return
@@ -147,13 +135,13 @@ func (c *APIGatewayRestController) handleGetPicture(ctx *gin.Context) {
 }
 
 func (c *APIGatewayRestController) handleDeletePicture(ctx *gin.Context) {
-	transport, err := strconv.Atoi(ctx.Param("transport"))
+	transport, err := c.sender.StringToTransport(ctx.Param("transport"))
 	span := c.GetSpan(ctx)
 	if err != nil {
 		c.HandleRestError(ctx, err)
 		return
 	}
-	validationRes, err := c.service.CheckAuth(ctx, sender.Transport(transport), "pictures", "deletePicture", span)
+	validationRes, err := c.service.CheckAuth(ctx, transport, "pictures", "deletePicture", span)
 	if err != nil {
 		c.HandleRestError(ctx, err)
 		return
@@ -165,7 +153,7 @@ func (c *APIGatewayRestController) handleDeletePicture(ctx *gin.Context) {
 		return
 	}
 
-	err = c.service.DeletePicture(sender.Transport(transport), validationRes.UserId, input.PictureId, span)
+	err = c.service.DeletePicture(transport, validationRes.UserId, input.PictureId, span)
 	if err != nil {
 		c.HandleRestError(ctx, err)
 		return
@@ -174,13 +162,13 @@ func (c *APIGatewayRestController) handleDeletePicture(ctx *gin.Context) {
 }
 
 func (c *APIGatewayRestController) handleGetAnalytics(ctx *gin.Context) {
-	transport, err := strconv.Atoi(ctx.Param("transport"))
+	transport, err := c.sender.StringToTransport(ctx.Param("transport"))
 	span := c.GetSpan(ctx)
 	if err != nil {
 		c.HandleRestError(ctx, err)
 		return
 	}
-	_, err = c.service.CheckAuth(ctx, sender.Transport(transport), "analytics", "getLogs", span)
+	_, err = c.service.CheckAuth(ctx, transport, "analytics", "getLogs", span)
 	if err != nil {
 		c.HandleRestError(ctx, err)
 		return
@@ -192,7 +180,7 @@ func (c *APIGatewayRestController) handleGetAnalytics(ctx *gin.Context) {
 		return
 	}
 
-	res, err := c.service.GetAnalytics(sender.Transport(transport), &input, span)
+	res, err := c.service.GetAnalytics(transport, &input, span)
 	if err != nil {
 		c.HandleRestError(ctx, err)
 		return
@@ -213,6 +201,7 @@ func NewAPIGatewayRestController(
 	tracer *opentracing.Tracer,
 	logger *zap.Logger,
 	mc *metrics.MetricsCollector,
+	sender *sender.Sender,
 ) *APIGatewayRestController {
 	bc := restcontroller.NewRestController(
 		tracer,
@@ -221,6 +210,7 @@ func NewAPIGatewayRestController(
 	)
 	c := APIGatewayRestController{
 		service:            s,
+		sender:             sender,
 		BaseRestController: bc,
 	}
 

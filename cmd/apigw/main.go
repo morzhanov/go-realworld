@@ -60,7 +60,7 @@ func main() {
 
 	service := services.NewAPIGatewayService(s, el)
 	l.Info("service created...")
-	restController := rest.NewAPIGatewayRestController(service, t, l, mc)
+	restController := rest.NewAPIGatewayRestController(service, t, l, mc, s)
 	l.Info("rest controller created...")
 
 	go restController.Listen(ctx, cancel, c.RestPort)

@@ -40,7 +40,7 @@ func (c *PicturesRestController) handleGetUserPictures(ctx *gin.Context) {
 		c.HandleRestError(ctx, err)
 		return
 	}
-	ctx.JSON(http.StatusCreated, res.Pictures)
+	ctx.JSON(http.StatusCreated, res)
 }
 
 func (c *PicturesRestController) handleGetUserPicture(ctx *gin.Context) {

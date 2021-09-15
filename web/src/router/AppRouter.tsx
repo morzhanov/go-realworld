@@ -1,33 +1,36 @@
 import React from "react";
-import {History} from "history";
-import {Route, Router, Switch} from "react-router";
+import {BrowserRouter, Route, Switch} from "react-router-dom";
 
 import {routeUrls} from "../configs/routeUrls";
+import Login from "../pages/Login/Login";
+import Pictures from "../pages/Pictures/Pictures";
+import Picture from "../pages/Picture/Picture";
+import Analytics from "../pages/Analytics/Analytics";
 
-const Login = React.lazy(() => import("../pages/Login/Login"));
-const Pictures = React.lazy(() => import("../pages/Pictures/Pictures"));
-const Picture = React.lazy(() => import("../pages/Picture/Picture"));
-const Analysis = React.lazy(() => import("../pages/Analytics/Analytics"));
-
-export default function AppRouter({history}: {history: History}): JSX.Element {
+export default function AppRouter({
+  transport,
+  openCreatePictureModal,
+}: {
+  transport: string;
+  closeCreatePictureModal: () => void;
+  openCreatePictureModal: () => void;
+}): JSX.Element {
   return (
-    <Router history={history}>
-      <React.Suspense fallback={<div>Loading...</div>}>
-        <Switch>
-          <Route exact path={routeUrls.login}>
-            <Login />
-          </Route>
-          <Route exact path={routeUrls.pictures}>
-            <Pictures />
-          </Route>
-          <Route exact path={routeUrls.picture}>
-            <Picture />
-          </Route>
-          <Route exact path={routeUrls.analysis}>
-            <Analysis />
-          </Route>
-        </Switch>
-      </React.Suspense>
-    </Router>
+    <BrowserRouter>
+      <Switch>
+        <Route exact path={routeUrls.login}>
+          <Login transport={transport} />
+        </Route>
+        <Route exact path={routeUrls.pictures}>
+          <Pictures transport={transport} openCreatePictureModal={openCreatePictureModal} />
+        </Route>
+        <Route exact path={routeUrls.picture.route}>
+          <Picture transport={transport} />
+        </Route>
+        <Route exact path={routeUrls.analytics}>
+          <Analytics transport={transport} />
+        </Route>
+      </Switch>
+    </BrowserRouter>
   );
 }

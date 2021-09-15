@@ -36,7 +36,7 @@ func (s *AuthService) Login(
 	d2 := usersrpc.GetUserDataByUsernameRequest{Username: data.Username}
 	user := &usersrpc.UserMessage{}
 	queryparams := fmt.Sprintf("username=%s", data.Username)
-	meta := map[string]string{"queryparams": queryparams}
+	meta := sender.RequestMeta{"queryparams": queryparams}
 	if err = s.sender.PerformRequest(transport, "users", "getUserByUsername", &d2, s.el, span, meta, user); err != nil {
 		return nil, err
 	}

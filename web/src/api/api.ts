@@ -17,4 +17,4 @@ export function createApiClient(baseURL = ""): ApiClient {
   };
 }
 
-export const api = createApiClient(process.env.API_URI);
+export const api = createApiClient(process.env.REACT_APP_API_URI);
