@@ -53,6 +53,10 @@ func (s *Sender) PerformRequest(
 	meta RequestMeta,
 	res interface{},
 ) error {
+	if meta != nil && meta["analyticslogdata"] != nil {
+		go s.logRequest(transport, service, method)
+	}
+
 	apiConfig, err := s.API.GetApiItem(service)
 	if err != nil {
 		return err
@@ -190,6 +194,19 @@ func (s *Sender) StringToTransport(transport string) (Transport, error) {
 		return EventsTransport, nil
 	default:
 		return -1, fmt.Errorf("wrong transport %s", transport)
+	}
+}
+
+func (s *Sender) TransportToString(transport Transport) (string, error) {
+	switch transport {
+	case RestTransport:
+		return "rest", nil
+	case RpcTransport:
+		return "grpc", nil
+	case EventsTransport:
+		return "events", nil
+	default:
+		return "", fmt.Errorf("wrong transport %s", transport)
 	}
 }
 
@@ -399,6 +416,18 @@ func (s *Sender) setupGrpcClient(c *config.Config, cancel context.CancelFunc) {
 		}
 		s.grpcClient.usersClient = usersrpc.NewUsersClient(conn)
 	}()
+}
+
+func (s *Sender) logRequest(transport Transport, service string, method string) {
+	transportName, err := s.TransportToString(transport)
+	if err != nil {
+		s.logger.Error(err.Error())
+	}
+	input := analyticsrpc.LogDataRequest{Transport: transportName, Service: service, Method: method}
+	meta := RequestMeta{"analyticslogdata": true}
+	if err := s.PerformRequest(transport, "analytics", "logData", &input, nil, nil, meta, nil); err != nil {
+		s.logger.Error(err.Error())
+	}
 }
 
 func (s *Sender) setupEventsClient(c *config.Config) {

@@ -57,12 +57,11 @@ func (s *APIGatewayService) CheckAuth(
 		}
 		method = "validateRpcRequest"
 	case sender.EventsTransport:
-		api, err := s.sender.API.GetApiItem(apiName)
+		_, err := s.sender.API.GetApiItem(apiName)
 		if err != nil {
 			return nil, err
 		}
 		input = &authrpc.ValidateEventsRequestInput{
-			Event:       api.Events[key].Event,
 			AccessToken: accessToken,
 		}
 		method = "validateEventsRequest"

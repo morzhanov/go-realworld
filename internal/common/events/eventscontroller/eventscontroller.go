@@ -3,6 +3,7 @@ package eventscontroller
 import (
 	"context"
 	"github.com/morzhanov/go-realworld/internal/common/config"
+	"github.com/morzhanov/go-realworld/internal/common/mq"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
 	"github.com/morzhanov/go-realworld/internal/common/tracing"
 	"github.com/opentracing/opentracing-go"
@@ -13,34 +14,9 @@ import (
 type BaseEventsController struct {
 	tracer          *opentracing.Tracer
 	sender          *sender.Sender
-	conn            *kafka.Conn
-	topic           string
-	kafkaUri        string
+	mq              *mq.MQ
 	Logger          *zap.Logger
-	consumerGroupId string
-}
-
-func (c *BaseEventsController) createTopic() error {
-	topicConfigs := []kafka.TopicConfig{
-		{
-			Topic:             c.topic,
-			NumPartitions:     1,
-			ReplicationFactor: 1,
-		},
-	}
-	return c.conn.CreateTopics(topicConfigs...)
-}
-
-func (c *BaseEventsController) createKafkaConnection(partition int) error {
-	conn, err := kafka.DialLeader(context.Background(), "tcp", c.kafkaUri, c.topic, partition)
-	if err != nil {
-		return err
-	}
-	c.conn = conn
-	if err := c.createTopic(); err != nil {
-		return err
-	}
-	return nil
+	ConsumerGroupId string
 }
 
 func (c *BaseEventsController) CreateSpan(in *kafka.Message) opentracing.Span {
@@ -51,14 +27,7 @@ func (c *BaseEventsController) Listen(
 	ctx context.Context,
 	processRequest func(*kafka.Message),
 ) {
-	r := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:  []string{c.kafkaUri},
-		Topic:    c.topic,
-		GroupID:  c.consumerGroupId,
-		MinBytes: 10e3,
-		MaxBytes: 10e6,
-	})
-
+	r := c.mq.CreateReader(c.ConsumerGroupId)
 	for {
 		m, err := r.ReadMessage(context.Background())
 		if err != nil {
@@ -82,19 +51,19 @@ func (c *BaseEventsController) SendResponse(eventId string, data interface{}, sp
 func NewEventsController(
 	s *sender.Sender,
 	tracer *opentracing.Tracer,
-	topic string,
-	kafkaUri string,
 	logger *zap.Logger,
 	conf *config.Config,
 ) (*BaseEventsController, error) {
+	msgQ, err := mq.NewMq(conf, conf.KafkaTopic)
+	if err != nil {
+		return nil, err
+	}
 	c := &BaseEventsController{
 		sender:          s,
 		tracer:          tracer,
+		mq:              msgQ,
 		Logger:          logger,
-		topic:           topic,
-		kafkaUri:        kafkaUri,
-		consumerGroupId: conf.KafkaConsumerGroupId,
+		ConsumerGroupId: conf.KafkaConsumerGroupId,
 	}
-	err := c.createKafkaConnection(0)
 	return c, err
 }

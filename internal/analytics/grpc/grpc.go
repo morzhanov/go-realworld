@@ -29,7 +29,7 @@ func (s *AnalyticsRpcServer) LogData(ctx context.Context, in *anrpc.LogDataReque
 	return &emptypb.Empty{}, err
 }
 
-func (s *AnalyticsRpcServer) GetLog(ctx context.Context, in *anrpc.GetLogRequest) (res *anrpc.AnalyticsEntryMessage, err error) {
+func (s *AnalyticsRpcServer) GetLog(ctx context.Context, in *emptypb.Empty) (res *anrpc.GetLogsMessage, err error) {
 	ctx, span := s.PrepareContext(ctx)
 	defer span.Finish()
 	return s.analyticsService.GetLog(in)

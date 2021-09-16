@@ -117,8 +117,6 @@ func NewPicturesEventsController(
 	controller, err := eventscontroller.NewEventsController(
 		sender,
 		tracer,
-		c.KafkaTopic,
-		c.KafkaUri,
 		logger,
 		c,
 	)

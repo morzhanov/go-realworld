@@ -22,7 +22,7 @@ type AnalyticsClient interface {
 	// Connect a client
 	LogData(ctx context.Context, in *LogDataRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Get a log
-	GetLog(ctx context.Context, in *GetLogRequest, opts ...grpc.CallOption) (*AnalyticsEntryMessage, error)
+	GetLog(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetLogsMessage, error)
 }
 
 type analyticsClient struct {
@@ -42,8 +42,8 @@ func (c *analyticsClient) LogData(ctx context.Context, in *LogDataRequest, opts 
 	return out, nil
 }
 
-func (c *analyticsClient) GetLog(ctx context.Context, in *GetLogRequest, opts ...grpc.CallOption) (*AnalyticsEntryMessage, error) {
-	out := new(AnalyticsEntryMessage)
+func (c *analyticsClient) GetLog(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetLogsMessage, error) {
+	out := new(GetLogsMessage)
 	err := c.cc.Invoke(ctx, "/analytics.Analytics/GetLog", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -58,7 +58,7 @@ type AnalyticsServer interface {
 	// Connect a client
 	LogData(context.Context, *LogDataRequest) (*emptypb.Empty, error)
 	// Get a log
-	GetLog(context.Context, *GetLogRequest) (*AnalyticsEntryMessage, error)
+	GetLog(context.Context, *emptypb.Empty) (*GetLogsMessage, error)
 	mustEmbedUnimplementedAnalyticsServer()
 }
 
@@ -69,7 +69,7 @@ type UnimplementedAnalyticsServer struct {
 func (UnimplementedAnalyticsServer) LogData(context.Context, *LogDataRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LogData not implemented")
 }
-func (UnimplementedAnalyticsServer) GetLog(context.Context, *GetLogRequest) (*AnalyticsEntryMessage, error) {
+func (UnimplementedAnalyticsServer) GetLog(context.Context, *emptypb.Empty) (*GetLogsMessage, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLog not implemented")
 }
 func (UnimplementedAnalyticsServer) mustEmbedUnimplementedAnalyticsServer() {}
@@ -104,7 +104,7 @@ func _Analytics_LogData_Handler(srv interface{}, ctx context.Context, dec func(i
 }
 
 func _Analytics_GetLog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetLogRequest)
+	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func _Analytics_GetLog_Handler(srv interface{}, ctx context.Context, dec func(in
 		FullMethod: "/analytics.Analytics/GetLog",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AnalyticsServer).GetLog(ctx, req.(*GetLogRequest))
+		return srv.(AnalyticsServer).GetLog(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }

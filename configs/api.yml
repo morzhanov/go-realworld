@@ -5,7 +5,7 @@ analytics:
       url: /analytics
     getLogs:
       method: GET
-      url: /analytics/:offset
+      url: /analytics
   grpc:
     logData:
       method: LogData

@@ -11,26 +11,23 @@ service Analytics {
   rpc LogData (LogDataRequest) returns (google.protobuf.Empty) {}
 
   // Get a log
-  rpc GetLog (GetLogRequest) returns (AnalyticsEntryMessage) {}
+  rpc GetLog (google.protobuf.Empty) returns (GetLogsMessage) {}
 }
 
 // Log data request
 message LogDataRequest {
-  string id = 1;
-  string userId = 2;
-  string operation = 3;
-  string data = 4;
-}
-
-// Get a log request
-message GetLogRequest {
-  int32 offset = 1;
+  string transport = 1;
+  string service = 2;
+  string method = 3;
 }
 
 // Analytics entry message
 message AnalyticsEntryMessage {
-  string id = 1;
-  string userId = 2;
-  string operation = 3;
-  string data = 4;
+  string transport = 1;
+  string service = 2;
+  string method = 3;
+}
+
+message GetLogsMessage {
+  repeated AnalyticsEntryMessage logs = 1;
 }

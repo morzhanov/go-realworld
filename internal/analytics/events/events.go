@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	anrpc "github.com/morzhanov/go-realworld/api/grpc/analytics"
 	"github.com/morzhanov/go-realworld/internal/analytics/services"
@@ -50,12 +51,11 @@ func (c *AnalyticsEventsController) getLogs(in *kafka.Message) error {
 	span := c.CreateSpan(in)
 	defer span.Finish()
 
-	res := anrpc.GetLogRequest{}
-	payload, err := events.ParseEventsResponse(in.Value, &res)
+	payload, err := events.ParseEventsResponse(in.Value, &emptypb.Empty{})
 	if err != nil {
 		return err
 	}
-	d, err := c.service.GetLog(&res)
+	d, err := c.service.GetLog(&emptypb.Empty{})
 	if err != nil {
 		return err
 	}
@@ -84,8 +84,6 @@ func NewAnalyticsEventsController(
 	controller, err := eventscontroller.NewEventsController(
 		sender,
 		tracer,
-		c.KafkaTopic,
-		c.KafkaUri,
 		logger,
 		c,
 	)

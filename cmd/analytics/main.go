@@ -57,14 +57,14 @@ func main() {
 	s := sender.NewSender(apiConfig, l)
 	l.Info("sender created...")
 
-	messageQ, err := mq.NewMq(c.KafkaTopic, 0)
+	messageQ, err := mq.NewMq(c, c.KafkaAnalyticsDbTopic)
 	if err != nil {
 		cancel()
 		helper.HandleInitializationError(err, "message queue", l)
 	}
 	l.Info("message queue created...")
 
-	service := services.NewAnalyticsService(messageQ)
+	service := services.NewAnalyticsService(messageQ, c.KafkaAnalyticsDbTopic)
 	l.Info("service created...")
 	rpcServer := grpc.NewAnalyticsRpcServer(service, c, t, l)
 	l.Info("grpc server created...")

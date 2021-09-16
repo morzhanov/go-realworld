@@ -2,9 +2,6 @@ package rest
 
 import (
 	"context"
-	"net/http"
-	"strconv"
-
 	"github.com/gin-gonic/gin"
 	anrpc "github.com/morzhanov/go-realworld/api/grpc/analytics"
 	"github.com/morzhanov/go-realworld/internal/analytics/services"
@@ -12,6 +9,8 @@ import (
 	"github.com/morzhanov/go-realworld/internal/common/rest/restcontroller"
 	"github.com/opentracing/opentracing-go"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/emptypb"
+	"net/http"
 )
 
 type AnalyticsRestController struct {
@@ -25,7 +24,6 @@ func (c *AnalyticsRestController) handleLogData(ctx *gin.Context) {
 		c.HandleRestError(ctx, err)
 		return
 	}
-
 	if err := c.service.LogData(&input); err != nil {
 		c.HandleRestError(ctx, err)
 		return
@@ -34,12 +32,7 @@ func (c *AnalyticsRestController) handleLogData(ctx *gin.Context) {
 }
 
 func (c *AnalyticsRestController) handleGetData(ctx *gin.Context) {
-	offset, err := strconv.Atoi(ctx.Param("offset"))
-	if err != nil {
-		c.HandleRestError(ctx, err)
-	}
-
-	res, err := c.service.GetLog(&anrpc.GetLogRequest{Offset: int32(offset)})
+	res, err := c.service.GetLog(&emptypb.Empty{})
 	if err != nil {
 		c.HandleRestError(ctx, err)
 		return
@@ -71,7 +64,7 @@ func NewAnalyticsRestController(
 		BaseRestController: bc,
 	}
 
-	bc.Router.GET("/analytics", bc.Handler(c.handleLogData))
-	bc.Router.GET("/analytics/:offset", bc.Handler(c.handleGetData))
+	bc.Router.POST("/analytics", bc.Handler(c.handleLogData))
+	bc.Router.GET("/analytics", bc.Handler(c.handleGetData))
 	return &c
 }
