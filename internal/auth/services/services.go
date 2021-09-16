@@ -14,13 +14,47 @@ import (
 	"github.com/opentracing/opentracing-go"
 )
 
-type AuthService struct {
-	sender            *sender.Sender
-	el                *eventslistener.EventListener
+type authService struct {
+	sender            sender.Sender
+	el                eventslistener.EventListener
 	accessTokenSecret string
 }
 
-func (s *AuthService) Login(
+type AuthService interface {
+	Login(ctx context.Context, data *authrpc.LoginInput, span *opentracing.Span) (res *authrpc.AuthResponse, err error)
+	Signup(ctx context.Context, data *authrpc.SignupInput, span *opentracing.Span) (res *authrpc.AuthResponse, err error)
+	ValidateRestRequest(data *authrpc.ValidateRestRequestInput) (res *authrpc.ValidationResponse, err error)
+	ValidateRpcRequest(data *authrpc.ValidateRpcRequestInput) (res *authrpc.ValidationResponse, err error)
+	ValidateEventsRequest(data *authrpc.ValidateEventsRequestInput) (res *authrpc.ValidationResponse, err error)
+}
+
+func (s *authService) createJwt(userId string) (res string, err error) {
+	atClaims := jwt.MapClaims{}
+	atClaims["authorized"] = true
+	atClaims["user_id"] = userId
+	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
+	token, err := at.SignedString([]byte(s.accessTokenSecret))
+	if err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
+func (s *authService) verifyJwt(tokenString string) (res *authrpc.ValidationResponse, err error) {
+	claims := jwt.MapClaims{}
+	_, err = jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(s.accessTokenSecret), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &authrpc.ValidationResponse{UserId: claims["user_id"].(string)}, nil
+}
+
+func (s *authService) Login(
 	ctx context.Context,
 	data *authrpc.LoginInput,
 	span *opentracing.Span,
@@ -48,7 +82,7 @@ func (s *AuthService) Login(
 	return &authrpc.AuthResponse{AccessToken: token}, nil
 }
 
-func (s *AuthService) Signup(
+func (s *authService) Signup(
 	ctx context.Context,
 	data *authrpc.SignupInput,
 	span *opentracing.Span,
@@ -68,33 +102,7 @@ func (s *AuthService) Signup(
 	return &authrpc.AuthResponse{AccessToken: token}, nil
 }
 
-func (s *AuthService) createJwt(userId string) (res string, err error) {
-	atClaims := jwt.MapClaims{}
-	atClaims["authorized"] = true
-	atClaims["user_id"] = userId
-	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
-	token, err := at.SignedString([]byte(s.accessTokenSecret))
-	if err != nil {
-		return "", err
-	}
-	return token, nil
-}
-
-func (s *AuthService) verifyJwt(tokenString string) (res *authrpc.ValidationResponse, err error) {
-	claims := jwt.MapClaims{}
-	_, err = jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte(s.accessTokenSecret), nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &authrpc.ValidationResponse{UserId: claims["user_id"].(string)}, nil
-}
-
-func (s *AuthService) ValidateRestRequest(data *authrpc.ValidateRestRequestInput) (res *authrpc.ValidationResponse, err error) {
+func (s *authService) ValidateRestRequest(data *authrpc.ValidateRestRequestInput) (res *authrpc.ValidationResponse, err error) {
 	for _, route := range aconfig.PUBLIC_ROUTES {
 		if route == data.Path {
 			return nil, nil
@@ -103,7 +111,7 @@ func (s *AuthService) ValidateRestRequest(data *authrpc.ValidateRestRequestInput
 	return s.verifyJwt(data.AccessToken)
 }
 
-func (s *AuthService) ValidateRpcRequest(data *authrpc.ValidateRpcRequestInput) (res *authrpc.ValidationResponse, err error) {
+func (s *authService) ValidateRpcRequest(data *authrpc.ValidateRpcRequestInput) (res *authrpc.ValidationResponse, err error) {
 	for _, route := range aconfig.PUBLIC_RPC_METHODS {
 		if route == data.Method {
 			return nil, nil
@@ -112,19 +120,14 @@ func (s *AuthService) ValidateRpcRequest(data *authrpc.ValidateRpcRequestInput) 
 	return s.verifyJwt(data.AccessToken)
 }
 
-func (s *AuthService) ValidateEventsRequest(data *authrpc.ValidateEventsRequestInput) (res *authrpc.ValidationResponse, err error) {
-	for _, route := range aconfig.PUBLIC_EVENTS {
-		if route == data.Event {
-			return nil, nil
-		}
-	}
+func (s *authService) ValidateEventsRequest(data *authrpc.ValidateEventsRequestInput) (res *authrpc.ValidationResponse, err error) {
 	return s.verifyJwt(data.AccessToken)
 }
 
 func NewAuthService(
-	s *sender.Sender,
-	el *eventslistener.EventListener,
+	s sender.Sender,
+	el eventslistener.EventListener,
 	c *config.Config,
-) *AuthService {
-	return &AuthService{s, el, c.AccessTokenSecret}
+) AuthService {
+	return &authService{s, el, c.AccessTokenSecret}
 }

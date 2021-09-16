@@ -13,12 +13,16 @@ import (
 	"go.uber.org/zap"
 )
 
-type PicturesRestController struct {
+type picturesRestController struct {
 	*restcontroller.BaseRestController
 	service *services.PictureService
 }
 
-func (c *PicturesRestController) handleCreateUserPicture(ctx *gin.Context) {
+type PicturesRestController interface {
+	Listen(ctx context.Context, cancel context.CancelFunc, port string)
+}
+
+func (c *picturesRestController) handleCreateUserPicture(ctx *gin.Context) {
 	input := prpc.CreateUserPictureRequest{}
 	if err := c.ParseRestBody(ctx, &input); err != nil {
 		c.HandleRestError(ctx, err)
@@ -33,7 +37,7 @@ func (c *PicturesRestController) handleCreateUserPicture(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, res)
 }
 
-func (c *PicturesRestController) handleGetUserPictures(ctx *gin.Context) {
+func (c *picturesRestController) handleGetUserPictures(ctx *gin.Context) {
 	userId := ctx.Param("userId")
 	res, err := c.service.GetUserPictures(userId)
 	if err != nil {
@@ -43,7 +47,7 @@ func (c *PicturesRestController) handleGetUserPictures(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, res)
 }
 
-func (c *PicturesRestController) handleGetUserPicture(ctx *gin.Context) {
+func (c *picturesRestController) handleGetUserPicture(ctx *gin.Context) {
 	userId := ctx.Param("userId")
 	id := ctx.Param("id")
 
@@ -59,7 +63,7 @@ func (c *PicturesRestController) handleGetUserPicture(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func (c *PicturesRestController) handleDeleteUserPicture(ctx *gin.Context) {
+func (c *picturesRestController) handleDeleteUserPicture(ctx *gin.Context) {
 	userId := ctx.Param("userId")
 	id := ctx.Param("id")
 
@@ -71,7 +75,7 @@ func (c *PicturesRestController) handleDeleteUserPicture(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
-func (c *PicturesRestController) Listen(
+func (c *picturesRestController) Listen(
 	ctx context.Context,
 	cancel context.CancelFunc,
 	port string,
@@ -81,16 +85,16 @@ func (c *PicturesRestController) Listen(
 
 func NewPicturesRestController(
 	s *services.PictureService,
-	tracer *opentracing.Tracer,
+	tracer opentracing.Tracer,
 	logger *zap.Logger,
 	mc *metrics.MetricsCollector,
-) *PicturesRestController {
+) PicturesRestController {
 	bc := restcontroller.NewRestController(
 		tracer,
 		logger,
 		mc,
 	)
-	c := PicturesRestController{
+	c := picturesRestController{
 		service:            s,
 		BaseRestController: bc,
 	}

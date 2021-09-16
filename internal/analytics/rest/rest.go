@@ -13,12 +13,16 @@ import (
 	"net/http"
 )
 
-type AnalyticsRestController struct {
+type analyticsRestController struct {
 	*restcontroller.BaseRestController
 	service *services.AnalyticsService
 }
 
-func (c *AnalyticsRestController) handleLogData(ctx *gin.Context) {
+type AnalyticsRestController interface {
+	Listen(ctx context.Context, cancel context.CancelFunc, port string)
+}
+
+func (c *analyticsRestController) handleLogData(ctx *gin.Context) {
 	input := anrpc.LogDataRequest{}
 	if err := c.ParseRestBody(ctx, &input); err != nil {
 		c.HandleRestError(ctx, err)
@@ -31,7 +35,7 @@ func (c *AnalyticsRestController) handleLogData(ctx *gin.Context) {
 	ctx.Status(http.StatusCreated)
 }
 
-func (c *AnalyticsRestController) handleGetData(ctx *gin.Context) {
+func (c *analyticsRestController) handleGetData(ctx *gin.Context) {
 	res, err := c.service.GetLog(&emptypb.Empty{})
 	if err != nil {
 		c.HandleRestError(ctx, err)
@@ -40,7 +44,7 @@ func (c *AnalyticsRestController) handleGetData(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func (c *AnalyticsRestController) Listen(
+func (c *analyticsRestController) Listen(
 	ctx context.Context,
 	cancel context.CancelFunc,
 	port string,
@@ -50,20 +54,19 @@ func (c *AnalyticsRestController) Listen(
 
 func NewAnalyticsRestController(
 	s *services.AnalyticsService,
-	tracer *opentracing.Tracer,
+	tracer opentracing.Tracer,
 	logger *zap.Logger,
 	mc *metrics.MetricsCollector,
-) *AnalyticsRestController {
+) AnalyticsRestController {
 	bc := restcontroller.NewRestController(
 		tracer,
 		logger,
 		mc,
 	)
-	c := AnalyticsRestController{
+	c := analyticsRestController{
 		service:            s,
 		BaseRestController: bc,
 	}
-
 	bc.Router.POST("/analytics", bc.Handler(c.handleLogData))
 	bc.Router.GET("/analytics", bc.Handler(c.handleGetData))
 	return &c

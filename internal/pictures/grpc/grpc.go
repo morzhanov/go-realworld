@@ -60,7 +60,7 @@ func (s *PicturesRpcServer) Listen(ctx context.Context, cancel context.CancelFun
 func NewPicturesRpcServer(
 	picturesService *services.PictureService,
 	c *config.Config,
-	tracer *opentracing.Tracer,
+	tracer opentracing.Tracer,
 	logger *zap.Logger,
 ) (s *PicturesRpcServer) {
 	uri := fmt.Sprintf("%s:%s", c.GrpcAddr, c.GrpcPort)

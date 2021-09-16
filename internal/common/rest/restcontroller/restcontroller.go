@@ -21,7 +21,7 @@ import (
 
 type BaseRestController struct {
 	Router *gin.Engine
-	Tracer *opentracing.Tracer
+	Tracer opentracing.Tracer
 	Logger *zap.Logger
 	MC     *metrics.MetricsCollector
 }
@@ -82,7 +82,7 @@ func (c *BaseRestController) GetSpan(ctx *gin.Context) *opentracing.Span {
 
 func (c *BaseRestController) Handler(handler gin.HandlerFunc) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		span := tracing.StartSpanFromHttpRequest(*c.Tracer, ctx.Request)
+		span := tracing.StartSpanFromHttpRequest(c.Tracer, ctx.Request)
 		ctx.Set("span", span)
 		handler(ctx)
 		defer span.Finish()
@@ -90,7 +90,7 @@ func (c *BaseRestController) Handler(handler gin.HandlerFunc) gin.HandlerFunc {
 }
 
 func NewRestController(
-	tracer *opentracing.Tracer,
+	tracer opentracing.Tracer,
 	logger *zap.Logger,
 	mc *metrics.MetricsCollector,
 ) *BaseRestController {

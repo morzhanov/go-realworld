@@ -18,7 +18,7 @@ import (
 type UsersRpcServer struct {
 	urpc.UnimplementedUsersServer
 	*grpcserver.BaseGrpcServer
-	usersService *services.UsersService
+	usersService services.UsersService
 	server       *grpc.Server
 }
 
@@ -59,9 +59,9 @@ func (s *UsersRpcServer) Listen(ctx context.Context, cancel context.CancelFunc) 
 }
 
 func NewUsersRpcServer(
-	usersService *services.UsersService,
+	usersService services.UsersService,
 	c *config.Config,
-	tracer *opentracing.Tracer,
+	tracer opentracing.Tracer,
 	logger *zap.Logger,
 ) (s *UsersRpcServer) {
 	uri := fmt.Sprintf("%s:%s", c.GrpcAddr, c.GrpcPort)

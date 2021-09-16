@@ -28,27 +28,18 @@ import (
 	"google.golang.org/grpc"
 )
 
-func getGrpcClientType(service string) (RpcClient, error) {
-	switch service {
-	case "analytics":
-		return AnalyticsRpcClient, nil
-	case "auth":
-		return AuthRpcClient, nil
-	case "users":
-		return UsersRpcClient, nil
-	case "pictures":
-		return PicturesRpcClient, nil
-	default:
-		return -1, fmt.Errorf("wrong service type")
-	}
+func (s *sender) Connect(c *config.Config, cancel context.CancelFunc) {
+	s.setupEventsClient(c)
+	s.setupRestClient(c)
+	s.setupGrpcClient(c, cancel)
 }
 
-func (s *Sender) PerformRequest(
+func (s *sender) PerformRequest(
 	transport Transport,
 	service string,
 	method string,
 	input interface{},
-	el *eventslistener.EventListener,
+	el eventslistener.EventListener,
 	span *opentracing.Span,
 	meta RequestMeta,
 	res interface{},
@@ -94,7 +85,7 @@ func (s *Sender) PerformRequest(
 	return nil
 }
 
-func (s *Sender) SendEventsResponse(eventUuid string, value interface{}, span *opentracing.Span) error {
+func (s *sender) SendEventsResponse(eventUuid string, value interface{}, span *opentracing.Span) error {
 	if !helper.CheckStruct(value) {
 		return errors.New("value is not struct")
 	}
@@ -114,7 +105,148 @@ func (s *Sender) SendEventsResponse(eventUuid string, value interface{}, span *o
 	)
 }
 
-func (s *Sender) restRequest(
+func (s *sender) GetTransportFromContext(ctx context.Context) Transport {
+	val := ctx.Value("transport")
+	return val.(Transport)
+}
+
+func (s *sender) StringToTransport(transport string) (Transport, error) {
+	switch transport {
+	case "rest":
+		return RestTransport, nil
+	case "grpc":
+		return RpcTransport, nil
+	case "events":
+		return EventsTransport, nil
+	default:
+		return -1, fmt.Errorf("wrong transport %s", transport)
+	}
+}
+
+func (s *sender) TransportToString(transport Transport) (string, error) {
+	switch transport {
+	case RestTransport:
+		return "rest", nil
+	case RpcTransport:
+		return "grpc", nil
+	case EventsTransport:
+		return "events", nil
+	default:
+		return "", fmt.Errorf("wrong transport %s", transport)
+	}
+}
+
+func (s *sender) GetAPI() *config.ApiConfig {
+	return s.API
+}
+
+func getGrpcClientType(service string) (RpcClient, error) {
+	switch service {
+	case "analytics":
+		return AnalyticsRpcClient, nil
+	case "auth":
+		return AuthRpcClient, nil
+	case "users":
+		return UsersRpcClient, nil
+	case "pictures":
+		return PicturesRpcClient, nil
+	default:
+		return -1, fmt.Errorf("wrong service type")
+	}
+}
+
+func (s *sender) setupRestClient(c *config.Config) {
+	restBaseUrls := RestApiBaseUrls{
+		"analytics": fmt.Sprintf("%v:%v", c.RestAddr, c.AnalyticsRestPort),
+		"auth":      fmt.Sprintf("%v:%v", c.RestAddr, c.AuthRestPort),
+		"pictures":  fmt.Sprintf("%v:%v", c.RestAddr, c.PicturesRestPort),
+		"users":     fmt.Sprintf("%v:%v", c.RestAddr, c.UsersRestPort),
+		"apigw":     fmt.Sprintf("%v:%v", c.RestAddr, c.ApiGWRestPort),
+	}
+	s.restClient = &RestClient{
+		http: &http.Client{},
+		urls: restBaseUrls,
+	}
+}
+
+func (s *sender) setupGrpcClient(c *config.Config, cancel context.CancelFunc) {
+	s.grpcClient = &GrpcClient{}
+	go func() {
+		uri := fmt.Sprintf("%s:%s", c.GrpcAddr, c.AnalyticsGrpcPort)
+		conn, err := grpc.Dial(uri, grpc.WithInsecure(), grpc.WithBlock())
+		if err != nil {
+			cancel()
+			s.logger.Fatal("error during dialing to analytics grpc server, exiting...")
+		}
+		s.grpcClient.analyticsClient = analyticsrpc.NewAnalyticsClient(conn)
+	}()
+	go func() {
+		uri := fmt.Sprintf("%s:%s", c.GrpcAddr, c.AuthGrpcPort)
+		conn, err := grpc.Dial(uri, grpc.WithInsecure(), grpc.WithBlock())
+		if err != nil {
+			cancel()
+			s.logger.Fatal("error during dialing to auth grpc server, exiting...")
+		}
+		s.grpcClient.authClient = authrpc.NewAuthClient(conn)
+	}()
+	go func() {
+		uri := fmt.Sprintf("%s:%s", c.GrpcAddr, c.PicturesGrpcPort)
+		conn, err := grpc.Dial(uri, grpc.WithInsecure(), grpc.WithBlock())
+		if err != nil {
+			cancel()
+			s.logger.Fatal("error during dialing to pictures grpc server, exiting...")
+		}
+		s.grpcClient.picturesClient = picturesrpc.NewPicturesClient(conn)
+	}()
+	go func() {
+		uri := fmt.Sprintf("%s:%s", c.GrpcAddr, c.UsersGrpcPort)
+		conn, err := grpc.Dial(uri, grpc.WithInsecure(), grpc.WithBlock())
+		if err != nil {
+			cancel()
+			s.logger.Fatal("error during dialing to users grpc server, exiting...")
+		}
+		s.grpcClient.usersClient = usersrpc.NewUsersClient(conn)
+	}()
+}
+
+func (s *sender) setupEventsClient(c *config.Config) {
+	s.eventsClient = &EventsClient{
+		Auth:      &EventsClientItem{[]string{c.KafkaUri}, c.AuthKafkaTopic},
+		Analytics: &EventsClientItem{[]string{c.KafkaUri}, c.AnalyticsKafkaTopic},
+		Pictures:  &EventsClientItem{[]string{c.KafkaUri}, c.PicturesKafkaTopic},
+		Users:     &EventsClientItem{[]string{c.KafkaUri}, c.UsersKafkaTopic},
+		Results:   &EventsClientItem{[]string{c.KafkaUri}, c.ResultsKafkaTopic},
+	}
+}
+
+func (s *sender) getRpcClient(client RpcClient) (interface{}, error) {
+	switch client {
+	case UsersRpcClient:
+		if s.grpcClient.usersClient == nil {
+			return nil, fmt.Errorf("users grpc server is not connected")
+		}
+		return &s.grpcClient.usersClient, nil
+	case PicturesRpcClient:
+		if s.grpcClient.usersClient == nil {
+			return nil, fmt.Errorf("pictures grpc server is not connected")
+		}
+		return &s.grpcClient.picturesClient, nil
+	case AnalyticsRpcClient:
+		if s.grpcClient.usersClient == nil {
+			return nil, fmt.Errorf("analytics grpc server is not connected")
+		}
+		return &s.grpcClient.analyticsClient, nil
+	case AuthRpcClient:
+		if s.grpcClient.usersClient == nil {
+			return nil, fmt.Errorf("auth grpc server is not connected")
+		}
+		return &s.grpcClient.authClient, nil
+	default:
+		return nil, fmt.Errorf("wrong client")
+	}
+}
+
+func (s *sender) restRequest(
 	method string,
 	url string,
 	data interface{},
@@ -179,65 +311,7 @@ func (s *Sender) restRequest(
 	return json.Unmarshal(body, &res)
 }
 
-func (s *Sender) GetTransportFromContext(ctx context.Context) Transport {
-	val := ctx.Value("transport")
-	return val.(Transport)
-}
-
-func (s *Sender) StringToTransport(transport string) (Transport, error) {
-	switch transport {
-	case "rest":
-		return RestTransport, nil
-	case "grpc":
-		return RpcTransport, nil
-	case "events":
-		return EventsTransport, nil
-	default:
-		return -1, fmt.Errorf("wrong transport %s", transport)
-	}
-}
-
-func (s *Sender) TransportToString(transport Transport) (string, error) {
-	switch transport {
-	case RestTransport:
-		return "rest", nil
-	case RpcTransport:
-		return "grpc", nil
-	case EventsTransport:
-		return "events", nil
-	default:
-		return "", fmt.Errorf("wrong transport %s", transport)
-	}
-}
-
-func (s *Sender) getRpcClient(client RpcClient) (interface{}, error) {
-	switch client {
-	case UsersRpcClient:
-		if s.grpcClient.usersClient == nil {
-			return nil, fmt.Errorf("users grpc server is not connected")
-		}
-		return &s.grpcClient.usersClient, nil
-	case PicturesRpcClient:
-		if s.grpcClient.usersClient == nil {
-			return nil, fmt.Errorf("pictures grpc server is not connected")
-		}
-		return &s.grpcClient.picturesClient, nil
-	case AnalyticsRpcClient:
-		if s.grpcClient.usersClient == nil {
-			return nil, fmt.Errorf("analytics grpc server is not connected")
-		}
-		return &s.grpcClient.analyticsClient, nil
-	case AuthRpcClient:
-		if s.grpcClient.usersClient == nil {
-			return nil, fmt.Errorf("auth grpc server is not connected")
-		}
-		return &s.grpcClient.authClient, nil
-	default:
-		return nil, fmt.Errorf("wrong client")
-	}
-}
-
-func (s *Sender) rpcRequest(
+func (s *sender) rpcRequest(
 	client RpcClient,
 	method string,
 	input interface{},
@@ -272,14 +346,14 @@ func (s *Sender) rpcRequest(
 	return nil
 }
 
-func (s *Sender) eventsRequest(
+func (s *sender) eventsRequest(
 	api string,
 	event string,
 	data string,
 	eventId string,
 	res interface{},
 	wait bool,
-	el *eventslistener.EventListener,
+	el eventslistener.EventListener,
 	span *opentracing.Span,
 ) (err error) {
 	eventKey := "results"
@@ -364,61 +438,7 @@ func (s *Sender) eventsRequest(
 	return
 }
 
-func (s *Sender) setupRestClient(c *config.Config) {
-	restBaseUrls := RestApiBaseUrls{
-		"analytics": fmt.Sprintf("%v:%v", c.RestAddr, c.AnalyticsRestPort),
-		"auth":      fmt.Sprintf("%v:%v", c.RestAddr, c.AuthRestPort),
-		"pictures":  fmt.Sprintf("%v:%v", c.RestAddr, c.PicturesRestPort),
-		"users":     fmt.Sprintf("%v:%v", c.RestAddr, c.UsersRestPort),
-		"apigw":     fmt.Sprintf("%v:%v", c.RestAddr, c.ApiGWRestPort),
-	}
-	s.restClient = &RestClient{
-		http: &http.Client{},
-		urls: restBaseUrls,
-	}
-}
-
-func (s *Sender) setupGrpcClient(c *config.Config, cancel context.CancelFunc) {
-	s.grpcClient = &GrpcClient{}
-	go func() {
-		uri := fmt.Sprintf("%s:%s", c.GrpcAddr, c.AnalyticsGrpcPort)
-		conn, err := grpc.Dial(uri, grpc.WithInsecure(), grpc.WithBlock())
-		if err != nil {
-			cancel()
-			s.logger.Fatal("error during dialing to analytics grpc server, exiting...")
-		}
-		s.grpcClient.analyticsClient = analyticsrpc.NewAnalyticsClient(conn)
-	}()
-	go func() {
-		uri := fmt.Sprintf("%s:%s", c.GrpcAddr, c.AuthGrpcPort)
-		conn, err := grpc.Dial(uri, grpc.WithInsecure(), grpc.WithBlock())
-		if err != nil {
-			cancel()
-			s.logger.Fatal("error during dialing to auth grpc server, exiting...")
-		}
-		s.grpcClient.authClient = authrpc.NewAuthClient(conn)
-	}()
-	go func() {
-		uri := fmt.Sprintf("%s:%s", c.GrpcAddr, c.PicturesGrpcPort)
-		conn, err := grpc.Dial(uri, grpc.WithInsecure(), grpc.WithBlock())
-		if err != nil {
-			cancel()
-			s.logger.Fatal("error during dialing to pictures grpc server, exiting...")
-		}
-		s.grpcClient.picturesClient = picturesrpc.NewPicturesClient(conn)
-	}()
-	go func() {
-		uri := fmt.Sprintf("%s:%s", c.GrpcAddr, c.UsersGrpcPort)
-		conn, err := grpc.Dial(uri, grpc.WithInsecure(), grpc.WithBlock())
-		if err != nil {
-			cancel()
-			s.logger.Fatal("error during dialing to users grpc server, exiting...")
-		}
-		s.grpcClient.usersClient = usersrpc.NewUsersClient(conn)
-	}()
-}
-
-func (s *Sender) logRequest(transport Transport, service string, method string) {
+func (s *sender) logRequest(transport Transport, service string, method string) {
 	transportName, err := s.TransportToString(transport)
 	if err != nil {
 		s.logger.Error(err.Error())
@@ -430,22 +450,6 @@ func (s *Sender) logRequest(transport Transport, service string, method string) 
 	}
 }
 
-func (s *Sender) setupEventsClient(c *config.Config) {
-	s.eventsClient = &EventsClient{
-		Auth:      &EventsClientItem{[]string{c.KafkaUri}, c.AuthKafkaTopic},
-		Analytics: &EventsClientItem{[]string{c.KafkaUri}, c.AnalyticsKafkaTopic},
-		Pictures:  &EventsClientItem{[]string{c.KafkaUri}, c.PicturesKafkaTopic},
-		Users:     &EventsClientItem{[]string{c.KafkaUri}, c.UsersKafkaTopic},
-		Results:   &EventsClientItem{[]string{c.KafkaUri}, c.ResultsKafkaTopic},
-	}
-}
-
-func (s *Sender) Connect(c *config.Config, cancel context.CancelFunc) {
-	s.setupEventsClient(c)
-	s.setupRestClient(c)
-	s.setupGrpcClient(c, cancel)
-}
-
-func NewSender(ac *config.ApiConfig, l *zap.Logger) *Sender {
-	return &Sender{API: ac, logger: l}
+func NewSender(ac *config.ApiConfig, l *zap.Logger) Sender {
+	return &sender{API: ac, logger: l}
 }

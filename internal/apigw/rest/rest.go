@@ -15,13 +15,17 @@ import (
 	"net/http"
 )
 
-type APIGatewayRestController struct {
+type apiGatewayRestController struct {
 	*restcontroller.BaseRestController
-	service *services.APIGatewayService
-	sender  *sender.Sender
+	service services.APIGatewayService
+	sender  sender.Sender
 }
 
-func (c *APIGatewayRestController) handleLogin(ctx *gin.Context) {
+type APIGatewayRestController interface {
+	Listen(ctx context.Context, cancel context.CancelFunc, port string)
+}
+
+func (c *apiGatewayRestController) handleLogin(ctx *gin.Context) {
 	transport, err := c.sender.StringToTransport(ctx.Param("transport"))
 	if err != nil {
 		c.HandleRestError(ctx, err)
@@ -42,7 +46,7 @@ func (c *APIGatewayRestController) handleLogin(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func (c *APIGatewayRestController) handleSignup(ctx *gin.Context) {
+func (c *apiGatewayRestController) handleSignup(ctx *gin.Context) {
 	transport, err := c.sender.StringToTransport(ctx.Param("transport"))
 	if err != nil {
 		c.HandleRestError(ctx, err)
@@ -63,7 +67,7 @@ func (c *APIGatewayRestController) handleSignup(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func (c *APIGatewayRestController) handleCreatePicture(ctx *gin.Context) {
+func (c *apiGatewayRestController) handleCreatePicture(ctx *gin.Context) {
 	transport, err := c.sender.StringToTransport(ctx.Param("transport"))
 	span := c.GetSpan(ctx)
 	if err != nil {
@@ -91,7 +95,7 @@ func (c *APIGatewayRestController) handleCreatePicture(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, res)
 }
 
-func (c *APIGatewayRestController) handleGetPictures(ctx *gin.Context) {
+func (c *apiGatewayRestController) handleGetPictures(ctx *gin.Context) {
 	transport, err := c.sender.StringToTransport(ctx.Param("transport"))
 	span := c.GetSpan(ctx)
 	if err != nil {
@@ -112,7 +116,7 @@ func (c *APIGatewayRestController) handleGetPictures(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res.Pictures)
 }
 
-func (c *APIGatewayRestController) handleGetPicture(ctx *gin.Context) {
+func (c *apiGatewayRestController) handleGetPicture(ctx *gin.Context) {
 	transport, err := c.sender.StringToTransport(ctx.Param("transport"))
 	picId := ctx.Param("id")
 	span := c.GetSpan(ctx)
@@ -134,7 +138,7 @@ func (c *APIGatewayRestController) handleGetPicture(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func (c *APIGatewayRestController) handleDeletePicture(ctx *gin.Context) {
+func (c *apiGatewayRestController) handleDeletePicture(ctx *gin.Context) {
 	transport, err := c.sender.StringToTransport(ctx.Param("transport"))
 	span := c.GetSpan(ctx)
 	if err != nil {
@@ -161,7 +165,7 @@ func (c *APIGatewayRestController) handleDeletePicture(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
-func (c *APIGatewayRestController) handleGetAnalytics(ctx *gin.Context) {
+func (c *apiGatewayRestController) handleGetAnalytics(ctx *gin.Context) {
 	transport, err := c.sender.StringToTransport(ctx.Param("transport"))
 	span := c.GetSpan(ctx)
 	if err != nil {
@@ -174,7 +178,7 @@ func (c *APIGatewayRestController) handleGetAnalytics(ctx *gin.Context) {
 		return
 	}
 
-	input := anrpc.GetLogRequest{}
+	input := anrpc.LogDataRequest{}
 	if err := c.ParseRestBody(ctx, &input); err != nil {
 		c.HandleRestError(ctx, err)
 		return
@@ -188,7 +192,7 @@ func (c *APIGatewayRestController) handleGetAnalytics(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func (c *APIGatewayRestController) Listen(
+func (c *apiGatewayRestController) Listen(
 	ctx context.Context,
 	cancel context.CancelFunc,
 	port string,
@@ -197,18 +201,18 @@ func (c *APIGatewayRestController) Listen(
 }
 
 func NewAPIGatewayRestController(
-	s *services.APIGatewayService,
-	tracer *opentracing.Tracer,
+	s services.APIGatewayService,
+	tracer opentracing.Tracer,
 	logger *zap.Logger,
 	mc *metrics.MetricsCollector,
-	sender *sender.Sender,
-) *APIGatewayRestController {
+	sender sender.Sender,
+) APIGatewayRestController {
 	bc := restcontroller.NewRestController(
 		tracer,
 		logger,
 		mc,
 	)
-	c := APIGatewayRestController{
+	c := apiGatewayRestController{
 		service:            s,
 		sender:             sender,
 		BaseRestController: bc,

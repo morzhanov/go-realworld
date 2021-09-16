@@ -12,15 +12,15 @@ import (
 )
 
 type BaseEventsController struct {
-	tracer          *opentracing.Tracer
-	sender          *sender.Sender
+	tracer          opentracing.Tracer
+	sender          sender.Sender
 	mq              *mq.MQ
 	Logger          *zap.Logger
 	ConsumerGroupId string
 }
 
 func (c *BaseEventsController) CreateSpan(in *kafka.Message) opentracing.Span {
-	return tracing.StartSpanFromEventsRequest(*c.tracer, in)
+	return tracing.StartSpanFromEventsRequest(c.tracer, in)
 }
 
 func (c *BaseEventsController) Listen(
@@ -49,8 +49,8 @@ func (c *BaseEventsController) SendResponse(eventId string, data interface{}, sp
 }
 
 func NewEventsController(
-	s *sender.Sender,
-	tracer *opentracing.Tracer,
+	s sender.Sender,
+	tracer opentracing.Tracer,
 	logger *zap.Logger,
 	conf *config.Config,
 ) (*BaseEventsController, error) {

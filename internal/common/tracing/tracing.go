@@ -28,7 +28,7 @@ func StartSpanFromEventsRequest(tracer opentracing.Tracer, m *kafka.Message) ope
 	return tracer.StartSpan("event-receive", ext.RPCServerOption(spanCtx))
 }
 
-func NewTracer(ctx context.Context, c *config.Config, logger *zap.Logger) (*opentracing.Tracer, error) {
+func NewTracer(ctx context.Context, c *config.Config, logger *zap.Logger) (opentracing.Tracer, error) {
 	cfg := jconfig.Configuration{
 		ServiceName: c.ServiceName,
 	}
@@ -43,5 +43,5 @@ func NewTracer(ctx context.Context, c *config.Config, logger *zap.Logger) (*open
 		closer.Close()
 	}()
 
-	return &tracer, nil
+	return tracer, nil
 }

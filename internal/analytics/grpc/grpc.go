@@ -42,7 +42,7 @@ func (s *AnalyticsRpcServer) Listen(ctx context.Context, cancel context.CancelFu
 func NewAnalyticsRpcServer(
 	analyticsService *services.AnalyticsService,
 	c *config.Config,
-	tracer *opentracing.Tracer,
+	tracer opentracing.Tracer,
 	logger *zap.Logger,
 ) (s *AnalyticsRpcServer) {
 	uri := fmt.Sprintf("%s:%s", c.GrpcAddr, c.GrpcPort)

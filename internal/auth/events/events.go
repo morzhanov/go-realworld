@@ -15,26 +15,30 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-type AuthEventsController struct {
+type authEventsController struct {
 	eventscontroller.BaseEventsController
-	service *services.AuthService
-	sender  *sender.Sender
+	service services.AuthService
+	sender  sender.Sender
 }
 
-func (c *AuthEventsController) processRequest(in *kafka.Message) error {
+type AuthEventsController interface {
+	Listen(ctx context.Context)
+}
+
+func (c *authEventsController) processRequest(in *kafka.Message) error {
 	switch string(in.Key) {
-	case c.sender.API.Auth.Events["validateEventsRequest"].Event:
+	case c.sender.GetAPI().Auth.Events["validateEventsRequest"].Event:
 		return c.validateEventsRequest(in)
-	case c.sender.API.Auth.Events["login"].Event:
+	case c.sender.GetAPI().Auth.Events["login"].Event:
 		return c.login(in)
-	case c.sender.API.Auth.Events["signup"].Event:
+	case c.sender.GetAPI().Auth.Events["signup"].Event:
 		return c.signup(in)
 	default:
 		return fmt.Errorf("wrong event name: %s", in.Key)
 	}
 }
 
-func (c *AuthEventsController) validateEventsRequest(in *kafka.Message) error {
+func (c *authEventsController) validateEventsRequest(in *kafka.Message) error {
 	span := c.CreateSpan(in)
 	defer span.Finish()
 
@@ -50,7 +54,7 @@ func (c *AuthEventsController) validateEventsRequest(in *kafka.Message) error {
 	return c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
 }
 
-func (c *AuthEventsController) login(in *kafka.Message) error {
+func (c *authEventsController) login(in *kafka.Message) error {
 	span := c.CreateSpan(in)
 	defer span.Finish()
 
@@ -67,7 +71,7 @@ func (c *AuthEventsController) login(in *kafka.Message) error {
 	return c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
 }
 
-func (c *AuthEventsController) signup(in *kafka.Message) error {
+func (c *authEventsController) signup(in *kafka.Message) error {
 	span := c.CreateSpan(in)
 	defer span.Finish()
 
@@ -85,7 +89,7 @@ func (c *AuthEventsController) signup(in *kafka.Message) error {
 	return c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
 }
 
-func (c *AuthEventsController) Listen(ctx context.Context) {
+func (c *authEventsController) Listen(ctx context.Context) {
 	c.BaseEventsController.Listen(
 		ctx,
 		func(m *kafka.Message) {
@@ -98,19 +102,19 @@ func (c *AuthEventsController) Listen(ctx context.Context) {
 }
 
 func NewAuthEventsController(
-	s *services.AuthService,
+	s services.AuthService,
 	c *config.Config,
-	sender *sender.Sender,
-	tracer *opentracing.Tracer,
+	sender sender.Sender,
+	tracer opentracing.Tracer,
 	logger *zap.Logger,
-) (*AuthEventsController, error) {
+) (AuthEventsController, error) {
 	controller, err := eventscontroller.NewEventsController(
 		sender,
 		tracer,
 		logger,
 		c,
 	)
-	return &AuthEventsController{
+	return &authEventsController{
 		service:              s,
 		BaseEventsController: *controller,
 		sender:               sender,

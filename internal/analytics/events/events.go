@@ -16,24 +16,28 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-type AnalyticsEventsController struct {
+type analyticsEventsController struct {
 	eventscontroller.BaseEventsController
 	service *services.AnalyticsService
-	sender  *sender.Sender
+	sender  sender.Sender
 }
 
-func (c *AnalyticsEventsController) processRequest(in *kafka.Message) error {
+type AnalyticsEventsController interface {
+	Listen(ctx context.Context)
+}
+
+func (c *analyticsEventsController) processRequest(in *kafka.Message) error {
 	switch string(in.Key) {
-	case c.sender.API.Analytics.Events["logData"].Event:
+	case c.sender.GetAPI().Analytics.Events["logData"].Event:
 		return c.logData(in)
-	case c.sender.API.Analytics.Events["getLogs"].Event:
+	case c.sender.GetAPI().Analytics.Events["getLogs"].Event:
 		return c.getLogs(in)
 	default:
 		return fmt.Errorf("wrong event name: %s", in.Key)
 	}
 }
 
-func (c *AnalyticsEventsController) logData(in *kafka.Message) error {
+func (c *analyticsEventsController) logData(in *kafka.Message) error {
 	span := c.CreateSpan(in)
 	defer span.Finish()
 
@@ -47,7 +51,7 @@ func (c *AnalyticsEventsController) logData(in *kafka.Message) error {
 	return nil
 }
 
-func (c *AnalyticsEventsController) getLogs(in *kafka.Message) error {
+func (c *analyticsEventsController) getLogs(in *kafka.Message) error {
 	span := c.CreateSpan(in)
 	defer span.Finish()
 
@@ -62,7 +66,7 @@ func (c *AnalyticsEventsController) getLogs(in *kafka.Message) error {
 	return c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
 }
 
-func (c *AnalyticsEventsController) Listen(ctx context.Context) {
+func (c *analyticsEventsController) Listen(ctx context.Context) {
 	c.BaseEventsController.Listen(
 		ctx,
 		func(m *kafka.Message) {
@@ -77,19 +81,19 @@ func (c *AnalyticsEventsController) Listen(ctx context.Context) {
 func NewAnalyticsEventsController(
 	s *services.AnalyticsService,
 	c *config.Config,
-	sender *sender.Sender,
-	tracer *opentracing.Tracer,
+	sender sender.Sender,
+	tracer opentracing.Tracer,
 	logger *zap.Logger,
-) (*AnalyticsEventsController, error) {
-	controller, err := eventscontroller.NewEventsController(
+) (AnalyticsEventsController, error) {
+	ec, err := eventscontroller.NewEventsController(
 		sender,
 		tracer,
 		logger,
 		c,
 	)
-	return &AnalyticsEventsController{
+	return &analyticsEventsController{
 		service:              s,
-		BaseEventsController: *controller,
+		BaseEventsController: *ec,
 		sender:               sender,
 	}, err
 }

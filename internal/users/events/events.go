@@ -15,30 +15,34 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-type UsersEventsController struct {
+type usersEventsController struct {
 	eventscontroller.BaseEventsController
-	service *services.UsersService
-	sender  *sender.Sender
+	service services.UsersService
+	sender  sender.Sender
 }
 
-func (c *UsersEventsController) processRequest(in *kafka.Message) error {
+type UsersEventsController interface {
+	Listen(ctx context.Context)
+}
+
+func (c *usersEventsController) processRequest(in *kafka.Message) error {
 	switch string(in.Key) {
-	case c.sender.API.Users.Events["getUser"].Event:
+	case c.sender.GetAPI().Users.Events["getUser"].Event:
 		return c.getUser(in)
-	case c.sender.API.Users.Events["getUserByUsername"].Event:
+	case c.sender.GetAPI().Users.Events["getUserByUsername"].Event:
 		return c.getUserByUsername(in)
-	case c.sender.API.Users.Events["validatePassword"].Event:
+	case c.sender.GetAPI().Users.Events["validatePassword"].Event:
 		return c.validatePassword(in)
-	case c.sender.API.Users.Events["createUser"].Event:
+	case c.sender.GetAPI().Users.Events["createUser"].Event:
 		return c.createUser(in)
-	case c.sender.API.Users.Events["deleteUser"].Event:
+	case c.sender.GetAPI().Users.Events["deleteUser"].Event:
 		return c.deleteUser(in)
 	default:
 		return fmt.Errorf("wrong event name: %s", in.Key)
 	}
 }
 
-func (c *UsersEventsController) getUser(in *kafka.Message) error {
+func (c *usersEventsController) getUser(in *kafka.Message) error {
 	span := c.CreateSpan(in)
 	defer span.Finish()
 
@@ -54,7 +58,7 @@ func (c *UsersEventsController) getUser(in *kafka.Message) error {
 	return c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
 }
 
-func (c *UsersEventsController) getUserByUsername(in *kafka.Message) error {
+func (c *usersEventsController) getUserByUsername(in *kafka.Message) error {
 	span := c.CreateSpan(in)
 	defer span.Finish()
 
@@ -70,7 +74,7 @@ func (c *UsersEventsController) getUserByUsername(in *kafka.Message) error {
 	return c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
 }
 
-func (c *UsersEventsController) validatePassword(in *kafka.Message) error {
+func (c *usersEventsController) validatePassword(in *kafka.Message) error {
 	span := c.CreateSpan(in)
 	defer span.Finish()
 
@@ -86,7 +90,7 @@ func (c *UsersEventsController) validatePassword(in *kafka.Message) error {
 	return c.BaseEventsController.SendResponse(payload.EventId, nil, &span)
 }
 
-func (c *UsersEventsController) createUser(in *kafka.Message) error {
+func (c *usersEventsController) createUser(in *kafka.Message) error {
 	span := c.CreateSpan(in)
 	defer span.Finish()
 
@@ -102,7 +106,7 @@ func (c *UsersEventsController) createUser(in *kafka.Message) error {
 	return c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
 }
 
-func (c *UsersEventsController) deleteUser(in *kafka.Message) error {
+func (c *usersEventsController) deleteUser(in *kafka.Message) error {
 	span := c.CreateSpan(in)
 	defer span.Finish()
 
@@ -118,7 +122,7 @@ func (c *UsersEventsController) deleteUser(in *kafka.Message) error {
 	return c.BaseEventsController.SendResponse(payload.EventId, nil, &span)
 }
 
-func (c *UsersEventsController) Listen(ctx context.Context) {
+func (c *usersEventsController) Listen(ctx context.Context) {
 	c.BaseEventsController.Listen(
 		ctx,
 		func(m *kafka.Message) {
@@ -131,19 +135,19 @@ func (c *UsersEventsController) Listen(ctx context.Context) {
 }
 
 func NewUsersEventsController(
-	s *services.UsersService,
+	s services.UsersService,
 	c *config.Config,
-	sender *sender.Sender,
-	tracer *opentracing.Tracer,
+	sender sender.Sender,
+	tracer opentracing.Tracer,
 	logger *zap.Logger,
-) (*UsersEventsController, error) {
+) (UsersEventsController, error) {
 	controller, err := eventscontroller.NewEventsController(
 		sender,
 		tracer,
 		logger,
 		c,
 	)
-	return &UsersEventsController{
+	return &usersEventsController{
 		service:              s,
 		BaseEventsController: *controller,
 		sender:               sender,

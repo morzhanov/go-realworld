@@ -13,12 +13,16 @@ import (
 	"go.uber.org/zap"
 )
 
-type UsersRestController struct {
+type usersRestController struct {
 	*restcontroller.BaseRestController
-	service *services.UsersService
+	service services.UsersService
 }
 
-func (c *UsersRestController) handleGetUserData(ctx *gin.Context) {
+type UsersRestController interface {
+	Listen(ctx context.Context, cancel context.CancelFunc, port string)
+}
+
+func (c *usersRestController) handleGetUserData(ctx *gin.Context) {
 	id := ctx.Param("id")
 	res, err := c.service.GetUserData(id)
 	if err != nil {
@@ -32,7 +36,7 @@ func (c *UsersRestController) handleGetUserData(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func (c *UsersRestController) handleGetUserDataByUsername(ctx *gin.Context) {
+func (c *usersRestController) handleGetUserDataByUsername(ctx *gin.Context) {
 	username := ctx.Query("username")
 	if username == "" {
 		ctx.String(http.StatusBadRequest, "username should be provided in query params")
@@ -51,7 +55,7 @@ func (c *UsersRestController) handleGetUserDataByUsername(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func (c *UsersRestController) handleValidateUserPassword(ctx *gin.Context) {
+func (c *usersRestController) handleValidateUserPassword(ctx *gin.Context) {
 	input := urpc.ValidateUserPasswordRequest{}
 	if err := c.ParseRestBody(ctx, &input); err != nil {
 		c.HandleRestError(ctx, err)
@@ -69,7 +73,7 @@ func (c *UsersRestController) handleValidateUserPassword(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
-func (c *UsersRestController) handleCreateUser(ctx *gin.Context) {
+func (c *usersRestController) handleCreateUser(ctx *gin.Context) {
 	input := urpc.CreateUserRequest{}
 	if err := c.ParseRestBody(ctx, &input); err != nil {
 		c.HandleRestError(ctx, err)
@@ -84,7 +88,7 @@ func (c *UsersRestController) handleCreateUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, res)
 }
 
-func (c *UsersRestController) handleDeleteUser(ctx *gin.Context) {
+func (c *usersRestController) handleDeleteUser(ctx *gin.Context) {
 	id := ctx.Param("id")
 	if err := c.service.DeleteUser(id); err != nil {
 		c.HandleRestError(ctx, err)
@@ -93,7 +97,7 @@ func (c *UsersRestController) handleDeleteUser(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
-func (c *UsersRestController) Listen(
+func (c *usersRestController) Listen(
 	ctx context.Context,
 	cancel context.CancelFunc,
 	port string,
@@ -102,17 +106,17 @@ func (c *UsersRestController) Listen(
 }
 
 func NewUsersRestController(
-	s *services.UsersService,
-	tracer *opentracing.Tracer,
+	s services.UsersService,
+	tracer opentracing.Tracer,
 	logger *zap.Logger,
 	mc *metrics.MetricsCollector,
-) *UsersRestController {
+) UsersRestController {
 	bc := restcontroller.NewRestController(
 		tracer,
 		logger,
 		mc,
 	)
-	c := UsersRestController{
+	c := usersRestController{
 		service:            s,
 		BaseRestController: bc,
 	}

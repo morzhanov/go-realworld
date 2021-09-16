@@ -14,13 +14,13 @@ import (
 )
 
 type BaseGrpcServer struct {
-	Tracer *opentracing.Tracer
+	Tracer opentracing.Tracer
 	Logger *zap.Logger
 	Uri    string
 }
 
 func (s *BaseGrpcServer) PrepareContext(ctx context.Context) (context.Context, opentracing.Span) {
-	span := tracing.StartSpanFromGrpcRequest(*s.Tracer, ctx)
+	span := tracing.StartSpanFromGrpcRequest(s.Tracer, ctx)
 	ctx = context.WithValue(ctx, "transport", sender.RpcTransport)
 	return ctx, span
 }
@@ -48,7 +48,7 @@ func (s *BaseGrpcServer) Listen(ctx context.Context, cancel context.CancelFunc, 
 }
 
 func NewGrpcServer(
-	tracer *opentracing.Tracer,
+	tracer opentracing.Tracer,
 	logger *zap.Logger,
 	uri string,
 ) *BaseGrpcServer {

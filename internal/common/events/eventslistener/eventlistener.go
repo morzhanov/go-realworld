@@ -14,12 +14,17 @@ type Listener struct {
 	Response chan []byte
 }
 
-type EventListener struct {
+type eventListener struct {
 	listeners map[string]*Listener
 	logger    *zap.Logger
 }
 
-func (e *EventListener) AddListener(l *Listener) error {
+type EventListener interface {
+	AddListener(l *Listener) error
+	RemoveListener(l *Listener) error
+}
+
+func (e *eventListener) AddListener(l *Listener) error {
 	if e.listeners[l.Uuid] != nil {
 		return fmt.Errorf("listener already exists, uuid: %v", l.Uuid)
 	}
@@ -27,7 +32,7 @@ func (e *EventListener) AddListener(l *Listener) error {
 	return nil
 }
 
-func (e *EventListener) RemoveListener(l *Listener) error {
+func (e *eventListener) RemoveListener(l *Listener) error {
 	if e.listeners[l.Uuid] == nil {
 		return fmt.Errorf("listener not found, uuid: %v", l.Uuid)
 	}
@@ -35,7 +40,7 @@ func (e *EventListener) RemoveListener(l *Listener) error {
 	return nil
 }
 
-func (e *EventListener) processEvent(m *kafka.Message) {
+func (e *eventListener) processEvent(m *kafka.Message) {
 	mp := map[string]string{}
 	if err := json.Unmarshal(m.Value, &mp); err != nil {
 		e.logger.Error(err.Error())
@@ -53,7 +58,7 @@ func NewEventListener(
 	ctx context.Context,
 	c *config.Config,
 	logger *zap.Logger,
-) *EventListener {
+) EventListener {
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:  []string{c.KafkaUri},
 		Topic:    c.ResultsKafkaTopic,
@@ -61,7 +66,7 @@ func NewEventListener(
 		MinBytes: 10e3,
 		MaxBytes: 10e6,
 	})
-	el := EventListener{make(map[string]*Listener), logger}
+	el := eventListener{make(map[string]*Listener), logger}
 
 	go func() {
 		for {

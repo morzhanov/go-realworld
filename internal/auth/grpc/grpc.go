@@ -17,7 +17,7 @@ import (
 type AuthRpcServer struct {
 	arpc.UnimplementedAuthServer
 	*grpcserver.BaseGrpcServer
-	authService *services.AuthService
+	authService services.AuthService
 	server      *grpc.Server
 }
 
@@ -44,9 +44,9 @@ func (s *AuthRpcServer) Listen(ctx context.Context, cancel context.CancelFunc) {
 }
 
 func NewAuthRpcServer(
-	authService *services.AuthService,
+	authService services.AuthService,
 	c *config.Config,
-	tracer *opentracing.Tracer,
+	tracer opentracing.Tracer,
 	logger *zap.Logger,
 ) (s *AuthRpcServer) {
 	uri := fmt.Sprintf("%s:%s", c.GrpcAddr, c.GrpcPort)

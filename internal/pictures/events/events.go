@@ -15,28 +15,32 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-type PicturesEventsController struct {
+type picturesEventsController struct {
 	eventscontroller.BaseEventsController
 	service *services.PictureService
-	sender  *sender.Sender
+	sender  sender.Sender
 }
 
-func (c *PicturesEventsController) processRequest(in *kafka.Message) error {
+type PicturesEventsController interface {
+	Listen(ctx context.Context)
+}
+
+func (c *picturesEventsController) processRequest(in *kafka.Message) error {
 	switch string(in.Key) {
-	case c.sender.API.Pictures.Events["getPictures"].Event:
+	case c.sender.GetAPI().Pictures.Events["getPictures"].Event:
 		return c.getPictures(in)
-	case c.sender.API.Pictures.Events["getPicture"].Event:
+	case c.sender.GetAPI().Pictures.Events["getPicture"].Event:
 		return c.getPicture(in)
-	case c.sender.API.Pictures.Events["createPicture"].Event:
+	case c.sender.GetAPI().Pictures.Events["createPicture"].Event:
 		return c.createPicture(in)
-	case c.sender.API.Pictures.Events["deletePicture"].Event:
+	case c.sender.GetAPI().Pictures.Events["deletePicture"].Event:
 		return c.deletePicture(in)
 	default:
 		return fmt.Errorf("wrong event name: %s", in.Key)
 	}
 }
 
-func (c *PicturesEventsController) getPictures(in *kafka.Message) error {
+func (c *picturesEventsController) getPictures(in *kafka.Message) error {
 	span := c.CreateSpan(in)
 	defer span.Finish()
 
@@ -52,7 +56,7 @@ func (c *PicturesEventsController) getPictures(in *kafka.Message) error {
 	return c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
 }
 
-func (c *PicturesEventsController) getPicture(in *kafka.Message) error {
+func (c *picturesEventsController) getPicture(in *kafka.Message) error {
 	span := c.CreateSpan(in)
 	defer span.Finish()
 
@@ -68,7 +72,7 @@ func (c *PicturesEventsController) getPicture(in *kafka.Message) error {
 	return c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
 }
 
-func (c *PicturesEventsController) createPicture(in *kafka.Message) error {
+func (c *picturesEventsController) createPicture(in *kafka.Message) error {
 	span := c.CreateSpan(in)
 	defer span.Finish()
 
@@ -84,7 +88,7 @@ func (c *PicturesEventsController) createPicture(in *kafka.Message) error {
 	return c.BaseEventsController.SendResponse(payload.EventId, &d, &span)
 }
 
-func (c *PicturesEventsController) deletePicture(in *kafka.Message) error {
+func (c *picturesEventsController) deletePicture(in *kafka.Message) error {
 	span := c.CreateSpan(in)
 	defer span.Finish()
 
@@ -95,7 +99,7 @@ func (c *PicturesEventsController) deletePicture(in *kafka.Message) error {
 	return c.service.DeleteUserPicture(res.UserId, res.PictureId)
 }
 
-func (c *PicturesEventsController) Listen(ctx context.Context) {
+func (c *picturesEventsController) Listen(ctx context.Context) {
 	c.BaseEventsController.Listen(
 		ctx,
 		func(m *kafka.Message) {
@@ -110,17 +114,17 @@ func (c *PicturesEventsController) Listen(ctx context.Context) {
 func NewPicturesEventsController(
 	s *services.PictureService,
 	c *config.Config,
-	sender *sender.Sender,
-	tracer *opentracing.Tracer,
+	sender sender.Sender,
+	tracer opentracing.Tracer,
 	logger *zap.Logger,
-) (*PicturesEventsController, error) {
+) (PicturesEventsController, error) {
 	controller, err := eventscontroller.NewEventsController(
 		sender,
 		tracer,
 		logger,
 		c,
 	)
-	return &PicturesEventsController{
+	return &picturesEventsController{
 		service:              s,
 		BaseEventsController: *controller,
 		sender:               sender,

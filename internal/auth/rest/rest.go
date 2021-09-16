@@ -14,12 +14,16 @@ import (
 	"go.uber.org/zap"
 )
 
-type AuthRestController struct {
+type authRestController struct {
 	*restcontroller.BaseRestController
-	service *services.AuthService
+	service services.AuthService
 }
 
-func (c *AuthRestController) handleAuthValidation(ctx *gin.Context) {
+type AuthRestController interface {
+	Listen(ctx context.Context, cancel context.CancelFunc, port string)
+}
+
+func (c *authRestController) handleAuthValidation(ctx *gin.Context) {
 	input := arpc.ValidateRestRequestInput{}
 	if err := c.ParseRestBody(ctx, &input); err != nil {
 		c.HandleRestError(ctx, err)
@@ -34,7 +38,7 @@ func (c *AuthRestController) handleAuthValidation(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func (c *AuthRestController) handleLogin(ctx *gin.Context) {
+func (c *authRestController) handleLogin(ctx *gin.Context) {
 	input := arpc.LoginInput{}
 	if err := c.ParseRestBody(ctx, &input); err != nil {
 		c.HandleRestError(ctx, err)
@@ -51,7 +55,7 @@ func (c *AuthRestController) handleLogin(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func (c *AuthRestController) handleSignup(ctx *gin.Context) {
+func (c *authRestController) handleSignup(ctx *gin.Context) {
 	input := arpc.SignupInput{}
 	if err := c.ParseRestBody(ctx, &input); err != nil {
 		c.HandleRestError(ctx, err)
@@ -68,7 +72,7 @@ func (c *AuthRestController) handleSignup(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func (c *AuthRestController) Listen(
+func (c *authRestController) Listen(
 	ctx context.Context,
 	cancel context.CancelFunc,
 	port string,
@@ -77,17 +81,17 @@ func (c *AuthRestController) Listen(
 }
 
 func NewAuthRestController(
-	s *services.AuthService,
-	tracer *opentracing.Tracer,
+	s services.AuthService,
+	tracer opentracing.Tracer,
 	logger *zap.Logger,
 	mc *metrics.MetricsCollector,
-) *AuthRestController {
+) AuthRestController {
 	bc := restcontroller.NewRestController(
 		tracer,
 		logger,
 		mc,
 	)
-	c := AuthRestController{
+	c := authRestController{
 		service:            s,
 		BaseRestController: bc,
 	}

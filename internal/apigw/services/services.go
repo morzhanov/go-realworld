@@ -2,22 +2,33 @@ package services
 
 import (
 	"fmt"
+	anrpc "github.com/morzhanov/go-realworld/api/grpc/analytics"
+	prpc "github.com/morzhanov/go-realworld/api/grpc/pictures"
 
 	"github.com/gin-gonic/gin"
-	anrpc "github.com/morzhanov/go-realworld/api/grpc/analytics"
 	authrpc "github.com/morzhanov/go-realworld/api/grpc/auth"
-	prpc "github.com/morzhanov/go-realworld/api/grpc/pictures"
 	"github.com/morzhanov/go-realworld/internal/common/events/eventslistener"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
 	"github.com/opentracing/opentracing-go"
 )
 
-type APIGatewayService struct {
-	sender        *sender.Sender
-	eventListener *eventslistener.EventListener
+type apiGatewayService struct {
+	sender        sender.Sender
+	eventListener eventslistener.EventListener
 }
 
-func (s *APIGatewayService) getAccessToken(ctx *gin.Context) (string, error) {
+type APIGatewayService interface {
+	CheckAuth(ctx *gin.Context, transport sender.Transport, apiName string, key string, span *opentracing.Span) (res *authrpc.ValidationResponse, err error)
+	Login(transport sender.Transport, input *authrpc.LoginInput, span *opentracing.Span) (res *authrpc.AuthResponse, err error)
+	Signup(transport sender.Transport, input *authrpc.SignupInput, span *opentracing.Span) (res *authrpc.AuthResponse, err error)
+	GetPictures(transport sender.Transport, userId string, span *opentracing.Span) (res *prpc.PicturesMessage, err error)
+	GetPicture(transport sender.Transport, userId string, pictureId string, span *opentracing.Span) (res *prpc.PictureMessage, err error)
+	CreatePicture(transport sender.Transport, input *prpc.CreateUserPictureRequest, span *opentracing.Span) (res *prpc.PictureMessage, err error)
+	DeletePicture(transport sender.Transport, userId string, pictureId string, span *opentracing.Span) error
+	GetAnalytics(transport sender.Transport, input *anrpc.LogDataRequest, span *opentracing.Span) (res *anrpc.AnalyticsEntryMessage, err error)
+}
+
+func (s *apiGatewayService) getAccessToken(ctx *gin.Context) (string, error) {
 	authorization := ctx.GetHeader("Authorization")
 	if authorization == "" {
 		return "", fmt.Errorf("not authorized")
@@ -25,7 +36,13 @@ func (s *APIGatewayService) getAccessToken(ctx *gin.Context) (string, error) {
 	return authorization[7:], nil
 }
 
-func (s *APIGatewayService) CheckAuth(
+func createMetaWithUserId(userId string) sender.RequestMeta {
+	return sender.RequestMeta{"urlparams": sender.UrlParams{
+		"userId": userId,
+	}}
+}
+
+func (s *apiGatewayService) CheckAuth(
 	ctx *gin.Context,
 	transport sender.Transport,
 	apiName string,
@@ -41,7 +58,7 @@ func (s *APIGatewayService) CheckAuth(
 	var method string
 	switch transport {
 	case sender.RestTransport:
-		api, err := s.sender.API.GetApiItem(apiName)
+		api, err := s.sender.GetAPI().GetApiItem(apiName)
 		if err != nil {
 			return nil, err
 		}
@@ -57,7 +74,7 @@ func (s *APIGatewayService) CheckAuth(
 		}
 		method = "validateRpcRequest"
 	case sender.EventsTransport:
-		_, err := s.sender.API.GetApiItem(apiName)
+		_, err := s.sender.GetAPI().GetApiItem(apiName)
 		if err != nil {
 			return nil, err
 		}
@@ -74,13 +91,7 @@ func (s *APIGatewayService) CheckAuth(
 	return res, nil
 }
 
-func createMetaWithUserId(userId string) sender.RequestMeta {
-	return sender.RequestMeta{"urlparams": sender.UrlParams{
-		"userId": userId,
-	}}
-}
-
-func (s *APIGatewayService) Login(
+func (s *apiGatewayService) Login(
 	transport sender.Transport,
 	input *authrpc.LoginInput,
 	span *opentracing.Span,
@@ -92,7 +103,7 @@ func (s *APIGatewayService) Login(
 	return
 }
 
-func (s *APIGatewayService) Signup(
+func (s *apiGatewayService) Signup(
 	transport sender.Transport,
 	input *authrpc.SignupInput,
 	span *opentracing.Span,
@@ -104,7 +115,7 @@ func (s *APIGatewayService) Signup(
 	return
 }
 
-func (s *APIGatewayService) GetPictures(
+func (s *apiGatewayService) GetPictures(
 	transport sender.Transport,
 	userId string,
 	span *opentracing.Span,
@@ -118,7 +129,7 @@ func (s *APIGatewayService) GetPictures(
 	return
 }
 
-func (s *APIGatewayService) GetPicture(
+func (s *apiGatewayService) GetPicture(
 	transport sender.Transport,
 	userId string,
 	pictureId string,
@@ -138,7 +149,7 @@ func (s *APIGatewayService) GetPicture(
 	return
 }
 
-func (s *APIGatewayService) CreatePicture(
+func (s *apiGatewayService) CreatePicture(
 	transport sender.Transport,
 	input *prpc.CreateUserPictureRequest,
 	span *opentracing.Span,
@@ -151,7 +162,7 @@ func (s *APIGatewayService) CreatePicture(
 	return
 }
 
-func (s *APIGatewayService) DeletePicture(
+func (s *apiGatewayService) DeletePicture(
 	transport sender.Transport,
 	userId string,
 	pictureId string,
@@ -165,9 +176,9 @@ func (s *APIGatewayService) DeletePicture(
 	return s.sender.PerformRequest(transport, "pictures", "deletePicture", &input, s.eventListener, span, meta, nil)
 }
 
-func (s *APIGatewayService) GetAnalytics(
+func (s *apiGatewayService) GetAnalytics(
 	transport sender.Transport,
-	input *anrpc.GetLogRequest,
+	input *anrpc.LogDataRequest,
 	span *opentracing.Span,
 ) (res *anrpc.AnalyticsEntryMessage, err error) {
 	res = &anrpc.AnalyticsEntryMessage{}
@@ -177,6 +188,6 @@ func (s *APIGatewayService) GetAnalytics(
 	return
 }
 
-func NewAPIGatewayService(s *sender.Sender, el *eventslistener.EventListener) *APIGatewayService {
-	return &APIGatewayService{s, el}
+func NewAPIGatewayService(s sender.Sender, el eventslistener.EventListener) APIGatewayService {
+	return &apiGatewayService{s, el}
 }
