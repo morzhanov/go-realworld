@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
 
 	"github.com/dgrijalva/jwt-go"
 	authrpc "github.com/morzhanov/go-realworld/api/grpc/auth"
@@ -29,6 +30,7 @@ type AuthService interface {
 }
 
 func (s *authService) createJwt(userId string) (res string, err error) {
+	defer func() { err = errors.Wrap(err, "authService:createJwt") }()
 	atClaims := jwt.MapClaims{}
 	atClaims["authorized"] = true
 	atClaims["user_id"] = userId
@@ -41,6 +43,7 @@ func (s *authService) createJwt(userId string) (res string, err error) {
 }
 
 func (s *authService) verifyJwt(tokenString string) (res *authrpc.ValidationResponse, err error) {
+	defer func() { err = errors.Wrap(err, "authService:verifyJwt") }()
 	claims := jwt.MapClaims{}
 	_, err = jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -59,6 +62,7 @@ func (s *authService) Login(
 	data *authrpc.LoginInput,
 	span *opentracing.Span,
 ) (res *authrpc.AuthResponse, err error) {
+	defer func() { err = errors.Wrap(err, "authService:Login") }()
 	transport := s.sender.GetTransportFromContext(ctx)
 
 	d := usersrpc.ValidateUserPasswordRequest{Username: data.Username, Password: data.Password}
@@ -87,6 +91,7 @@ func (s *authService) Signup(
 	data *authrpc.SignupInput,
 	span *opentracing.Span,
 ) (res *authrpc.AuthResponse, err error) {
+	defer func() { err = errors.Wrap(err, "authService:Signup") }()
 	transport := s.sender.GetTransportFromContext(ctx)
 
 	d := usersrpc.CreateUserRequest{Username: data.Username, Password: data.Password}
@@ -103,6 +108,7 @@ func (s *authService) Signup(
 }
 
 func (s *authService) ValidateRestRequest(data *authrpc.ValidateRestRequestInput) (res *authrpc.ValidationResponse, err error) {
+	defer func() { err = errors.Wrap(err, "authService:ValidateRestRequest") }()
 	for _, route := range aconfig.PUBLIC_ROUTES {
 		if route == data.Path {
 			return nil, nil
@@ -112,6 +118,7 @@ func (s *authService) ValidateRestRequest(data *authrpc.ValidateRestRequestInput
 }
 
 func (s *authService) ValidateRpcRequest(data *authrpc.ValidateRpcRequestInput) (res *authrpc.ValidationResponse, err error) {
+	defer func() { err = errors.Wrap(err, "authService:ValidateRpcRequest") }()
 	for _, route := range aconfig.PUBLIC_RPC_METHODS {
 		if route == data.Method {
 			return nil, nil
@@ -121,6 +128,7 @@ func (s *authService) ValidateRpcRequest(data *authrpc.ValidateRpcRequestInput) 
 }
 
 func (s *authService) ValidateEventsRequest(data *authrpc.ValidateEventsRequestInput) (res *authrpc.ValidationResponse, err error) {
+	defer func() { err = errors.Wrap(err, "authService:ValidateEventsRequest") }()
 	return s.verifyJwt(data.AccessToken)
 }
 

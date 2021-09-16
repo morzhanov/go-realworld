@@ -91,4 +91,5 @@ type Sender interface {
 	StringToTransport(transport string) (Transport, error)
 	TransportToString(transport Transport) (string, error)
 	GetAPI() *config.ApiConfig
+	CheckStruct(val interface{}) bool
 }

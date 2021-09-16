@@ -3,15 +3,17 @@ package services
 import (
 	"github.com/jmoiron/sqlx"
 	prpc "github.com/morzhanov/go-realworld/api/grpc/pictures"
-	"github.com/morzhanov/go-realworld/internal/common/helper"
+	errs "github.com/morzhanov/go-realworld/internal/common/errors"
 	. "github.com/morzhanov/go-realworld/internal/pictures/models"
+	"github.com/pkg/errors"
 )
 
 type PictureService struct {
 	db *sqlx.DB
 }
 
-func (s *PictureService) GetUserPictures(userId string) (*prpc.PicturesMessage, error) {
+func (s *PictureService) GetUserPictures(userId string) (result *prpc.PicturesMessage, err error) {
+	defer func() { err = errors.Wrap(err, "picturesService:GetUserPictures") }()
 	q := `SELECT * FROM pictures
 		WHERE pictures.user_id = $1`
 	rows, err := s.db.Query(q, userId)
@@ -40,15 +42,16 @@ func (s *PictureService) GetUserPictures(userId string) (*prpc.PicturesMessage, 
 	return &res, nil
 }
 
-func (s *PictureService) GetUserPicture(userId string, pictureId string) (*prpc.PictureMessage, error) {
+func (s *PictureService) GetUserPicture(userId string, pictureId string) (result *prpc.PictureMessage, err error) {
+	defer func() { err = errors.Wrap(err, "picturesService:GetUserPicture") }()
 	q := `SELECT * FROM pictures
 		WHERE pictures.id = $1 AND pictures.user_id = $2`
 	row := s.db.QueryRow(q, pictureId, userId)
 
 	res := &Picture{}
-	err := row.Scan(&res.ID, &res.Title, &res.Base64, &res.UserId)
+	err = row.Scan(&res.ID, &res.Title, &res.Base64, &res.UserId)
 	if err != nil {
-		if helper.CheckNotFound(err) {
+		if errs.CheckNotFound(err) {
 			return nil, nil
 		}
 		return nil, err
@@ -61,7 +64,8 @@ func (s *PictureService) GetUserPicture(userId string, pictureId string) (*prpc.
 	}, nil
 }
 
-func (s *PictureService) CreateUserPicture(data *prpc.CreateUserPictureRequest) (*prpc.PictureMessage, error) {
+func (s *PictureService) CreateUserPicture(data *prpc.CreateUserPictureRequest) (result *prpc.PictureMessage, err error) {
+	defer func() { err = errors.Wrap(err, "picturesService:CreateUserPicture") }()
 	q := `INSERT INTO pictures (title, base64, user_id)
 		VALUES ($1, $2, $3)
 		RETURNING *`
@@ -79,10 +83,11 @@ func (s *PictureService) CreateUserPicture(data *prpc.CreateUserPictureRequest) 
 	}, nil
 }
 
-func (s *PictureService) DeleteUserPicture(userId string, pictureId string) error {
+func (s *PictureService) DeleteUserPicture(userId string, pictureId string) (err error) {
+	defer func() { err = errors.Wrap(err, "picturesService:DeleteUserPicture") }()
 	q := `DELETE FROM pictures
 		WHERE id = $1 AND user_id = $2`
-	_, err := s.db.Query(q, pictureId, userId)
+	_, err = s.db.Query(q, pictureId, userId)
 	return err
 }
 

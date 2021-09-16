@@ -8,8 +8,8 @@ import (
 	"github.com/morzhanov/go-realworld/internal/auth/rest"
 	"github.com/morzhanov/go-realworld/internal/auth/services"
 	"github.com/morzhanov/go-realworld/internal/common/config"
+	"github.com/morzhanov/go-realworld/internal/common/errors"
 	"github.com/morzhanov/go-realworld/internal/common/events/eventslistener"
-	"github.com/morzhanov/go-realworld/internal/common/helper"
 	"github.com/morzhanov/go-realworld/internal/common/logger"
 	"github.com/morzhanov/go-realworld/internal/common/metrics"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
@@ -50,7 +50,7 @@ func main() {
 	apiConfig, err := config.NewApiConfig()
 	if err != nil {
 		cancel()
-		helper.HandleInitializationError(err, "api config", l)
+		errors.LogInitializationError(err, "api config", l)
 	}
 	l.Info("apiConfig created...")
 
@@ -69,7 +69,7 @@ func main() {
 	eventsController, err := events.NewAuthEventsController(service, c, s, t, l)
 	if err != nil {
 		cancel()
-		helper.HandleInitializationError(err, "events controller", l)
+		errors.LogInitializationError(err, "events controller", l)
 	}
 	l.Info("events controller created...")
 

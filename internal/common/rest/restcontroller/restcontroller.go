@@ -3,9 +3,10 @@ package restcontroller
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gin-contrib/cors"
-	"github.com/morzhanov/go-realworld/internal/common/helper"
+	errs "github.com/morzhanov/go-realworld/internal/common/errors"
 	"io/ioutil"
 	"net/http"
 	"reflect"
@@ -39,7 +40,7 @@ func (c *BaseRestController) Listen(
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			cancel()
-			helper.HandleInitializationError(err, "rest controller", c.Logger)
+			errs.LogInitializationError(err, "rest controller", c.Logger)
 			return
 		}
 	}()
@@ -52,7 +53,7 @@ func (c *BaseRestController) Listen(
 	if err := srv.Shutdown(ctx); err != nil {
 		cancel()
 		cancel2()
-		helper.HandleInitializationError(err, "rest controller", c.Logger)
+		errs.LogInitializationError(err, "rest controller", c.Logger)
 	}
 }
 
@@ -67,6 +68,7 @@ func (c *BaseRestController) ParseRestBody(ctx *gin.Context, input interface{}) 
 }
 
 func (c *BaseRestController) HandleRestError(ctx *gin.Context, err error) {
+	c.Logger.Error(errors.Unwrap(err).Error())
 	if err.Error() == "not authorized" {
 		ctx.String(http.StatusUnauthorized, err.Error())
 		return

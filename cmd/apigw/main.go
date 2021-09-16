@@ -6,8 +6,8 @@ import (
 	"github.com/morzhanov/go-realworld/internal/apigw/rest"
 	"github.com/morzhanov/go-realworld/internal/apigw/services"
 	"github.com/morzhanov/go-realworld/internal/common/config"
+	"github.com/morzhanov/go-realworld/internal/common/errors"
 	"github.com/morzhanov/go-realworld/internal/common/events/eventslistener"
-	"github.com/morzhanov/go-realworld/internal/common/helper"
 	"github.com/morzhanov/go-realworld/internal/common/logger"
 	"github.com/morzhanov/go-realworld/internal/common/metrics"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
@@ -48,7 +48,7 @@ func main() {
 	apiConfig, err := config.NewApiConfig()
 	if err != nil {
 		cancel()
-		helper.HandleInitializationError(err, "api config", l)
+		errors.LogInitializationError(err, "api config", l)
 	}
 	l.Info("apiConfig created...")
 

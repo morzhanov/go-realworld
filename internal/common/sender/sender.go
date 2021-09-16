@@ -20,7 +20,6 @@ import (
 	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/common/events"
 	"github.com/morzhanov/go-realworld/internal/common/events/eventslistener"
-	"github.com/morzhanov/go-realworld/internal/common/helper"
 	"github.com/morzhanov/go-realworld/internal/common/tracing"
 	"github.com/opentracing/opentracing-go"
 	uuid "github.com/satori/go.uuid"
@@ -86,7 +85,7 @@ func (s *sender) PerformRequest(
 }
 
 func (s *sender) SendEventsResponse(eventUuid string, value interface{}, span *opentracing.Span) error {
-	if !helper.CheckStruct(value) {
+	if !s.CheckStruct(value) {
 		return errors.New("value is not struct")
 	}
 	payload, err := json.Marshal(&value)
@@ -138,6 +137,11 @@ func (s *sender) TransportToString(transport Transport) (string, error) {
 
 func (s *sender) GetAPI() *config.ApiConfig {
 	return s.API
+}
+
+func (s *sender) CheckStruct(val interface{}) bool {
+	kind := reflect.ValueOf(val).Kind()
+	return kind == reflect.Struct || kind == reflect.Ptr
 }
 
 func getGrpcClientType(service string) (RpcClient, error) {
@@ -255,7 +259,7 @@ func (s *sender) restRequest(
 	span *opentracing.Span,
 	meta RequestMeta,
 ) (err error) {
-	if !helper.CheckStruct(data) {
+	if !s.CheckStruct(data) {
 		return errors.New("value is not struct")
 	}
 
@@ -318,7 +322,7 @@ func (s *sender) rpcRequest(
 	span *opentracing.Span,
 	res interface{},
 ) error {
-	if !helper.CheckStruct(input) {
+	if !s.CheckStruct(input) {
 		return errors.New("value is not a structure")
 	}
 	c, err := s.getRpcClient(client)

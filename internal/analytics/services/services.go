@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"time"
 
@@ -15,7 +16,8 @@ type AnalyticsService struct {
 	dataTopic string
 }
 
-func (s *AnalyticsService) LogData(data *anrpc.LogDataRequest) error {
+func (s *AnalyticsService) LogData(data *anrpc.LogDataRequest) (err error) {
+	defer func() { err = errors.Wrap(err, "analyticsService:logData") }()
 	bytes, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -28,6 +30,7 @@ func (s *AnalyticsService) LogData(data *anrpc.LogDataRequest) error {
 }
 
 func (s *AnalyticsService) GetLog(_ *emptypb.Empty) (res *anrpc.GetLogsMessage, err error) {
+	defer func() { err = errors.Wrap(err, "analyticsService:getlog") }()
 	r := s.mq.CreateReader(s.dataTopic)
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)

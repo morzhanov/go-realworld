@@ -38,9 +38,8 @@ func NewApiConfig() (res *ApiConfig, err error) {
 	if err != nil {
 		return nil, err
 	}
-
 	res = &ApiConfig{}
-	if err = yaml.Unmarshal([]byte(data), res); err != nil {
+	if err = yaml.Unmarshal(data, res); err != nil {
 		return nil, err
 	}
 	return res, nil

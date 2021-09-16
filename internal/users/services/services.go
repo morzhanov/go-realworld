@@ -1,11 +1,11 @@
 package services
 
 import (
-	"errors"
-	"github.com/morzhanov/go-realworld/internal/common/helper"
+	"github.com/pkg/errors"
 
 	"github.com/jmoiron/sqlx"
 	urpc "github.com/morzhanov/go-realworld/api/grpc/users"
+	errs "github.com/morzhanov/go-realworld/internal/common/errors"
 	. "github.com/morzhanov/go-realworld/internal/users/models"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -23,6 +23,7 @@ type UsersService interface {
 }
 
 func (s *usersService) GetUserData(userId string) (user *urpc.UserMessage, err error) {
+	defer func() { err = errors.Wrap(err, "usersService:GetUserData") }()
 	q := `SELECT id, username FROM users
 		WHERE id = $1`
 	row := s.db.QueryRow(q, userId)
@@ -30,7 +31,7 @@ func (s *usersService) GetUserData(userId string) (user *urpc.UserMessage, err e
 	user = &urpc.UserMessage{}
 	err = row.Scan(&user.Id, &user.Username)
 	if err != nil {
-		if helper.CheckNotFound(err) {
+		if errs.CheckNotFound(err) {
 			return nil, nil
 		}
 		return nil, err
@@ -39,6 +40,7 @@ func (s *usersService) GetUserData(userId string) (user *urpc.UserMessage, err e
 }
 
 func (s *usersService) GetUserDataByUsername(username string) (user *urpc.UserMessage, err error) {
+	defer func() { err = errors.Wrap(err, "usersService:GetUserDataByUsername") }()
 	q := `SELECT id, username FROM users
 		WHERE username = $1`
 	row := s.db.QueryRow(q, username)
@@ -46,7 +48,7 @@ func (s *usersService) GetUserDataByUsername(username string) (user *urpc.UserMe
 	user = &urpc.UserMessage{}
 	err = row.Scan(&user.Id, &user.Username)
 	if err != nil {
-		if helper.CheckNotFound(err) {
+		if errs.CheckNotFound(err) {
 			return nil, nil
 		}
 		return nil, err
@@ -54,7 +56,8 @@ func (s *usersService) GetUserDataByUsername(username string) (user *urpc.UserMe
 	return user, nil
 }
 
-func (s *usersService) ValidateUserPassword(data *urpc.ValidateUserPasswordRequest) error {
+func (s *usersService) ValidateUserPassword(data *urpc.ValidateUserPasswordRequest) (err error) {
+	defer func() { err = errors.Wrap(err, "usersService:ValidateUserPassword") }()
 	q := `SELECT id, username, password FROM users
 		WHERE username = $1`
 	row := s.db.QueryRow(q, data.Username)
@@ -74,6 +77,7 @@ func (s *usersService) ValidateUserPassword(data *urpc.ValidateUserPasswordReque
 }
 
 func (s *usersService) CreateUser(data *urpc.CreateUserRequest) (res *urpc.UserMessage, err error) {
+	defer func() { err = errors.Wrap(err, "usersService:CreateUser") }()
 	hashedPassword, err := s.hashPassword(data.Password)
 	if err != nil {
 		return nil, err
@@ -93,13 +97,15 @@ func (s *usersService) CreateUser(data *urpc.CreateUserRequest) (res *urpc.UserM
 	return res, err
 }
 
-func (s *usersService) DeleteUser(userId string) error {
+func (s *usersService) DeleteUser(userId string) (err error) {
+	defer func() { err = errors.Wrap(err, "usersService:DeleteUser") }()
 	q := `DELETE FROM users WHERE id = $1`
-	_, err := s.db.Query(q, userId)
+	_, err = s.db.Query(q, userId)
 	return err
 }
 
-func (s *usersService) hashPassword(password string) (string, error) {
+func (s *usersService) hashPassword(password string) (res string, err error) {
+	defer func() { err = errors.Wrap(err, "usersService:hashPassword") }()
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
 	return string(bytes), err
 }

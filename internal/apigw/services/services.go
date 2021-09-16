@@ -4,6 +4,7 @@ import (
 	"fmt"
 	anrpc "github.com/morzhanov/go-realworld/api/grpc/analytics"
 	prpc "github.com/morzhanov/go-realworld/api/grpc/pictures"
+	"github.com/pkg/errors"
 
 	"github.com/gin-gonic/gin"
 	authrpc "github.com/morzhanov/go-realworld/api/grpc/auth"
@@ -28,7 +29,8 @@ type APIGatewayService interface {
 	GetAnalytics(transport sender.Transport, input *anrpc.LogDataRequest, span *opentracing.Span) (res *anrpc.AnalyticsEntryMessage, err error)
 }
 
-func (s *apiGatewayService) getAccessToken(ctx *gin.Context) (string, error) {
+func (s *apiGatewayService) getAccessToken(ctx *gin.Context) (res string, err error) {
+	defer func() { err = errors.Wrap(err, "apigwService:getAccessToken") }()
 	authorization := ctx.GetHeader("Authorization")
 	if authorization == "" {
 		return "", fmt.Errorf("not authorized")
@@ -49,6 +51,7 @@ func (s *apiGatewayService) CheckAuth(
 	key string,
 	span *opentracing.Span,
 ) (res *authrpc.ValidationResponse, err error) {
+	defer func() { err = errors.Wrap(err, "apigwService:CheckAuth") }()
 	accessToken, err := s.getAccessToken(ctx)
 	if err != nil {
 		return nil, err
@@ -96,6 +99,7 @@ func (s *apiGatewayService) Login(
 	input *authrpc.LoginInput,
 	span *opentracing.Span,
 ) (res *authrpc.AuthResponse, err error) {
+	defer func() { err = errors.Wrap(err, "apigwService:Login") }()
 	res = &authrpc.AuthResponse{}
 	if err := s.sender.PerformRequest(transport, "auth", "login", input, s.eventListener, span, nil, res); err != nil {
 		return nil, err
@@ -108,6 +112,7 @@ func (s *apiGatewayService) Signup(
 	input *authrpc.SignupInput,
 	span *opentracing.Span,
 ) (res *authrpc.AuthResponse, err error) {
+	defer func() { err = errors.Wrap(err, "apigwService:Signup") }()
 	res = &authrpc.AuthResponse{}
 	if err = s.sender.PerformRequest(transport, "auth", "signup", input, s.eventListener, span, nil, res); err != nil {
 		return nil, err
@@ -120,6 +125,7 @@ func (s *apiGatewayService) GetPictures(
 	userId string,
 	span *opentracing.Span,
 ) (res *prpc.PicturesMessage, err error) {
+	defer func() { err = errors.Wrap(err, "apigwService:GetPictures") }()
 	input := prpc.GetUserPicturesRequest{UserId: userId}
 	res = &prpc.PicturesMessage{}
 	meta := createMetaWithUserId(userId)
@@ -135,6 +141,7 @@ func (s *apiGatewayService) GetPicture(
 	pictureId string,
 	span *opentracing.Span,
 ) (res *prpc.PictureMessage, err error) {
+	defer func() { err = errors.Wrap(err, "apigwService:GetPicture") }()
 	input := prpc.GetUserPictureRequest{
 		UserId:    userId,
 		PictureId: pictureId,
@@ -154,6 +161,7 @@ func (s *apiGatewayService) CreatePicture(
 	input *prpc.CreateUserPictureRequest,
 	span *opentracing.Span,
 ) (res *prpc.PictureMessage, err error) {
+	defer func() { err = errors.Wrap(err, "apigwService:CreatePicture") }()
 	res = &prpc.PictureMessage{}
 	meta := createMetaWithUserId(input.UserId)
 	if err := s.sender.PerformRequest(transport, "pictures", "createPicture", input, s.eventListener, span, meta, &res); err != nil {
@@ -181,6 +189,7 @@ func (s *apiGatewayService) GetAnalytics(
 	input *anrpc.LogDataRequest,
 	span *opentracing.Span,
 ) (res *anrpc.AnalyticsEntryMessage, err error) {
+	defer func() { err = errors.Wrap(err, "apigwService:GetAnalytics") }()
 	res = &anrpc.AnalyticsEntryMessage{}
 	if err := s.sender.PerformRequest(transport, "pictures", "deletePicture", &input, s.eventListener, span, nil, &res); err != nil {
 		return nil, err

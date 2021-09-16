@@ -8,7 +8,7 @@ import (
 	"github.com/morzhanov/go-realworld/internal/analytics/rest"
 	"github.com/morzhanov/go-realworld/internal/analytics/services"
 	"github.com/morzhanov/go-realworld/internal/common/config"
-	"github.com/morzhanov/go-realworld/internal/common/helper"
+	"github.com/morzhanov/go-realworld/internal/common/errors"
 	"github.com/morzhanov/go-realworld/internal/common/logger"
 	"github.com/morzhanov/go-realworld/internal/common/metrics"
 	"github.com/morzhanov/go-realworld/internal/common/mq"
@@ -50,7 +50,7 @@ func main() {
 	apiConfig, err := config.NewApiConfig()
 	if err != nil {
 		cancel()
-		helper.HandleInitializationError(err, "api config", l)
+		errors.LogInitializationError(err, "api config", l)
 	}
 	l.Info("apiConfig created...")
 
@@ -60,7 +60,7 @@ func main() {
 	messageQ, err := mq.NewMq(c, c.KafkaAnalyticsDbTopic)
 	if err != nil {
 		cancel()
-		helper.HandleInitializationError(err, "message queue", l)
+		errors.LogInitializationError(err, "message queue", l)
 	}
 	l.Info("message queue created...")
 
@@ -73,7 +73,7 @@ func main() {
 	eventsController, err := events.NewAnalyticsEventsController(service, c, s, t, l)
 	if err != nil {
 		cancel()
-		helper.HandleInitializationError(err, "events controller", l)
+		errors.LogInitializationError(err, "events controller", l)
 	}
 	l.Info("events controller created...")
 

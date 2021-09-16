@@ -2,7 +2,7 @@ package grpcserver
 
 import (
 	"context"
-	"github.com/morzhanov/go-realworld/internal/common/helper"
+	"github.com/morzhanov/go-realworld/internal/common/errors"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
 	"github.com/morzhanov/go-realworld/internal/common/tracing"
 	"github.com/opentracing/opentracing-go"
@@ -29,20 +29,20 @@ func (s *BaseGrpcServer) Listen(ctx context.Context, cancel context.CancelFunc, 
 	lis, err := net.Listen("tcp", s.Uri)
 	if err != nil {
 		cancel()
-		helper.HandleInitializationError(err, "grpc server", s.Logger)
+		errors.LogInitializationError(err, "grpc server", s.Logger)
 		return
 	}
 
 	if err := server.Serve(lis); err != nil {
 		cancel()
-		helper.HandleInitializationError(err, "grpc server", s.Logger)
+		errors.LogInitializationError(err, "grpc server", s.Logger)
 		return
 	}
 	log.Info("Grpc server started", zap.String("port", s.Uri))
 	<-ctx.Done()
 	if err := lis.Close(); err != nil {
 		cancel()
-		helper.HandleInitializationError(err, "grpc server", s.Logger)
+		errors.LogInitializationError(err, "grpc server", s.Logger)
 		return
 	}
 }

@@ -5,7 +5,7 @@ import (
 	_ "github.com/jnewmano/grpc-json-proxy/codec"
 	"github.com/morzhanov/go-realworld/internal/common/config"
 	"github.com/morzhanov/go-realworld/internal/common/db"
-	"github.com/morzhanov/go-realworld/internal/common/helper"
+	"github.com/morzhanov/go-realworld/internal/common/errors"
 	"github.com/morzhanov/go-realworld/internal/common/logger"
 	"github.com/morzhanov/go-realworld/internal/common/metrics"
 	"github.com/morzhanov/go-realworld/internal/common/sender"
@@ -50,7 +50,7 @@ func main() {
 	apiConfig, err := config.NewApiConfig()
 	if err != nil {
 		cancel()
-		helper.HandleInitializationError(err, "api config", l)
+		errors.LogInitializationError(err, "api config", l)
 	}
 	l.Info("apiConfig created...")
 
@@ -59,7 +59,7 @@ func main() {
 	dbs, err := db.NewDb(c)
 	if err != nil {
 		cancel()
-		helper.HandleInitializationError(err, "database", l)
+		errors.LogInitializationError(err, "database", l)
 	}
 	l.Info("database connection created...")
 
@@ -72,7 +72,7 @@ func main() {
 	eventsController, err := events.NewPicturesEventsController(service, c, s, t, l)
 	if err != nil {
 		cancel()
-		helper.HandleInitializationError(err, "events controller", l)
+		errors.LogInitializationError(err, "events controller", l)
 	}
 	l.Info("events controller created...")
 
@@ -83,7 +83,7 @@ func main() {
 
 	if err := db.RunMigrations(dbs, "pictures"); err != nil {
 		cancel()
-		helper.HandleInitializationError(err, "migrations", l)
+		errors.LogInitializationError(err, "migrations", l)
 	}
 	l.Info("all database migrations applied...")
 
