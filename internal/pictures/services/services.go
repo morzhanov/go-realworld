@@ -8,11 +8,18 @@ import (
 	"github.com/pkg/errors"
 )
 
-type PictureService struct {
+type pictureService struct {
 	db *sqlx.DB
 }
 
-func (s *PictureService) GetUserPictures(userId string) (result *prpc.PicturesMessage, err error) {
+type PictureService interface {
+	GetUserPictures(userId string) (result *prpc.PicturesMessage, err error)
+	GetUserPicture(userId string, pictureId string) (result *prpc.PictureMessage, err error)
+	CreateUserPicture(data *prpc.CreateUserPictureRequest) (result *prpc.PictureMessage, err error)
+	DeleteUserPicture(userId string, pictureId string) (err error)
+}
+
+func (s *pictureService) GetUserPictures(userId string) (result *prpc.PicturesMessage, err error) {
 	defer func() { err = errors.Wrap(err, "picturesService:GetUserPictures") }()
 	q := `SELECT * FROM pictures
 		WHERE pictures.user_id = $1`
@@ -42,7 +49,7 @@ func (s *PictureService) GetUserPictures(userId string) (result *prpc.PicturesMe
 	return &res, nil
 }
 
-func (s *PictureService) GetUserPicture(userId string, pictureId string) (result *prpc.PictureMessage, err error) {
+func (s *pictureService) GetUserPicture(userId string, pictureId string) (result *prpc.PictureMessage, err error) {
 	defer func() { err = errors.Wrap(err, "picturesService:GetUserPicture") }()
 	q := `SELECT * FROM pictures
 		WHERE pictures.id = $1 AND pictures.user_id = $2`
@@ -64,7 +71,7 @@ func (s *PictureService) GetUserPicture(userId string, pictureId string) (result
 	}, nil
 }
 
-func (s *PictureService) CreateUserPicture(data *prpc.CreateUserPictureRequest) (result *prpc.PictureMessage, err error) {
+func (s *pictureService) CreateUserPicture(data *prpc.CreateUserPictureRequest) (result *prpc.PictureMessage, err error) {
 	defer func() { err = errors.Wrap(err, "picturesService:CreateUserPicture") }()
 	q := `INSERT INTO pictures (title, base64, user_id)
 		VALUES ($1, $2, $3)
@@ -83,7 +90,7 @@ func (s *PictureService) CreateUserPicture(data *prpc.CreateUserPictureRequest) 
 	}, nil
 }
 
-func (s *PictureService) DeleteUserPicture(userId string, pictureId string) (err error) {
+func (s *pictureService) DeleteUserPicture(userId string, pictureId string) (err error) {
 	defer func() { err = errors.Wrap(err, "picturesService:DeleteUserPicture") }()
 	q := `DELETE FROM pictures
 		WHERE id = $1 AND user_id = $2`
@@ -91,6 +98,6 @@ func (s *PictureService) DeleteUserPicture(userId string, pictureId string) (err
 	return err
 }
 
-func NewPicturesService(db *sqlx.DB) *PictureService {
-	return &PictureService{db}
+func NewPicturesService(db *sqlx.DB) PictureService {
+	return &pictureService{db}
 }

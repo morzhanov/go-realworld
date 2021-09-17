@@ -27,15 +27,15 @@ type UsersEventsController interface {
 
 func (c *usersEventsController) processRequest(in *kafka.Message) error {
 	switch string(in.Key) {
-	case c.sender.GetAPI().Users.Events["getUser"].Event:
+	case c.sender.GetAPI().Users().Events["getUser"].Event:
 		return c.getUser(in)
-	case c.sender.GetAPI().Users.Events["getUserByUsername"].Event:
+	case c.sender.GetAPI().Users().Events["getUserByUsername"].Event:
 		return c.getUserByUsername(in)
-	case c.sender.GetAPI().Users.Events["validatePassword"].Event:
+	case c.sender.GetAPI().Users().Events["validatePassword"].Event:
 		return c.validatePassword(in)
-	case c.sender.GetAPI().Users.Events["createUser"].Event:
+	case c.sender.GetAPI().Users().Events["createUser"].Event:
 		return c.createUser(in)
-	case c.sender.GetAPI().Users.Events["deleteUser"].Event:
+	case c.sender.GetAPI().Users().Events["deleteUser"].Event:
 		return c.deleteUser(in)
 	default:
 		return fmt.Errorf("wrong event name: %s", in.Key)
@@ -128,7 +128,7 @@ func (c *usersEventsController) Listen(ctx context.Context) {
 		func(m *kafka.Message) {
 			err := c.processRequest(m)
 			if err != nil {
-				c.BaseEventsController.Logger.Error(err.Error())
+				c.BaseEventsController.Logger().Error(err.Error())
 			}
 		},
 	)
@@ -149,7 +149,7 @@ func NewUsersEventsController(
 	)
 	return &usersEventsController{
 		service:              s,
-		BaseEventsController: *controller,
+		BaseEventsController: controller,
 		sender:               sender,
 	}, err
 }

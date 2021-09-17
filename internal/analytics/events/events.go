@@ -18,7 +18,7 @@ import (
 
 type analyticsEventsController struct {
 	eventscontroller.BaseEventsController
-	service *services.AnalyticsService
+	service services.AnalyticsService
 	sender  sender.Sender
 }
 
@@ -28,9 +28,9 @@ type AnalyticsEventsController interface {
 
 func (c *analyticsEventsController) processRequest(in *kafka.Message) error {
 	switch string(in.Key) {
-	case c.sender.GetAPI().Analytics.Events["logData"].Event:
+	case c.sender.GetAPI().Analytics().Events["logData"].Event:
 		return c.logData(in)
-	case c.sender.GetAPI().Analytics.Events["getLogs"].Event:
+	case c.sender.GetAPI().Analytics().Events["getLogs"].Event:
 		return c.getLogs(in)
 	default:
 		return fmt.Errorf("wrong event name: %s", in.Key)
@@ -72,14 +72,14 @@ func (c *analyticsEventsController) Listen(ctx context.Context) {
 		func(m *kafka.Message) {
 			err := c.processRequest(m)
 			if err != nil {
-				c.BaseEventsController.Logger.Error(err.Error())
+				c.BaseEventsController.Logger().Error(err.Error())
 			}
 		},
 	)
 }
 
 func NewAnalyticsEventsController(
-	s *services.AnalyticsService,
+	s services.AnalyticsService,
 	c *config.Config,
 	sender sender.Sender,
 	tracer opentracing.Tracer,
@@ -93,7 +93,7 @@ func NewAnalyticsEventsController(
 	)
 	return &analyticsEventsController{
 		service:              s,
-		BaseEventsController: *ec,
+		BaseEventsController: ec,
 		sender:               sender,
 	}, err
 }

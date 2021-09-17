@@ -13,19 +13,24 @@ import (
 	"google.golang.org/grpc"
 )
 
-type BaseGrpcServer struct {
+type baseGrpcServer struct {
 	Tracer opentracing.Tracer
 	Logger *zap.Logger
 	Uri    string
 }
 
-func (s *BaseGrpcServer) PrepareContext(ctx context.Context) (context.Context, opentracing.Span) {
+type BaseGrpcServer interface {
+	PrepareContext(ctx context.Context) (context.Context, opentracing.Span)
+	Listen(ctx context.Context, cancel context.CancelFunc, server *grpc.Server)
+}
+
+func (s *baseGrpcServer) PrepareContext(ctx context.Context) (context.Context, opentracing.Span) {
 	span := tracing.StartSpanFromGrpcRequest(s.Tracer, ctx)
 	ctx = context.WithValue(ctx, "transport", sender.RpcTransport)
 	return ctx, span
 }
 
-func (s *BaseGrpcServer) Listen(ctx context.Context, cancel context.CancelFunc, server *grpc.Server) {
+func (s *baseGrpcServer) Listen(ctx context.Context, cancel context.CancelFunc, server *grpc.Server) {
 	lis, err := net.Listen("tcp", s.Uri)
 	if err != nil {
 		cancel()
@@ -51,6 +56,6 @@ func NewGrpcServer(
 	tracer opentracing.Tracer,
 	logger *zap.Logger,
 	uri string,
-) *BaseGrpcServer {
-	return &BaseGrpcServer{tracer, logger, uri}
+) BaseGrpcServer {
+	return &baseGrpcServer{tracer, logger, uri}
 }

@@ -11,25 +11,30 @@ import (
 	"github.com/morzhanov/go-realworld/internal/common/mq"
 )
 
-type AnalyticsService struct {
-	mq        *mq.MQ
+type analyticsService struct {
+	mq        mq.MQ
 	dataTopic string
 }
 
-func (s *AnalyticsService) LogData(data *anrpc.LogDataRequest) (err error) {
+type AnalyticsService interface {
+	LogData(data *anrpc.LogDataRequest) (err error)
+	GetLog(_ *emptypb.Empty) (res *anrpc.GetLogsMessage, err error)
+}
+
+func (s *analyticsService) LogData(data *anrpc.LogDataRequest) (err error) {
 	defer func() { err = errors.Wrap(err, "analyticsService:logData") }()
 	bytes, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
 
-	if _, err = s.mq.Conn.Write(bytes); err != nil {
+	if _, err = s.mq.Conn().Write(bytes); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *AnalyticsService) GetLog(_ *emptypb.Empty) (res *anrpc.GetLogsMessage, err error) {
+func (s *analyticsService) GetLog(_ *emptypb.Empty) (res *anrpc.GetLogsMessage, err error) {
 	defer func() { err = errors.Wrap(err, "analyticsService:getlog") }()
 	r := s.mq.CreateReader(s.dataTopic)
 	ctx := context.Background()
@@ -51,6 +56,6 @@ func (s *AnalyticsService) GetLog(_ *emptypb.Empty) (res *anrpc.GetLogsMessage, 
 	return
 }
 
-func NewAnalyticsService(mq *mq.MQ, dataTopic string) *AnalyticsService {
-	return &AnalyticsService{mq, dataTopic}
+func NewAnalyticsService(mq mq.MQ, dataTopic string) AnalyticsService {
+	return &analyticsService{mq, dataTopic}
 }

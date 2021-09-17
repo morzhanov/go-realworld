@@ -17,7 +17,7 @@ import (
 
 type UsersRpcServer struct {
 	urpc.UnimplementedUsersServer
-	*grpcserver.BaseGrpcServer
+	grpcserver.BaseGrpcServer
 	usersService services.UsersService
 	server       *grpc.Server
 }

@@ -12,17 +12,22 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-type MetricsCollector struct {
+type collector struct {
 	opsProcessed prometheus.Counter
 }
 
-func (mc *MetricsCollector) RegisterMetricsEndpoint(router *gin.Engine) {
+type Collector interface {
+	RegisterMetricsEndpoint(router *gin.Engine)
+	RecordBaseMetrics(ctx context.Context)
+}
+
+func (mc *collector) RegisterMetricsEndpoint(router *gin.Engine) {
 	router.GET("/metrics", func(c *gin.Context) {
 		promhttp.Handler().ServeHTTP(c.Writer, c.Request)
 	})
 }
 
-func (mc *MetricsCollector) RecordBaseMetrics(ctx context.Context) {
+func (mc *collector) RecordBaseMetrics(ctx context.Context) {
 	go func() {
 	loop:
 		for {
@@ -37,8 +42,8 @@ func (mc *MetricsCollector) RecordBaseMetrics(ctx context.Context) {
 	}()
 }
 
-func NewMetricsCollector(c *config.Config) *MetricsCollector {
-	mc := &MetricsCollector{}
+func NewMetricsCollector(c *config.Config) Collector {
+	mc := &collector{}
 	mc.opsProcessed = promauto.NewCounter(prometheus.CounterOpts{
 		Name: fmt.Sprintf("%v_ops_total", c.ServiceName),
 		Help: "The total number of processed events",

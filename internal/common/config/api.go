@@ -26,36 +26,49 @@ type ServiceAPI struct {
 	Events map[string]EventsServiceAPIItem `yaml:"events"`
 }
 
-type ApiConfig struct {
-	Analytics ServiceAPI `yaml:"analytics"`
-	Auth      ServiceAPI `yaml:"auth"`
-	Pictures  ServiceAPI `yaml:"pictures"`
-	Users     ServiceAPI `yaml:"users"`
+type apiConfig struct {
+	analytics ServiceAPI `yaml:"analytics"`
+	auth      ServiceAPI `yaml:"auth"`
+	pictures  ServiceAPI `yaml:"pictures"`
+	users     ServiceAPI `yaml:"users"`
 }
 
-func NewApiConfig() (res *ApiConfig, err error) {
+type ApiConfig interface {
+	GetApiItem(key string) (*ServiceAPI, error)
+	Analytics() ServiceAPI
+	Auth() ServiceAPI
+	Pictures() ServiceAPI
+	Users() ServiceAPI
+}
+
+func (a *apiConfig) GetApiItem(key string) (*ServiceAPI, error) {
+	switch key {
+	case "analytics":
+		return &a.analytics, nil
+	case "auth":
+		return &a.auth, nil
+	case "pictures":
+		return &a.pictures, nil
+	case "users":
+		return &a.users, nil
+	default:
+		return nil, fmt.Errorf("wrong api key %v", key)
+	}
+}
+
+func (a *apiConfig) Analytics() ServiceAPI { return a.analytics }
+func (a *apiConfig) Auth() ServiceAPI      { return a.auth }
+func (a *apiConfig) Pictures() ServiceAPI  { return a.pictures }
+func (a *apiConfig) Users() ServiceAPI     { return a.users }
+
+func NewApiConfig() (res ApiConfig, err error) {
 	data, err := os.ReadFile("./configs/api.yml")
 	if err != nil {
 		return nil, err
 	}
-	res = &ApiConfig{}
+	res = &apiConfig{}
 	if err = yaml.Unmarshal(data, res); err != nil {
 		return nil, err
 	}
 	return res, nil
-}
-
-func (a *ApiConfig) GetApiItem(key string) (*ServiceAPI, error) {
-	switch key {
-	case "analytics":
-		return &a.Analytics, nil
-	case "auth":
-		return &a.Auth, nil
-	case "pictures":
-		return &a.Pictures, nil
-	case "users":
-		return &a.Users, nil
-	default:
-		return nil, fmt.Errorf("wrong api key %v", key)
-	}
 }

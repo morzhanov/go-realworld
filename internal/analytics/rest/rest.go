@@ -14,8 +14,8 @@ import (
 )
 
 type analyticsRestController struct {
-	*restcontroller.BaseRestController
-	service *services.AnalyticsService
+	restcontroller.BaseRestController
+	service services.AnalyticsService
 }
 
 type AnalyticsRestController interface {
@@ -53,10 +53,10 @@ func (c *analyticsRestController) Listen(
 }
 
 func NewAnalyticsRestController(
-	s *services.AnalyticsService,
+	s services.AnalyticsService,
 	tracer opentracing.Tracer,
 	logger *zap.Logger,
-	mc *metrics.MetricsCollector,
+	mc metrics.Collector,
 ) AnalyticsRestController {
 	bc := restcontroller.NewRestController(
 		tracer,
@@ -67,7 +67,8 @@ func NewAnalyticsRestController(
 		service:            s,
 		BaseRestController: bc,
 	}
-	bc.Router.POST("/analytics", bc.Handler(c.handleLogData))
-	bc.Router.GET("/analytics", bc.Handler(c.handleGetData))
+	r := bc.Router()
+	r.POST("/analytics", bc.Handler(c.handleLogData))
+	r.GET("/analytics", bc.Handler(c.handleGetData))
 	return &c
 }

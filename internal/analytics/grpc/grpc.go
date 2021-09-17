@@ -17,8 +17,8 @@ import (
 
 type AnalyticsRpcServer struct {
 	anrpc.UnimplementedAnalyticsServer
-	*grpcserver.BaseGrpcServer
-	analyticsService *services.AnalyticsService
+	grpcserver.BaseGrpcServer
+	analyticsService services.AnalyticsService
 	server           *grpc.Server
 }
 
@@ -40,7 +40,7 @@ func (s *AnalyticsRpcServer) Listen(ctx context.Context, cancel context.CancelFu
 }
 
 func NewAnalyticsRpcServer(
-	analyticsService *services.AnalyticsService,
+	analyticsService services.AnalyticsService,
 	c *config.Config,
 	tracer opentracing.Tracer,
 	logger *zap.Logger,

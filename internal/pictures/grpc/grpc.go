@@ -19,7 +19,7 @@ import (
 
 type PicturesRpcServer struct {
 	prpc.UnimplementedPicturesServer
-	*grpcserver.BaseGrpcServer
+	grpcserver.BaseGrpcServer
 	picturesService *services.PictureService
 	server          *grpc.Server
 }

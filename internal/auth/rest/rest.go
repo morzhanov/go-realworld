@@ -15,7 +15,7 @@ import (
 )
 
 type authRestController struct {
-	*restcontroller.BaseRestController
+	restcontroller.BaseRestController
 	service services.AuthService
 }
 
@@ -84,7 +84,7 @@ func NewAuthRestController(
 	s services.AuthService,
 	tracer opentracing.Tracer,
 	logger *zap.Logger,
-	mc *metrics.MetricsCollector,
+	mc metrics.Collector,
 ) AuthRestController {
 	bc := restcontroller.NewRestController(
 		tracer,
@@ -95,9 +95,9 @@ func NewAuthRestController(
 		service:            s,
 		BaseRestController: bc,
 	}
-
-	bc.Router.POST("/auth", bc.Handler(c.handleAuthValidation))
-	bc.Router.POST("/login", bc.Handler(c.handleLogin))
-	bc.Router.POST("/signup", bc.Handler(c.handleSignup))
+	r := bc.Router()
+	r.POST("/auth", bc.Handler(c.handleAuthValidation))
+	r.POST("/login", bc.Handler(c.handleLogin))
+	r.POST("/signup", bc.Handler(c.handleSignup))
 	return &c
 }

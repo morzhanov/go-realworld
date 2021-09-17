@@ -135,7 +135,7 @@ func (s *sender) TransportToString(transport Transport) (string, error) {
 	}
 }
 
-func (s *sender) GetAPI() *config.ApiConfig {
+func (s *sender) GetAPI() config.ApiConfig {
 	return s.API
 }
 
@@ -454,6 +454,6 @@ func (s *sender) logRequest(transport Transport, service string, method string) 
 	}
 }
 
-func NewSender(ac *config.ApiConfig, l *zap.Logger) Sender {
+func NewSender(ac config.ApiConfig, l *zap.Logger) Sender {
 	return &sender{API: ac, logger: l}
 }

@@ -11,27 +11,35 @@ import (
 	"go.uber.org/zap"
 )
 
-type BaseEventsController struct {
+type baseEventsController struct {
 	tracer          opentracing.Tracer
 	sender          sender.Sender
-	mq              *mq.MQ
-	Logger          *zap.Logger
-	ConsumerGroupId string
+	mq              mq.MQ
+	logger          *zap.Logger
+	consumerGroupId string
 }
 
-func (c *BaseEventsController) CreateSpan(in *kafka.Message) opentracing.Span {
+type BaseEventsController interface {
+	CreateSpan(in *kafka.Message) opentracing.Span
+	Listen(ctx context.Context, processRequest func(*kafka.Message))
+	SendResponse(eventId string, data interface{}, span *opentracing.Span) error
+	Logger() *zap.Logger
+	ConsumerGroupId() string
+}
+
+func (c *baseEventsController) CreateSpan(in *kafka.Message) opentracing.Span {
 	return tracing.StartSpanFromEventsRequest(c.tracer, in)
 }
 
-func (c *BaseEventsController) Listen(
+func (c *baseEventsController) Listen(
 	ctx context.Context,
 	processRequest func(*kafka.Message),
 ) {
-	r := c.mq.CreateReader(c.ConsumerGroupId)
+	r := c.mq.CreateReader(c.consumerGroupId)
 	for {
 		m, err := r.ReadMessage(context.Background())
 		if err != nil {
-			c.Logger.Error(err.Error())
+			c.logger.Error(err.Error())
 			continue
 		}
 		go processRequest(&m)
@@ -44,8 +52,16 @@ func (c *BaseEventsController) Listen(
 	}
 }
 
-func (c *BaseEventsController) SendResponse(eventId string, data interface{}, span *opentracing.Span) error {
+func (c *baseEventsController) SendResponse(eventId string, data interface{}, span *opentracing.Span) error {
 	return c.sender.SendEventsResponse(eventId, data, span)
+}
+
+func (c *baseEventsController) Logger() *zap.Logger {
+	return c.logger
+}
+
+func (c *baseEventsController) ConsumerGroupId() string {
+	return c.consumerGroupId
 }
 
 func NewEventsController(
@@ -53,17 +69,17 @@ func NewEventsController(
 	tracer opentracing.Tracer,
 	logger *zap.Logger,
 	conf *config.Config,
-) (*BaseEventsController, error) {
+) (BaseEventsController, error) {
 	msgQ, err := mq.NewMq(conf, conf.KafkaTopic)
 	if err != nil {
 		return nil, err
 	}
-	c := &BaseEventsController{
+	c := &baseEventsController{
 		sender:          s,
 		tracer:          tracer,
 		mq:              msgQ,
-		Logger:          logger,
-		ConsumerGroupId: conf.KafkaConsumerGroupId,
+		logger:          logger,
+		consumerGroupId: conf.KafkaConsumerGroupId,
 	}
 	return c, err
 }

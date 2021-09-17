@@ -16,7 +16,7 @@ import (
 
 type AuthRpcServer struct {
 	arpc.UnimplementedAuthServer
-	*grpcserver.BaseGrpcServer
+	grpcserver.BaseGrpcServer
 	authService services.AuthService
 	server      *grpc.Server
 }

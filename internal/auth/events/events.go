@@ -27,11 +27,11 @@ type AuthEventsController interface {
 
 func (c *authEventsController) processRequest(in *kafka.Message) error {
 	switch string(in.Key) {
-	case c.sender.GetAPI().Auth.Events["validateEventsRequest"].Event:
+	case c.sender.GetAPI().Auth().Events["validateEventsRequest"].Event:
 		return c.validateEventsRequest(in)
-	case c.sender.GetAPI().Auth.Events["login"].Event:
+	case c.sender.GetAPI().Auth().Events["login"].Event:
 		return c.login(in)
-	case c.sender.GetAPI().Auth.Events["signup"].Event:
+	case c.sender.GetAPI().Auth().Events["signup"].Event:
 		return c.signup(in)
 	default:
 		return fmt.Errorf("wrong event name: %s", in.Key)
@@ -95,7 +95,7 @@ func (c *authEventsController) Listen(ctx context.Context) {
 		func(m *kafka.Message) {
 			err := c.processRequest(m)
 			if err != nil {
-				c.BaseEventsController.Logger.Error(err.Error())
+				c.BaseEventsController.Logger().Error(err.Error())
 			}
 		},
 	)
@@ -116,7 +116,7 @@ func NewAuthEventsController(
 	)
 	return &authEventsController{
 		service:              s,
-		BaseEventsController: *controller,
+		BaseEventsController: controller,
 		sender:               sender,
 	}, err
 }

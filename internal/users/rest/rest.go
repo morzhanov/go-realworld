@@ -14,7 +14,7 @@ import (
 )
 
 type usersRestController struct {
-	*restcontroller.BaseRestController
+	restcontroller.BaseRestController
 	service services.UsersService
 }
 
@@ -109,7 +109,7 @@ func NewUsersRestController(
 	s services.UsersService,
 	tracer opentracing.Tracer,
 	logger *zap.Logger,
-	mc *metrics.MetricsCollector,
+	mc metrics.Collector,
 ) UsersRestController {
 	bc := restcontroller.NewRestController(
 		tracer,
@@ -121,10 +121,11 @@ func NewUsersRestController(
 		BaseRestController: bc,
 	}
 
-	bc.Router.GET("/users/:id", bc.Handler(c.handleGetUserData))
-	bc.Router.GET("/users", bc.Handler(c.handleGetUserDataByUsername))
-	bc.Router.POST("/users/validate-password", bc.Handler(c.handleValidateUserPassword))
-	bc.Router.POST("/users", bc.Handler(c.handleCreateUser))
-	bc.Router.DELETE("/users/:id", bc.Handler(c.handleDeleteUser))
+	r := bc.Router()
+	r.GET("/users/:id", bc.Handler(c.handleGetUserData))
+	r.GET("/users", bc.Handler(c.handleGetUserDataByUsername))
+	r.POST("/users/validate-password", bc.Handler(c.handleValidateUserPassword))
+	r.POST("/users", bc.Handler(c.handleCreateUser))
+	r.DELETE("/users/:id", bc.Handler(c.handleDeleteUser))
 	return &c
 }

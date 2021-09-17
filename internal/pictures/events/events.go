@@ -27,13 +27,13 @@ type PicturesEventsController interface {
 
 func (c *picturesEventsController) processRequest(in *kafka.Message) error {
 	switch string(in.Key) {
-	case c.sender.GetAPI().Pictures.Events["getPictures"].Event:
+	case c.sender.GetAPI().Pictures().Events["getPictures"].Event:
 		return c.getPictures(in)
-	case c.sender.GetAPI().Pictures.Events["getPicture"].Event:
+	case c.sender.GetAPI().Pictures().Events["getPicture"].Event:
 		return c.getPicture(in)
-	case c.sender.GetAPI().Pictures.Events["createPicture"].Event:
+	case c.sender.GetAPI().Pictures().Events["createPicture"].Event:
 		return c.createPicture(in)
-	case c.sender.GetAPI().Pictures.Events["deletePicture"].Event:
+	case c.sender.GetAPI().Pictures().Events["deletePicture"].Event:
 		return c.deletePicture(in)
 	default:
 		return fmt.Errorf("wrong event name: %s", in.Key)
@@ -105,7 +105,7 @@ func (c *picturesEventsController) Listen(ctx context.Context) {
 		func(m *kafka.Message) {
 			err := c.processRequest(m)
 			if err != nil {
-				c.BaseEventsController.Logger.Error(err.Error())
+				c.BaseEventsController.Logger().Error(err.Error())
 			}
 		},
 	)
@@ -126,7 +126,7 @@ func NewPicturesEventsController(
 	)
 	return &picturesEventsController{
 		service:              s,
-		BaseEventsController: *controller,
+		BaseEventsController: controller,
 		sender:               sender,
 	}, err
 }

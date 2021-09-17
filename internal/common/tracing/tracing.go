@@ -32,7 +32,6 @@ func NewTracer(ctx context.Context, c *config.Config, logger *zap.Logger) (opent
 	cfg := jconfig.Configuration{
 		ServiceName: c.ServiceName,
 	}
-
 	tracer, closer, err := cfg.NewTracer(jconfig.Logger(NewJeagerLogger(logger)))
 	if err != nil {
 		return nil, fmt.Errorf("cannot init Jaeger tracer: %v", err)
@@ -40,8 +39,9 @@ func NewTracer(ctx context.Context, c *config.Config, logger *zap.Logger) (opent
 
 	go func() {
 		<-ctx.Done()
-		closer.Close()
+		if err := closer.Close(); err != nil {
+			logger.Error(err.Error())
+		}
 	}()
-
 	return tracer, nil
 }

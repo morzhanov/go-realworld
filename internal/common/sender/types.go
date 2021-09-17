@@ -76,7 +76,7 @@ type EventsRequestInput struct {
 }
 
 type sender struct {
-	API          *config.ApiConfig
+	API          config.ApiConfig
 	restClient   *RestClient
 	grpcClient   *GrpcClient
 	eventsClient *EventsClient
@@ -90,6 +90,6 @@ type Sender interface {
 	GetTransportFromContext(ctx context.Context) Transport
 	StringToTransport(transport string) (Transport, error)
 	TransportToString(transport Transport) (string, error)
-	GetAPI() *config.ApiConfig
+	GetAPI() config.ApiConfig
 	CheckStruct(val interface{}) bool
 }

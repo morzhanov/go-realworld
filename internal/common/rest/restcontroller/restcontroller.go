@@ -20,27 +20,39 @@ import (
 	"go.uber.org/zap"
 )
 
-type BaseRestController struct {
-	Router *gin.Engine
-	Tracer opentracing.Tracer
-	Logger *zap.Logger
-	MC     *metrics.MetricsCollector
+type baseRestController struct {
+	router *gin.Engine
+	tracer opentracing.Tracer
+	logger *zap.Logger
+	mC     metrics.Collector
 }
 
-func (c *BaseRestController) Listen(
+type BaseRestController interface {
+	Listen(ctx context.Context, cancel context.CancelFunc, port string)
+	ParseRestBody(ctx *gin.Context, input interface{}) error
+	HandleRestError(ctx *gin.Context, err error)
+	GetSpan(ctx *gin.Context) *opentracing.Span
+	Handler(handler gin.HandlerFunc) gin.HandlerFunc
+	Router() *gin.Engine
+	Tracer() opentracing.Tracer
+	Logger() *zap.Logger
+	MC() metrics.Collector
+}
+
+func (c *baseRestController) Listen(
 	ctx context.Context,
 	cancel context.CancelFunc,
 	port string,
 ) {
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%s", port),
-		Handler: c.Router,
+		Handler: c.router,
 	}
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			cancel()
-			errs.LogInitializationError(err, "rest controller", c.Logger)
+			errs.LogInitializationError(err, "rest controller", c.logger)
 			return
 		}
 	}()
@@ -53,11 +65,11 @@ func (c *BaseRestController) Listen(
 	if err := srv.Shutdown(ctx); err != nil {
 		cancel()
 		cancel2()
-		errs.LogInitializationError(err, "rest controller", c.Logger)
+		errs.LogInitializationError(err, "rest controller", c.logger)
 	}
 }
 
-func (c *BaseRestController) ParseRestBody(ctx *gin.Context, input interface{}) error {
+func (c *baseRestController) ParseRestBody(ctx *gin.Context, input interface{}) error {
 	jsonData, err := ioutil.ReadAll(ctx.Request.Body)
 	if err != nil {
 		return err
@@ -67,8 +79,8 @@ func (c *BaseRestController) ParseRestBody(ctx *gin.Context, input interface{}) 
 	return json.Unmarshal(jsonData, &in)
 }
 
-func (c *BaseRestController) HandleRestError(ctx *gin.Context, err error) {
-	c.Logger.Error(errors.Unwrap(err).Error())
+func (c *baseRestController) HandleRestError(ctx *gin.Context, err error) {
+	c.logger.Error(errors.Unwrap(err).Error())
 	if err.Error() == "not authorized" {
 		ctx.String(http.StatusUnauthorized, err.Error())
 		return
@@ -76,32 +88,37 @@ func (c *BaseRestController) HandleRestError(ctx *gin.Context, err error) {
 	ctx.String(http.StatusInternalServerError, err.Error())
 }
 
-func (c *BaseRestController) GetSpan(ctx *gin.Context) *opentracing.Span {
+func (c *baseRestController) GetSpan(ctx *gin.Context) *opentracing.Span {
 	item, _ := ctx.Get("span")
 	span := item.(opentracing.Span)
 	return &span
 }
 
-func (c *BaseRestController) Handler(handler gin.HandlerFunc) gin.HandlerFunc {
+func (c *baseRestController) Handler(handler gin.HandlerFunc) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		span := tracing.StartSpanFromHttpRequest(c.Tracer, ctx.Request)
+		span := tracing.StartSpanFromHttpRequest(c.tracer, ctx.Request)
 		ctx.Set("span", span)
 		handler(ctx)
 		defer span.Finish()
 	}
 }
 
+func (c *baseRestController) Router() *gin.Engine        { return c.router }
+func (c *baseRestController) Tracer() opentracing.Tracer { return c.tracer }
+func (c *baseRestController) Logger() *zap.Logger        { return c.logger }
+func (c *baseRestController) MC() metrics.Collector      { return c.mC }
+
 func NewRestController(
 	tracer opentracing.Tracer,
 	logger *zap.Logger,
-	mc *metrics.MetricsCollector,
-) *BaseRestController {
+	mc metrics.Collector,
+) BaseRestController {
 	router := gin.Default()
 	config := cors.DefaultConfig()
 	config.AllowAllOrigins = true
 	config.AddAllowHeaders([]string{"authorization"}...)
 	router.Use(cors.New(config))
-	c := BaseRestController{router, tracer, logger, mc}
-	c.MC.RegisterMetricsEndpoint(router)
+	c := baseRestController{router, tracer, logger, mc}
+	c.mC.RegisterMetricsEndpoint(router)
 	return &c
 }

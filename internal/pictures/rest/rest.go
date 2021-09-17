@@ -14,8 +14,8 @@ import (
 )
 
 type picturesRestController struct {
-	*restcontroller.BaseRestController
-	service *services.PictureService
+	restcontroller.BaseRestController
+	service services.PictureService
 }
 
 type PicturesRestController interface {
@@ -84,10 +84,10 @@ func (c *picturesRestController) Listen(
 }
 
 func NewPicturesRestController(
-	s *services.PictureService,
+	s services.PictureService,
 	tracer opentracing.Tracer,
 	logger *zap.Logger,
-	mc *metrics.MetricsCollector,
+	mc metrics.Collector,
 ) PicturesRestController {
 	bc := restcontroller.NewRestController(
 		tracer,
@@ -99,9 +99,10 @@ func NewPicturesRestController(
 		BaseRestController: bc,
 	}
 
-	bc.Router.POST("/pictures", bc.Handler(c.handleCreateUserPicture))
-	bc.Router.GET("/pictures/:userId", bc.Handler(c.handleGetUserPictures))
-	bc.Router.GET("/pictures/:userId/:id", bc.Handler(c.handleGetUserPicture))
-	bc.Router.DELETE("/pictures/:userId/:id", bc.Handler(c.handleDeleteUserPicture))
+	r := bc.Router()
+	r.POST("/pictures", bc.Handler(c.handleCreateUserPicture))
+	r.GET("/pictures/:userId", bc.Handler(c.handleGetUserPictures))
+	r.GET("/pictures/:userId/:id", bc.Handler(c.handleGetUserPicture))
+	r.DELETE("/pictures/:userId/:id", bc.Handler(c.handleDeleteUserPicture))
 	return &c
 }

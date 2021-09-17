@@ -16,7 +16,7 @@ import (
 )
 
 type apiGatewayRestController struct {
-	*restcontroller.BaseRestController
+	restcontroller.BaseRestController
 	service services.APIGatewayService
 	sender  sender.Sender
 }
@@ -204,7 +204,7 @@ func NewAPIGatewayRestController(
 	s services.APIGatewayService,
 	tracer opentracing.Tracer,
 	logger *zap.Logger,
-	mc *metrics.MetricsCollector,
+	mc metrics.Collector,
 	sender sender.Sender,
 ) APIGatewayRestController {
 	bc := restcontroller.NewRestController(
@@ -218,12 +218,13 @@ func NewAPIGatewayRestController(
 		BaseRestController: bc,
 	}
 
-	bc.Router.POST("/:transport/login", bc.Handler(c.handleLogin))
-	bc.Router.POST("/:transport/signup", bc.Handler(c.handleSignup))
-	bc.Router.POST("/:transport/pictures", bc.Handler(c.handleCreatePicture))
-	bc.Router.GET("/:transport/pictures", bc.Handler(c.handleGetPictures))
-	bc.Router.GET("/:transport/pictures/:id", bc.Handler(c.handleGetPicture))
-	bc.Router.DELETE("/:transport/pictures/:id", bc.Handler(c.handleDeletePicture))
-	bc.Router.GET("/:transport/analytics", bc.Handler(c.handleGetAnalytics))
+	r := bc.Router()
+	r.POST("/:transport/login", bc.Handler(c.handleLogin))
+	r.POST("/:transport/signup", bc.Handler(c.handleSignup))
+	r.POST("/:transport/pictures", bc.Handler(c.handleCreatePicture))
+	r.GET("/:transport/pictures", bc.Handler(c.handleGetPictures))
+	r.GET("/:transport/pictures/:id", bc.Handler(c.handleGetPicture))
+	r.DELETE("/:transport/pictures/:id", bc.Handler(c.handleDeletePicture))
+	r.GET("/:transport/analytics", bc.Handler(c.handleGetAnalytics))
 	return &c
 }
