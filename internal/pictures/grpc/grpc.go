@@ -20,7 +20,7 @@ import (
 type PicturesRpcServer struct {
 	prpc.UnimplementedPicturesServer
 	grpcserver.BaseGrpcServer
-	picturesService *services.PictureService
+	picturesService services.PictureService
 	server          *grpc.Server
 }
 
@@ -58,7 +58,7 @@ func (s *PicturesRpcServer) Listen(ctx context.Context, cancel context.CancelFun
 }
 
 func NewPicturesRpcServer(
-	picturesService *services.PictureService,
+	picturesService services.PictureService,
 	c *config.Config,
 	tracer opentracing.Tracer,
 	logger *zap.Logger,

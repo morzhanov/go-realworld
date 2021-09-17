@@ -17,7 +17,7 @@ import (
 
 type picturesEventsController struct {
 	eventscontroller.BaseEventsController
-	service *services.PictureService
+	service services.PictureService
 	sender  sender.Sender
 }
 
@@ -112,7 +112,7 @@ func (c *picturesEventsController) Listen(ctx context.Context) {
 }
 
 func NewPicturesEventsController(
-	s *services.PictureService,
+	s services.PictureService,
 	c *config.Config,
 	sender sender.Sender,
 	tracer opentracing.Tracer,
