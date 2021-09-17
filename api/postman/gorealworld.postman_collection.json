@@ -1,0 +1,964 @@
+{
+	"info": {
+		"_postman_id": "d640b9ca-134c-4da2-9695-2d9cce450faf",
+		"name": "gorealworld",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "REST",
+			"item": [
+				{
+					"name": "ANALYTICS:LOG_DATA",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"transport\": \"grpc\",\n    \"service\": \"auth\",\n    \"method\": \"login\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3001/analytics",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"analytics"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "ANALYTICS:GET_DATA",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3001/analytics",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"analytics"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "AUTH:LOGIN",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"email@mail.com\",\n    \"password\": \"qwerty123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3002/login",
+							"host": [
+								"localhost"
+							],
+							"port": "3002",
+							"path": [
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "AUTH:AUTH",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemVkIjp0cnVlLCJ1c2VyX2lkIjoiZjdlYzJjMzEtZmMxMy00MTk5LTlkYWQtZGM0NDlkNjc3ZDE3In0.0SnKEu_Q31AOKERFkhR1AUqFrGKaSAFCc80yH0aJiWs\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3002/auth",
+							"host": [
+								"localhost"
+							],
+							"port": "3002",
+							"path": [
+								"auth"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "AUTH:SIGNUP",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"email@mail.com\",\n    \"password\": \"qwerty123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3002/signup",
+							"host": [
+								"localhost"
+							],
+							"port": "3002",
+							"path": [
+								"signup"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "PICTURES:CREATE",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"One\",\n    \"user_id\": \"f7ec2c31-fc13-4199-9dad-dc449d677d17\",\n    \"base64\": \"base64\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3003/pictures",
+							"host": [
+								"localhost"
+							],
+							"port": "3003",
+							"path": [
+								"pictures"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "PICTURES:GET_ALL",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/grpc+json",
+								"type": "text"
+							},
+							{
+								"key": "Grpc-Insecure",
+								"value": "true",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user_id\": \"f7ec2c31-fc13-4199-9dad-dc449d677d17\"\n}",
+							"options": {
+								"raw": {
+									"language": "text"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:3003/pictures/f7ec2c31-fc13-4199-9dad-dc449d677d17",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "3003",
+							"path": [
+								"pictures",
+								"f7ec2c31-fc13-4199-9dad-dc449d677d17"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "PICTURES:GET_ONE",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3003/pictures/f7ec2c31-fc13-4199-9dad-dc449d677d17/7c5d3406-f76b-40b9-8635-ec5907da67d9",
+							"host": [
+								"localhost"
+							],
+							"port": "3003",
+							"path": [
+								"pictures",
+								"f7ec2c31-fc13-4199-9dad-dc449d677d17",
+								"7c5d3406-f76b-40b9-8635-ec5907da67d9"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "PICTURES:DELETE",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3003/pictures/f7ec2c31-fc13-4199-9dad-dc449d677d17/b9dd6895-6021-47a4-8ba0-10f84220dec5",
+							"host": [
+								"localhost"
+							],
+							"port": "3003",
+							"path": [
+								"pictures",
+								"f7ec2c31-fc13-4199-9dad-dc449d677d17",
+								"b9dd6895-6021-47a4-8ba0-10f84220dec5"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "USERS:GET_ONE",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3004/users/f7ec2c31-fc13-4199-9dad-dc449d677d17",
+							"host": [
+								"localhost"
+							],
+							"port": "3004",
+							"path": [
+								"users",
+								"f7ec2c31-fc13-4199-9dad-dc449d677d17"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "USERS:GET_BY_USERNAME",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3004/users/?username=email@mail.com",
+							"host": [
+								"localhost"
+							],
+							"port": "3004",
+							"path": [
+								"users",
+								""
+							],
+							"query": [
+								{
+									"key": "username",
+									"value": "email@mail.com"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "USERS:VALIDATE_PASSWORD",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"email@mail.com\",\n    \"password\": \"qwerty1234\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3004/users/validate-password",
+							"host": [
+								"localhost"
+							],
+							"port": "3004",
+							"path": [
+								"users",
+								"validate-password"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "USERS:CREATE",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"email2@mail.com\",\n    \"password\": \"qwerty123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3004/users",
+							"host": [
+								"localhost"
+							],
+							"port": "3004",
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "USERS:DELETE",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3004/users/50755ac0-e8a9-4ea1-bdf1-8b42df87d155",
+							"host": [
+								"localhost"
+							],
+							"port": "3004",
+							"path": [
+								"users",
+								"50755ac0-e8a9-4ea1-bdf1-8b42df87d155"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "GRPC",
+			"item": [
+				{
+					"name": "AUTH:LOGIN",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/grpc+json"
+							},
+							{
+								"key": "Grpc-Insecure",
+								"type": "text",
+								"value": "true"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"email@mail.com\",\n    \"password\": \"qwerty123\"\n}",
+							"options": {
+								"raw": {
+									"language": "text"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:5002/auth.Auth/Login",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5002",
+							"path": [
+								"auth.Auth",
+								"Login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "AUTH:SIGNUP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/grpc+json"
+							},
+							{
+								"key": "Grpc-Insecure",
+								"type": "text",
+								"value": "true"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"email3@mail.com\",\n    \"password\": \"qwerty123\"\n}",
+							"options": {
+								"raw": {
+									"language": "text"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:5002/auth.Auth/Signup",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5002",
+							"path": [
+								"auth.Auth",
+								"Signup"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "AUTH:VALIDATE_RPC_REQUEST",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/grpc+json"
+							},
+							{
+								"key": "Grpc-Insecure",
+								"type": "text",
+								"value": "true"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemVkIjp0cnVlLCJ1c2VyX2lkIjoiZjdlYzJjMzEtZmMxMy00MTk5LTlkYWQtZGM0NDlkNjc3ZDE3In0.0SnKEu_Q31AOKERFkhR1AUqFrGKaSAFCc80yH0aJiWs\"\n}",
+							"options": {
+								"raw": {
+									"language": "text"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:5002/auth.Auth/ValidateRpcRequest",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5002",
+							"path": [
+								"auth.Auth",
+								"ValidateRpcRequest"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "PICTURES:CREATE",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/grpc+json"
+							},
+							{
+								"key": "Grpc-Insecure",
+								"type": "text",
+								"value": "true"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Some\",\n    \"base64\": \"base64\",\n    \"user_id\": \"f7ec2c31-fc13-4199-9dad-dc449d677d17\"\n}",
+							"options": {
+								"raw": {
+									"language": "text"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:5003/pictures.Pictures/CreateUserPicture",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5003",
+							"path": [
+								"pictures.Pictures",
+								"CreateUserPicture"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "PICTURES:GET_ALL",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/grpc+json",
+								"type": "text"
+							},
+							{
+								"key": "Grpc-Insecure",
+								"value": "true",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user_id\": \"f7ec2c31-fc13-4199-9dad-dc449d677d17\"\n}",
+							"options": {
+								"raw": {
+									"language": "text"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:5003/pictures.Pictures/GetUserPictures",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5003",
+							"path": [
+								"pictures.Pictures",
+								"GetUserPictures"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "PICTURES:GET_ONE",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/grpc+json",
+								"type": "text"
+							},
+							{
+								"key": "Grpc-Insecure",
+								"value": "true",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user_id\": \"f7ec2c31-fc13-4199-9dad-dc449d677d17\",\n    \"picture_id\": \"7c5d3406-f76b-40b9-8635-ec5907da67d9\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:5003/pictures.Pictures/GetUserPicture",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5003",
+							"path": [
+								"pictures.Pictures",
+								"GetUserPicture"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "PICTURES:DELETE",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/grpc+json"
+							},
+							{
+								"key": "Grpc-Insecure",
+								"type": "text",
+								"value": "true"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user_id\": \"f7ec2c31-fc13-4199-9dad-dc449d677d17\",\n    \"picture_id\": \"f91b8e5a-723a-4a8e-94f0-50290f5c6bb7\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:5003/pictures.Pictures/DeleteUserPicture",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5003",
+							"path": [
+								"pictures.Pictures",
+								"DeleteUserPicture"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "USERS:GET_ONE",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/grpc+json"
+							},
+							{
+								"key": "Grpc-Insecure",
+								"type": "text",
+								"value": "true"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"email@mail.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:5004/users.Users/GetUserDataByUsername",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5004",
+							"path": [
+								"users.Users",
+								"GetUserDataByUsername"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "USERS:GET_BY_USERNAME",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/grpc+json"
+							},
+							{
+								"key": "Grpc-Insecure",
+								"type": "text",
+								"value": "true"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user_id\": \"f7ec2c31-fc13-4199-9dad-dc449d677d17\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:5004/users.Users/GetUserData",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5004",
+							"path": [
+								"users.Users",
+								"GetUserData"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "USERS:VALIDATE_PASSWORD",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/grpc+json"
+							},
+							{
+								"key": "Grpc-Insecure",
+								"type": "text",
+								"value": "true"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"email@mail.com\",\n    \"password\": \"qwerty123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:5004/users.Users/ValidateUserPassword",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5004",
+							"path": [
+								"users.Users",
+								"ValidateUserPassword"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "USERS:CREATE",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/grpc+json"
+							},
+							{
+								"key": "Grpc-Insecure",
+								"type": "text",
+								"value": "true"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"email4@mail.com\",\n    \"password\": \"qwerty123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:5004/users.Users/CreateUser",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5004",
+							"path": [
+								"users.Users",
+								"CreateUser"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "USERS:DELETE",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/grpc+json"
+							},
+							{
+								"key": "Grpc-Insecure",
+								"type": "text",
+								"value": "true"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user_id\": \"b2c1feba-721b-4d73-9034-155175eee9d1\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:5004/users.Users/DeleteUser",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5004",
+							"path": [
+								"users.Users",
+								"DeleteUser"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
