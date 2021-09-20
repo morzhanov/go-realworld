@@ -87,8 +87,6 @@ Web App is a react application that provides UI tools to:
 - <a href="google.golang.org/grpc">grpc</a> - gRPC library
 - <a href="google.golang.org/protobuf">protobuf</a> - protobuf library
 - <a href="github.com/spf13/viper">viper</a> - config files parsing library
-- <a href="github.com/spf13/viper">viper</a> - config files parsing library
-- <a href="github.com/spf13/viper">viper</a> - config files parsing library
 
 ### Technologies
 
