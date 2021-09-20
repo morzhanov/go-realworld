@@ -47,8 +47,8 @@ Web App is a react application that provides UI tools to:
 ## Project Structure
 
 - /api - API-related packages and files
-  - /api/grpc - .proto definition files and compiled .go files for grpc. Also contains `compile_proto.sh` script to compile .proto files into .go files.
-  - /api/postman - contains postman collection for local API calls through REST and GRPC transports
+  - /grpc - .proto definition files and compiled .go files for grpc. Also contains `compile_proto.sh` script to compile .proto files into .go files.
+  - /postman - contains postman collection for local API calls through REST and GRPC transports
 - /build - for further development. Should contain CI/CD configuration files
 - /cmd - contains `main.go` files for each service. This folder is the starting point for each project service.
 - /configs - contains `*.env` files which contain environment variables declaration for each service. Also contains `api.yml` files with API schema declaration for each transport.
@@ -56,18 +56,18 @@ Web App is a react application that provides UI tools to:
   - docker-compose.deps.yml - contains docker-compose config with dependant images (ELK, Prometheus, Jeager, etc.)
   - docker-compose.yml - main docker-compose config files
 - /internal - contains internal application packages
-  - /internal/common - contains common application packages
-  - /internal/common/config - configuration service
-  - /internal/common/db - database initialization and management service 
-  - /internal/common/errors - error creation/parsing helper functions
-  - /internal/common/events - contains events-related helper functions and basic EventsController interface
-  - /internal/common/grpc - contains grpc-related helper functions and basic GrpcService interface
-  - /internal/common/logger - contains main logger configuration
-  - /internal/common/metrics - Prometheus metrics collector service
-  - /internal/common/mq - Kafka message queue configuration service
-  - /internal/common/rest - contains rest-related helper functions and basic RestController interface
-  - /internal/common/sender - contains main interface and structure to manage cross-service communication
-  - /internal/common/tracing - Jaeger tracer configuration files and main interface
+  - /common - contains common application packages
+    - /config - configuration service
+    - /db - database initialization and management service 
+    - /errors - error creation/parsing helper functions
+    - /events - contains events-related helper functions and basic EventsController interface
+    - /grpc - contains grpc-related helper functions and basic GrpcService interface
+    - /logger - contains main logger configuration
+    - /metrics - Prometheus metrics collector service
+    - /mq - Kafka message queue configuration service
+    - /rest - contains rest-related helper functions and basic RestController interface
+    - /sender - contains main interface and structure to manage cross-service communication
+    - /tracing - Jaeger tracer configuration files and main interface
 
 ## Used Libraries and Technologies
 
